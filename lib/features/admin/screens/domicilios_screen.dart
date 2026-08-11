@@ -78,20 +78,49 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
     setState(() => _loading = false);
   }
 
+  // Solo la llamada de red — sin tocar setState/list/snackbar. Se usa desde
+  // diálogos/modales, que la esperan ANTES de cerrarse. El refresh completo
+  // (_despuesDeConfirmar) se dispara DESPUÉS de que el diálogo/modal ya
+  // terminó de cerrarse, nunca mientras sigue en el árbol — evitar mezclar
+  // el cierre de una ruta con un setState de pantalla completa es lo que
+  // corrige el crash "_dependents.isEmpty" / "Duplicate GlobalKeys".
+  Future<void> _confirmarApi(int id) async {
+    await ApiService.patch('/api/ventas/$id/estado', {'nombre_estado': 'en_proceso'});
+  }
+
+  Future<void> _anularApi(int id, String motivo) async {
+    await ApiService.patch('/api/ventas/$id/anular',
+        {'motivo_anulacion': motivo.isNotEmpty ? motivo : 'Rechazado por admin'});
+  }
+
+  Future<void> _despuesDeConfirmar() async {
+    await _cargar();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Pedido confirmado y enviado a cocina'),
+        backgroundColor: Color(0xFF16A34A),
+      ));
+    }
+  }
+
+  Future<void> _despuesDeAnular() async {
+    await _cargar();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Pedido rechazado'),
+        backgroundColor: AppColors.error,
+      ));
+    }
+  }
+
+  // Wrapper legado (mismo comportamiento visible que antes) usado solo
+  // fuera de diálogos/modales, donde no hay riesgo de mezclar el pop de una
+  // ruta con este setState de pantalla completa.
   Future<void> _confirmar(Pedido pedido) async {
     setState(() => _procesandoId = pedido.id);
     try {
-      await ApiService.patch(
-        '/api/ventas/${pedido.id}/estado',
-        {'nombre_estado': 'en_proceso'},
-      );
-      await _cargar();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Pedido confirmado y enviado a cocina'),
-          backgroundColor: Color(0xFF16A34A),
-        ));
-      }
+      await _confirmarApi(pedido.id);
+      await _despuesDeConfirmar();
     } on ApiException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
@@ -101,34 +130,6 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Error al confirmar pedido')));
-      }
-    }
-    if (mounted) setState(() => _procesandoId = null);
-  }
-
-  Future<void> _anular(int id, String motivo) async {
-    setState(() => _procesandoId = id);
-    try {
-      await ApiService.patch(
-        '/api/ventas/$id/anular',
-        {'motivo_anulacion': motivo.isNotEmpty ? motivo : 'Rechazado por admin'},
-      );
-      await _cargar();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Pedido rechazado'),
-          backgroundColor: AppColors.error,
-        ));
-      }
-    } on ApiException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.message)));
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error al rechazar pedido')));
       }
     }
     if (mounted) setState(() => _procesandoId = null);
@@ -154,25 +155,38 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
     }
   }
 
-  void _mostrarDetalle(Pedido pedido) {
-    showModalBottomSheet(
+  // El modal solo ejecuta la llamada API y se cierra devolviendo un
+  // resultado; el refresh de la lista + snackbar corren DESPUÉS, cuando el
+  // modal ya salió por completo del árbol (ver comentario en _confirmarApi).
+  void _mostrarDetalle(Pedido pedido) async {
+    final resultado = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _DetalleAdminModal(
         pedido: pedido,
         fmt: _fmt,
-        onConfirmar: () => _confirmar(pedido),
-        onRechazar: (motivo) => _anular(pedido.id, motivo),
+        onConfirmar: () => _confirmarApi(pedido.id),
+        onRechazar: (motivo) => _anularApi(pedido.id, motivo),
       ),
     );
+    if (!mounted || resultado == null) return;
+    if (resultado == 'confirmado') {
+      await _despuesDeConfirmar();
+    } else if (resultado == 'rechazado') {
+      await _despuesDeAnular();
+    }
   }
 
-  // Quick reject from card X button — requires non-empty motivo
-  void _confirmarRechazo(Pedido pedido) {
+  // Quick reject from card X button — requires non-empty motivo.
+  // Mismo patrón de dos fases que _mostrarDetalle: el diálogo solo hace la
+  // llamada API y se cierra; el refresh de la lista + snackbar corren
+  // DESPUÉS de que el diálogo ya salió del árbol por completo.
+  void _confirmarRechazo(Pedido pedido) async {
     final motivoCtrl = TextEditingController();
     bool procesando = false;
-    showDialog(
+    String? error;
+    final rechazado = await showDialog<bool>(
       context: context,
       builder: (_) => StatefulBuilder(
         builder: (ctx, setSt) => AlertDialog(
@@ -192,11 +206,15 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
                 ),
                 maxLines: 3,
               ),
+              if (error != null) ...[
+                const SizedBox(height: 8),
+                Text(error!, style: const TextStyle(color: AppColors.error, fontSize: 12)),
+              ],
             ],
           ),
           actions: [
             TextButton(
-              onPressed: procesando ? null : () => Navigator.pop(ctx),
+              onPressed: procesando ? null : () => Navigator.pop(ctx, false),
               child: const Text('Cancelar'),
             ),
             ElevatedButton(
@@ -208,13 +226,15 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
                   ? null
                   : () async {
                       final motivo = motivoCtrl.text.trim();
-                      setSt(() => procesando = true);
-                      // Primero se completa la actualización (API + setState
-                      // del padre) y solo después se cierra el diálogo, para
-                      // evitar el crash "_dependents.isEmpty" por popear el
-                      // contexto mientras la actualización sigue en curso.
-                      await _anular(pedido.id, motivo);
-                      if (ctx.mounted) Navigator.pop(ctx);
+                      setSt(() { procesando = true; error = null; });
+                      try {
+                        await _anularApi(pedido.id, motivo);
+                        if (ctx.mounted) Navigator.pop(ctx, true);
+                      } on ApiException catch (e) {
+                        setSt(() { procesando = false; error = e.message; });
+                      } catch (_) {
+                        setSt(() { procesando = false; error = 'Error al rechazar pedido'; });
+                      }
                     },
               child: procesando
                   ? const SizedBox(
@@ -226,6 +246,8 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
         ),
       ),
     );
+    motivoCtrl.dispose();
+    if (mounted && rechazado == true) await _despuesDeAnular();
   }
 
   @override
@@ -266,26 +288,31 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Pedidos por confirmar',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.textPrimary,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Pedidos por confirmar',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.textPrimary,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                '${_pedidos.length} pedidos esperando confirmación',
-                                style: const TextStyle(
-                                    fontSize: 13,
-                                    color: AppColors.textSecondary),
-                              ),
-                            ],
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${_pedidos.length} pedidos esperando confirmación',
+                                  style: const TextStyle(
+                                      fontSize: 13,
+                                      color: AppColors.textSecondary),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
                           ),
+                          const SizedBox(width: 8),
                           GestureDetector(
                             onTap: _cargar,
                             child: Container(
@@ -727,6 +754,7 @@ class _DetalleAdminModalState extends State<_DetalleAdminModal> {
   // actualización (llamada API + setState del padre) y solo después se
   // cierra este modal — nunca al revés.
   bool _procesando = false;
+  String? _error;
 
   @override
   void dispose() {
@@ -827,9 +855,17 @@ class _DetalleAdminModalState extends State<_DetalleAdminModal> {
                       ? null
                       : () async {
                           final motivo = _motivoCtrl.text.trim();
-                          setState(() => _procesando = true);
-                          await widget.onRechazar(motivo);
-                          if (context.mounted) Navigator.pop(context);
+                          setState(() { _procesando = true; _error = null; });
+                          try {
+                            await widget.onRechazar(motivo);
+                            if (context.mounted) Navigator.pop(context, 'rechazado');
+                          } on ApiException catch (e) {
+                            if (mounted) setState(() { _procesando = false; _error = e.message; });
+                          } catch (_) {
+                            if (mounted) {
+                              setState(() { _procesando = false; _error = 'Error al rechazar pedido'; });
+                            }
+                          }
                         },
                   child: _procesando
                       ? const SizedBox(
@@ -840,6 +876,10 @@ class _DetalleAdminModalState extends State<_DetalleAdminModal> {
               ),
             ],
           ),
+          if (_error != null) ...[
+            const SizedBox(height: 10),
+            Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 12)),
+          ],
         ],
       ),
     );
@@ -1320,15 +1360,29 @@ class _DetalleAdminModalState extends State<_DetalleAdminModal> {
                     onPressed: _procesando
                         ? null
                         : () async {
-                            setState(() => _procesando = true);
-                            await widget.onConfirmar();
-                            if (context.mounted) Navigator.pop(context);
+                            setState(() { _procesando = true; _error = null; });
+                            try {
+                              await widget.onConfirmar();
+                              if (context.mounted) Navigator.pop(context, 'confirmado');
+                            } on ApiException catch (e) {
+                              if (mounted) setState(() { _procesando = false; _error = e.message; });
+                            } catch (_) {
+                              if (mounted) {
+                                setState(() { _procesando = false; _error = 'Error al confirmar pedido'; });
+                              }
+                            }
                           },
                   ),
                 ),
               ],
             ),
           ),
+          if (_error != null) ...[
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 12)),
+            ),
+          ],
         ],
       ),
     );

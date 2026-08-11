@@ -162,8 +162,14 @@ Future<void> _anularVentaRapidoDialog(
     BuildContext context, Pedido pedido, VoidCallback onRefresh) async {
   final motivoCtrl = TextEditingController();
   bool procesando = false;
+  String? dlgError;
 
-  await showDialog<void>(
+  // El diálogo solo hace la llamada API y se cierra; el refresh de la
+  // lista (onRefresh, que dispara un setState de pantalla completa) y el
+  // snackbar corren DESPUÉS, cuando el diálogo ya salió del árbol — mezclar
+  // el pop de esta ruta con ese setState es lo que causaba el crash
+  // "_dependents.isEmpty" / "Duplicate GlobalKeys".
+  final anulada = await showDialog<bool>(
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setDlg) => AlertDialog(
@@ -193,11 +199,15 @@ Future<void> _anularVentaRapidoDialog(
                 ),
               ),
             ),
+            if (dlgError != null) ...[
+              const SizedBox(height: 8),
+              Text(dlgError!, style: const TextStyle(color: AppColors.error, fontSize: 12)),
+            ],
           ],
         ),
         actions: [
           TextButton(
-            onPressed: procesando ? null : () => Navigator.pop(ctx),
+            onPressed: procesando ? null : () => Navigator.pop(ctx, false),
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
@@ -205,31 +215,17 @@ Future<void> _anularVentaRapidoDialog(
                 backgroundColor: AppColors.error, foregroundColor: Colors.white),
             onPressed: (motivoCtrl.text.trim().length < 5 || procesando) ? null : () async {
               final motivo = motivoCtrl.text.trim();
-              setDlg(() => procesando = true);
-              // Primero se completa la actualización (API + refresh) y solo
-              // después se cierra el diálogo, para evitar el crash
-              // "_dependents.isEmpty" por popear el contexto mientras la
-              // actualización sigue en curso.
+              setDlg(() { procesando = true; dlgError = null; });
               try {
                 await ApiService.patch(
                   '/api/ventas/${pedido.id}/anular',
                   {'motivo_anulacion': motivo},
                 );
-                onRefresh();
-                if (ctx.mounted) Navigator.pop(ctx);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Venta anulada')),
-                  );
-                }
+                if (ctx.mounted) Navigator.pop(ctx, true);
               } on ApiException catch (e) {
-                if (ctx.mounted) Navigator.pop(ctx);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context)
-                      .showSnackBar(SnackBar(content: Text(e.message)));
-                }
+                setDlg(() { procesando = false; dlgError = e.message; });
               } catch (_) {
-                if (ctx.mounted) Navigator.pop(ctx);
+                setDlg(() { procesando = false; dlgError = 'Error al anular la venta'; });
               }
             },
             child: procesando
@@ -241,7 +237,16 @@ Future<void> _anularVentaRapidoDialog(
         ],
       ),
     ),
-  ).then((_) => motivoCtrl.dispose());
+  );
+  motivoCtrl.dispose();
+  if (anulada == true) {
+    onRefresh();
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Venta anulada')),
+      );
+    }
+  }
 }
 
 class VentasScreen extends StatefulWidget {
