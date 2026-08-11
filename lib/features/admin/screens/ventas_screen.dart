@@ -472,7 +472,9 @@ class _VentasScreenState extends State<VentasScreen> {
                     const DropdownMenuItem<String?>(value: null, child: Text('Todos los estados', style: TextStyle(fontSize: 13))),
                     ..._estados.map((e) => DropdownMenuItem<String?>(value: e, child: Text(_labelEstado(e), style: const TextStyle(fontSize: 13)))),
                   ],
-                  onChanged: (v) { setState(() => _filtroEstado = v); _cargar(); },
+                  // El estado se filtra 100% en el cliente (ver _ventasFiltradas):
+                  // no hace falta recargar del servidor al cambiarlo.
+                  onChanged: (v) => setState(() => _filtroEstado = v),
                 ),
                 const SizedBox(height: 8),
 
@@ -491,7 +493,9 @@ class _VentasScreenState extends State<VentasScreen> {
                     const DropdownMenuItem<String?>(value: null, child: Text('Todos los métodos', style: TextStyle(fontSize: 13))),
                     ..._metodosPago.map((m) => DropdownMenuItem<String?>(value: m, child: Text(_labelMetodo(m), style: const TextStyle(fontSize: 13)))),
                   ],
-                  onChanged: (v) { setState(() => _filtroMetodoPago = v); _cargar(); },
+                  // El backend ignora este query param (ver comentario en
+                  // _cargar); el filtro real se aplica en _ventasFiltradas.
+                  onChanged: (v) => setState(() => _filtroMetodoPago = v),
                 ),
                 const SizedBox(height: 8),
 

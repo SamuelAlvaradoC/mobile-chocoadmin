@@ -314,14 +314,20 @@ class _ProductosScreenState extends State<ProductosScreen> {
                                     ]),
                                     const SizedBox(height: 4),
                                     Row(children: [
-                                      Text('\$${precio.toStringAsFixed(0).replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => '.')}',
-                                          style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF1a1a1a))),
+                                      Flexible(
+                                        child: Text('\$${precio.toStringAsFixed(0).replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => '.')}',
+                                            style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF1a1a1a)),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis),
+                                      ),
                                       if (toppings) ...[
                                         const SizedBox(width: 6),
-                                        _BadgeChip(
-                                          label: 'Toppings: máx. ${p['max_toppings'] ?? 0}',
-                                          color: const Color(0xFF666666),
-                                          bg: const Color(0xFFF0F0F0),
+                                        Flexible(
+                                          child: _BadgeChip(
+                                            label: 'Toppings: máx. ${p['max_toppings'] ?? 0}',
+                                            color: const Color(0xFF666666),
+                                            bg: const Color(0xFFF0F0F0),
+                                          ),
                                         ),
                                       ],
                                     ]),
