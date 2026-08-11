@@ -1730,39 +1730,34 @@ class _EditarVentaModalState extends State<_EditarVentaModal> {
                           final prod = prods[idx];
                           return GestureDetector(
                             onTap: () async {
-                              final needsConfig = prod.permiteToppings || prod.permiteSalsas || prod.permiteChocolate || prod.esBowl;
-                              if (needsConfig) {
-                                final result = await showModalBottomSheet<ModalProductoResult>(
-                                  context: context,
-                                  isScrollControlled: true,
-                                  backgroundColor: Colors.transparent,
-                                  builder: (_) => ToppingsModal(
-                                    allToppings: cat.toppings,
-                                    allAdiciones: cat.adiciones,
-                                    producto: prod,
-                                  ),
-                                );
-                                if (result != null && mounted) {
-                                  setState(() => _items.add(_ItemEdit(
-                                    idProducto: prod.id,
-                                    nombre: prod.nombre,
-                                    cantidad: 1,
-                                    precioUnitario: prod.precio + result.cargoExtra,
-                                    costoAdiciones: result.adiciones.fold(0.0, (s, a) => s + a.precio),
-                                    rawToppings: result.toppings.map((t) => <String, dynamic>{'id_topping': t.id, 'cantidad': 1}).toList(),
-                                    rawAdiciones: result.adiciones.map((a) => <String, dynamic>{'id_adicion': a.id, 'cantidad': 1}).toList(),
-                                    salsas: result.salsas.map((s) => (s['nombre'] ?? s['id'] ?? '').toString()).where((s) => s.isNotEmpty).toList(),
-                                    chocolate: result.tipoChocolate,
-                                    esBowl: prod.esBowl,
-                                    maxToppings: prod.maxToppings,
-                                  )));
-                                }
-                              } else {
+                              // Igual que React (Ventas.jsx) y el catálogo cliente: el
+                              // modal SIEMPRE se abre, sin importar los flags — su propio
+                              // `_pasos` decide qué secciones mostrar y siempre incluye
+                              // "adiciones" como paso final, incluso para productos sin
+                              // ningún permite_X activo. Antes, esos productos "planos" se
+                              // agregaban directo sin pasar por el modal y por eso nunca
+                              // podían llevar adiciones.
+                              final result = await showModalBottomSheet<ModalProductoResult>(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (_) => ToppingsModal(
+                                  allToppings: cat.toppings,
+                                  allAdiciones: cat.adiciones,
+                                  producto: prod,
+                                ),
+                              );
+                              if (result != null && mounted) {
                                 setState(() => _items.add(_ItemEdit(
                                   idProducto: prod.id,
                                   nombre: prod.nombre,
                                   cantidad: 1,
-                                  precioUnitario: prod.precio,
+                                  precioUnitario: prod.precio + result.cargoExtra,
+                                  costoAdiciones: result.adiciones.fold(0.0, (s, a) => s + a.precio),
+                                  rawToppings: result.toppings.map((t) => <String, dynamic>{'id_topping': t.id, 'cantidad': 1}).toList(),
+                                  rawAdiciones: result.adiciones.map((a) => <String, dynamic>{'id_adicion': a.id, 'cantidad': 1}).toList(),
+                                  salsas: result.salsas.map((s) => (s['nombre'] ?? s['id'] ?? '').toString()).where((s) => s.isNotEmpty).toList(),
+                                  chocolate: result.tipoChocolate,
                                   esBowl: prod.esBowl,
                                   maxToppings: prod.maxToppings,
                                 )));
@@ -2948,33 +2943,26 @@ class _CrearVentaModalState extends State<_CrearVentaModal> {
                       .fold(0, (s, i) => s + i.cantidad);
                   return GestureDetector(
                     onTap: () async {
-                      final needsConfig = prod.permiteToppings || prod.permiteSalsas ||
-                          prod.permiteChocolate || prod.esBowl;
-                      ModalProductoResult? result;
-                      if (needsConfig) {
-                        result = await showModalBottomSheet<ModalProductoResult>(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (_) => ToppingsModal(
-                            allToppings: catalogo.toppings,
-                            allAdiciones: catalogo.adiciones,
-                            producto: prod,
-                          ),
-                        );
-                        if (result == null || !mounted) return;
-                      }
-                      final salsas = result == null
-                          ? <String>[]
-                          : result.salsas.map((s) => (s['nombre'] ?? s['id'] ?? '').toString()).where((s) => s.isNotEmpty).toList();
-                      final rawTop = result == null
-                          ? <Map<String, dynamic>>[]
-                          : result.toppings.map((t) => <String, dynamic>{'id_topping': t.id, 'nombre': t.nombre, 'cantidad': 1}).toList();
-                      final rawAdi = result == null
-                          ? <Map<String, dynamic>>[]
-                          : result.adiciones.map((a) => <String, dynamic>{'id_adicion': a.id, 'nombre': a.nombre, 'precio': a.precio, 'cantidad': 1}).toList();
-                      final chocolate = result?.tipoChocolate;
-                      final cargoExtra = result?.cargoExtra ?? 0.0;
+                      // Igual que React (Ventas.jsx) y el catálogo cliente: el modal
+                      // SIEMPRE se abre, sin importar los flags — su propio `_pasos`
+                      // decide qué secciones mostrar y siempre incluye "adiciones" como
+                      // paso final, incluso para productos sin ningún permite_X activo.
+                      final result = await showModalBottomSheet<ModalProductoResult>(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => ToppingsModal(
+                          allToppings: catalogo.toppings,
+                          allAdiciones: catalogo.adiciones,
+                          producto: prod,
+                        ),
+                      );
+                      if (result == null || !mounted) return;
+                      final salsas = result.salsas.map((s) => (s['nombre'] ?? s['id'] ?? '').toString()).where((s) => s.isNotEmpty).toList();
+                      final rawTop = result.toppings.map((t) => <String, dynamic>{'id_topping': t.id, 'nombre': t.nombre, 'cantidad': 1}).toList();
+                      final rawAdi = result.adiciones.map((a) => <String, dynamic>{'id_adicion': a.id, 'nombre': a.nombre, 'precio': a.precio, 'cantidad': 1}).toList();
+                      final chocolate = result.tipoChocolate;
+                      final cargoExtra = result.cargoExtra;
                       // Misma config → incrementa cantidad
                       final sameIdx = _carritoItems.indexWhere((i) {
                         if (i.idProducto != prod.id) return false;
