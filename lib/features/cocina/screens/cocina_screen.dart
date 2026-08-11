@@ -26,12 +26,6 @@ class _CocinaScreenState extends State<CocinaScreen> {
 
   final _fmt = NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
 
-  static String _hoyISO() {
-    // Use Colombia time (UTC-5) to match server-side date grouping
-    final now = DateTime.now().toUtc().subtract(const Duration(hours: 5));
-    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-  }
-
   @override
   void initState() {
     super.initState();
@@ -48,7 +42,7 @@ class _CocinaScreenState extends State<CocinaScreen> {
   Future<void> _cargar() async {
     try {
       final data = await ApiService.get('/api/ventas',
-          queryParams: {'estado': 'en_proceso', 'fecha': _hoyISO()});
+          queryParams: {'estado': 'en_proceso'});
       List raw = [];
       if (data is List) {
         raw = data;
@@ -59,7 +53,23 @@ class _CocinaScreenState extends State<CocinaScreen> {
           .map((e) => Pedido.fromJson(e as Map<String, dynamic>))
           .toList()
         ..sort((a, b) => a.id.compareTo(b.id));
-      if (mounted) setState(() { _pedidos = pedidos; _cargando = false; });
+      if (mounted) {
+        final detalleIdActual = _detalleAbierto?.id;
+        final confirmandoIdActual = _confirmandoId;
+        final sigueDetalle = detalleIdActual == null || pedidos.any((p) => p.id == detalleIdActual);
+        final sigueConfirmando = confirmandoIdActual == null || pedidos.any((p) => p.id == confirmandoIdActual);
+        setState(() {
+          _pedidos = pedidos;
+          _cargando = false;
+          if (!sigueDetalle) _detalleAbierto = null;
+          if (!sigueConfirmando) _confirmandoId = null;
+        });
+        if (!sigueDetalle || !sigueConfirmando) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Este pedido cambió de estado en otro dispositivo.')),
+          );
+        }
+      }
     } catch (_) {
       if (mounted) setState(() => _cargando = false);
     }
