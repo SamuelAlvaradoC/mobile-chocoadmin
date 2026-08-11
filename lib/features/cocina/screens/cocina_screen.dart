@@ -107,9 +107,9 @@ class _CocinaScreenState extends State<CocinaScreen> {
         children: [
           // Page header — matches React's .page-header
           Container(
-            color: Colors.white,
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
             decoration: const BoxDecoration(
+              color: Colors.white,
               border: Border(bottom: BorderSide(color: Color(0xFFF0F0F0))),
             ),
             child: Row(

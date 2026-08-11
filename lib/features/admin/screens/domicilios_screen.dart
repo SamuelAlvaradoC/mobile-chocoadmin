@@ -171,6 +171,7 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
   // Quick reject from card X button — requires non-empty motivo
   void _confirmarRechazo(Pedido pedido) {
     final motivoCtrl = TextEditingController();
+    bool procesando = false;
     showDialog(
       context: context,
       builder: (_) => StatefulBuilder(
@@ -195,7 +196,7 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(ctx),
+              onPressed: procesando ? null : () => Navigator.pop(ctx),
               child: const Text('Cancelar'),
             ),
             ElevatedButton(
@@ -203,14 +204,23 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
                   backgroundColor: AppColors.error,
                   foregroundColor: Colors.white),
               // Disabled when motivo is empty (matches React)
-              onPressed: motivoCtrl.text.trim().isEmpty
+              onPressed: (motivoCtrl.text.trim().isEmpty || procesando)
                   ? null
-                  : () {
+                  : () async {
                       final motivo = motivoCtrl.text.trim();
-                      Navigator.pop(ctx);
-                      _anular(pedido.id, motivo);
+                      setSt(() => procesando = true);
+                      // Primero se completa la actualización (API + setState
+                      // del padre) y solo después se cierra el diálogo, para
+                      // evitar el crash "_dependents.isEmpty" por popear el
+                      // contexto mientras la actualización sigue en curso.
+                      await _anular(pedido.id, motivo);
+                      if (ctx.mounted) Navigator.pop(ctx);
                     },
-              child: const Text('Confirmar rechazo'),
+              child: procesando
+                  ? const SizedBox(
+                      width: 18, height: 18,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : const Text('Confirmar rechazo'),
             ),
           ],
         ),
@@ -695,8 +705,8 @@ class _IconBtn extends StatelessWidget {
 class _DetalleAdminModal extends StatefulWidget {
   final Pedido pedido;
   final NumberFormat fmt;
-  final VoidCallback onConfirmar;
-  final void Function(String motivo) onRechazar;
+  final Future<void> Function() onConfirmar;
+  final Future<void> Function(String motivo) onRechazar;
 
   const _DetalleAdminModal({
     required this.pedido,
@@ -713,6 +723,10 @@ class _DetalleAdminModalState extends State<_DetalleAdminModal> {
   /// 'revision' | 'rechazar'  — igual que React vista state
   String _vista = 'revision';
   final _motivoCtrl = TextEditingController();
+  // Evita el crash "_dependents.isEmpty": primero se completa la
+  // actualización (llamada API + setState del padre) y solo después se
+  // cierra este modal — nunca al revés.
+  bool _procesando = false;
 
   @override
   void dispose() {
@@ -809,14 +823,19 @@ class _DetalleAdminModalState extends State<_DetalleAdminModal> {
                     foregroundColor: Colors.white,
                   ),
                   // Disabled cuando motivo vacío (igual a React)
-                  onPressed: _motivoCtrl.text.trim().isEmpty
+                  onPressed: (_motivoCtrl.text.trim().isEmpty || _procesando)
                       ? null
-                      : () {
+                      : () async {
                           final motivo = _motivoCtrl.text.trim();
-                          Navigator.pop(context);
-                          widget.onRechazar(motivo);
+                          setState(() => _procesando = true);
+                          await widget.onRechazar(motivo);
+                          if (context.mounted) Navigator.pop(context);
                         },
-                  child: const Text('Confirmar rechazo'),
+                  child: _procesando
+                      ? const SizedBox(
+                          width: 18, height: 18,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Text('Confirmar rechazo'),
                 ),
               ),
             ],
@@ -1290,14 +1309,21 @@ class _DetalleAdminModalState extends State<_DetalleAdminModal> {
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    icon: const Icon(Icons.check_rounded, size: 14),
+                    icon: _procesando
+                        ? const SizedBox(
+                            width: 14, height: 14,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Icon(Icons.check_rounded, size: 14),
                     label: const Text('Confirmar — enviar a cocina',
                         style: TextStyle(
                             fontSize: 12, fontWeight: FontWeight.w700)),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      widget.onConfirmar();
-                    },
+                    onPressed: _procesando
+                        ? null
+                        : () async {
+                            setState(() => _procesando = true);
+                            await widget.onConfirmar();
+                            if (context.mounted) Navigator.pop(context);
+                          },
                   ),
                 ),
               ],

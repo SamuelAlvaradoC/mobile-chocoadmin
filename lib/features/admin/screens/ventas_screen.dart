@@ -161,6 +161,7 @@ Future<void> _confirmarImprimir(BuildContext context, Pedido venta) async {
 Future<void> _anularVentaRapidoDialog(
     BuildContext context, Pedido pedido, VoidCallback onRefresh) async {
   final motivoCtrl = TextEditingController();
+  bool procesando = false;
 
   await showDialog<void>(
     context: context,
@@ -196,34 +197,46 @@ Future<void> _anularVentaRapidoDialog(
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: procesando ? null : () => Navigator.pop(ctx),
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.error, foregroundColor: Colors.white),
-            onPressed: motivoCtrl.text.trim().length < 5 ? null : () async {
+            onPressed: (motivoCtrl.text.trim().length < 5 || procesando) ? null : () async {
               final motivo = motivoCtrl.text.trim();
-              Navigator.pop(ctx);
+              setDlg(() => procesando = true);
+              // Primero se completa la actualización (API + refresh) y solo
+              // después se cierra el diálogo, para evitar el crash
+              // "_dependents.isEmpty" por popear el contexto mientras la
+              // actualización sigue en curso.
               try {
                 await ApiService.patch(
                   '/api/ventas/${pedido.id}/anular',
                   {'motivo_anulacion': motivo},
                 );
                 onRefresh();
+                if (ctx.mounted) Navigator.pop(ctx);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Venta anulada')),
                   );
                 }
               } on ApiException catch (e) {
+                if (ctx.mounted) Navigator.pop(ctx);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context)
                       .showSnackBar(SnackBar(content: Text(e.message)));
                 }
-              } catch (_) {}
+              } catch (_) {
+                if (ctx.mounted) Navigator.pop(ctx);
+              }
             },
-            child: const Text('Anular'),
+            child: procesando
+                ? const SizedBox(
+                    width: 18, height: 18,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : const Text('Anular'),
           ),
         ],
       ),
