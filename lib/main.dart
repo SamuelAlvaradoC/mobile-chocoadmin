@@ -10,7 +10,6 @@ import 'core/services/auth_service.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/cliente/providers/catalogo_provider.dart';
 import 'features/cliente/providers/carrito_provider.dart';
-import 'features/domiciliario/providers/domiciliario_provider.dart';
 
 // Auth
 import 'features/auth/screens/login_screen.dart';
@@ -62,7 +61,6 @@ class ChocAdminApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => CatalogoProvider()),
         ChangeNotifierProvider(create: (_) => CarritoProvider()),
-        ChangeNotifierProvider(create: (_) => DomiciliarioProvider()),
       ],
       child: const _AppRouter(),
     );
