@@ -411,6 +411,7 @@ class _AdicionFormDialogState extends State<_AdicionFormDialog> {
   late final TextEditingController _descCtrl;
   late final TextEditingController _precioCtrl;
   bool _estado = true;
+  late final bool _estadoOriginal;
   bool _guardando = false;
   String? _error;
   Map<String, String> _errores = {};
@@ -431,6 +432,7 @@ class _AdicionFormDialogState extends State<_AdicionFormDialog> {
     if (_esEditar) {
       _estado = widget.item!['estado'] == true || widget.item!['estado'] == 1;
     }
+    _estadoOriginal = _estado;
   }
 
   @override
@@ -469,11 +471,20 @@ class _AdicionFormDialogState extends State<_AdicionFormDialog> {
                            : _gramajeCtrl.text.trim(),
         'precio':      precio,
         'img':         _img ?? '',
-        'estado':      _esEditar ? _estado : true,
       };
+      String? errorEstado;
       if (_esEditar) {
         final id = widget.item!['id_adicion'] ?? widget.item!['id'];
         await ApiService.put('/api/adiciones/$id', body);
+        if (_estado != _estadoOriginal) {
+          try {
+            await ApiService.patch('/api/adiciones/$id/estado', {'estado': _estado ? 1 : 0});
+          } on ApiException catch (e) {
+            errorEstado = e.message;
+          } catch (_) {
+            errorEstado = 'Error al cambiar el estado';
+          }
+        }
       } else {
         await ApiService.post('/api/adiciones', body);
       }
@@ -481,9 +492,10 @@ class _AdicionFormDialogState extends State<_AdicionFormDialog> {
         Navigator.pop(context);
         widget.onGuardado();
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content:
-              Text(_esEditar ? 'Adición actualizada' : 'Adición creada'),
-          backgroundColor: AppColors.success,
+          content: Text(errorEstado != null
+              ? '${_esEditar ? 'Adición actualizada' : 'Adición creada'}, pero no se pudo cambiar el estado: $errorEstado'
+              : (_esEditar ? 'Adición actualizada' : 'Adición creada')),
+          backgroundColor: errorEstado != null ? AppColors.error : AppColors.success,
         ));
       }
     } on ApiException catch (e) {
@@ -497,7 +509,7 @@ class _AdicionFormDialogState extends State<_AdicionFormDialog> {
     } catch (_) {
       setState(() => _error = 'Error al guardar. Inténtalo de nuevo.');
     }
-    setState(() => _guardando = false);
+    if (mounted) setState(() => _guardando = false);
   }
 
   @override

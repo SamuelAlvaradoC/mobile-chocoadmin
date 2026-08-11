@@ -181,6 +181,17 @@ Future<void> _anularVentaRapidoDialog(
               ),
               maxLines: 3,
             ),
+            const SizedBox(height: 6),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Mínimo 5 caracteres (${motivoCtrl.text.trim().length}/5)',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: motivoCtrl.text.trim().length < 5 ? AppColors.error : AppColors.success,
+                ),
+              ),
+            ),
           ],
         ),
         actions: [
@@ -191,7 +202,7 @@ Future<void> _anularVentaRapidoDialog(
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.error, foregroundColor: Colors.white),
-            onPressed: motivoCtrl.text.trim().isEmpty ? null : () async {
+            onPressed: motivoCtrl.text.trim().length < 5 ? null : () async {
               final motivo = motivoCtrl.text.trim();
               Navigator.pop(ctx);
               try {

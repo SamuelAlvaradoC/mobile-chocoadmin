@@ -394,6 +394,7 @@ class _ToppingFormDialogState extends State<_ToppingFormDialog> {
   late final TextEditingController _gramajeCtrl;
   late final TextEditingController _descCtrl;
   bool _estado = true;
+  late final bool _estadoOriginal;
   bool _guardando = false;
   String? _error;
   Map<String, String> _errores = {};
@@ -411,6 +412,7 @@ class _ToppingFormDialogState extends State<_ToppingFormDialog> {
     if (_esEditar) {
       _estado = widget.item!['estado'] == true || widget.item!['estado'] == 1;
     }
+    _estadoOriginal = _estado;
   }
 
   @override
@@ -439,11 +441,20 @@ class _ToppingFormDialogState extends State<_ToppingFormDialog> {
                            ? null
                            : _gramajeCtrl.text.trim(),
         'img':         _img ?? '',
-        'estado':      _esEditar ? _estado : true,
       };
+      String? errorEstado;
       if (_esEditar) {
         final id = widget.item!['id_topping'] ?? widget.item!['id'];
         await ApiService.put('/api/toppings/$id', body);
+        if (_estado != _estadoOriginal) {
+          try {
+            await ApiService.patch('/api/toppings/$id/estado', {'estado': _estado ? 1 : 0});
+          } on ApiException catch (e) {
+            errorEstado = e.message;
+          } catch (_) {
+            errorEstado = 'Error al cambiar el estado';
+          }
+        }
       } else {
         await ApiService.post('/api/toppings', body);
       }
@@ -451,8 +462,10 @@ class _ToppingFormDialogState extends State<_ToppingFormDialog> {
         Navigator.pop(context);
         widget.onGuardado();
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(_esEditar ? 'Topping actualizado' : 'Topping creado'),
-          backgroundColor: AppColors.success,
+          content: Text(errorEstado != null
+              ? '${_esEditar ? 'Topping actualizado' : 'Topping creado'}, pero no se pudo cambiar el estado: $errorEstado'
+              : (_esEditar ? 'Topping actualizado' : 'Topping creado')),
+          backgroundColor: errorEstado != null ? AppColors.error : AppColors.success,
         ));
       }
     } on ApiException catch (e) {
@@ -466,7 +479,7 @@ class _ToppingFormDialogState extends State<_ToppingFormDialog> {
     } catch (_) {
       setState(() => _error = 'Error al guardar. Inténtalo de nuevo.');
     }
-    setState(() => _guardando = false);
+    if (mounted) setState(() => _guardando = false);
   }
 
   @override

@@ -399,6 +399,7 @@ class _CategoriaFormDialogState extends State<_CategoriaFormDialog> {
   late final TextEditingController _nombreCtrl;
   late final TextEditingController _descCtrl;
   bool _estado = true;
+  late final bool _estadoOriginal;
   bool _guardando = false;
   String? _error;
   Map<String, String> _errores = {};
@@ -413,6 +414,7 @@ class _CategoriaFormDialogState extends State<_CategoriaFormDialog> {
     if (_esEditar) {
       _estado = widget.categoria!['estado'] == true || widget.categoria!['estado'] == 1;
     }
+    _estadoOriginal = _estado;
   }
 
   @override
@@ -436,11 +438,20 @@ class _CategoriaFormDialogState extends State<_CategoriaFormDialog> {
       final body = {
         'nombre': _nombreCtrl.text.trim(),
         'descripcion': _descCtrl.text.trim(),
-        if (_esEditar) 'estado': _estado,
       };
+      String? errorEstado;
       if (_esEditar) {
         final id = widget.categoria!['id_categoria'] ?? widget.categoria!['id'];
         await ApiService.put('/api/categorias/$id', body);
+        if (_estado != _estadoOriginal) {
+          try {
+            await ApiService.patch('/api/categorias/$id/estado', {'estado': _estado ? 1 : 0});
+          } on ApiException catch (e) {
+            errorEstado = e.message;
+          } catch (_) {
+            errorEstado = 'Error al cambiar el estado';
+          }
+        }
       } else {
         await ApiService.post('/api/categorias', body);
       }
@@ -449,8 +460,10 @@ class _CategoriaFormDialogState extends State<_CategoriaFormDialog> {
         widget.onGuardado();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_esEditar ? 'Categoría actualizada' : 'Categoría creada'),
-            backgroundColor: AppColors.success,
+            content: Text(errorEstado != null
+                ? '${_esEditar ? 'Categoría actualizada' : 'Categoría creada'}, pero no se pudo cambiar el estado: $errorEstado'
+                : (_esEditar ? 'Categoría actualizada' : 'Categoría creada')),
+            backgroundColor: errorEstado != null ? AppColors.error : AppColors.success,
           ),
         );
       }
@@ -465,7 +478,7 @@ class _CategoriaFormDialogState extends State<_CategoriaFormDialog> {
     } catch (_) {
       setState(() => _error = 'Error al guardar');
     }
-    setState(() => _guardando = false);
+    if (mounted) setState(() => _guardando = false);
   }
 
   @override

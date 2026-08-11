@@ -393,6 +393,10 @@ class _ProductoFormDialogState extends State<_ProductoFormDialog> {
     _descCtrl        = TextEditingController(text: p?['descripcion'] ?? '');
     _precioCtrl      = TextEditingController(text: p?['precio']?.toString() ?? '');
     _idCategoria     = p?['id_categoria'] ?? (widget.categorias.isNotEmpty ? widget.categorias[0]['id_categoria'] ?? widget.categorias[0]['id'] : null);
+    final catIds = widget.categorias.map((c) => c['id_categoria'] ?? c['id']).toSet();
+    if (!catIds.contains(_idCategoria)) {
+      _idCategoria = widget.categorias.isNotEmpty ? (widget.categorias[0]['id_categoria'] ?? widget.categorias[0]['id']) : null;
+    }
     _tamano          = _normTamano(p?['tamano'] ?? '');
     _permiteToppings  = p?['permite_toppings'] == true || p?['permite_toppings'] == 1;
     final mt = p?['max_toppings'];
@@ -460,7 +464,7 @@ class _ProductoFormDialogState extends State<_ProductoFormDialog> {
         'permite_chocolate': _esBowl ? 0 : (_permiteChocolate ? 1 : 0),
         'permite_salsas': _esBowl ? false : _permiteSalsas,
         'es_bowl': _esBowl,
-        if (_esEditar) 'estado': _estado,
+        if (_esEditar) 'estado': _estado ? 1 : 0,
         if (_imgUrl != null && _imgUrl!.isNotEmpty) 'img': _imgUrl,
       };
       if (_esEditar) {
@@ -548,7 +552,7 @@ class _ProductoFormDialogState extends State<_ProductoFormDialog> {
                 const SizedBox(height: 8),
                 _DropdownField(
                   value: _tamano,
-                  items: ['', 'Pequeño (9oz)', 'Mediano (12oz)', 'Grande (16oz)'].map((t) => DropdownMenuItem(
+                  items: <String>{'', 'Pequeño (9oz)', 'Mediano (12oz)', 'Grande (16oz)', _tamano}.map((t) => DropdownMenuItem(
                     value: t,
                     child: Text(t.isEmpty ? '(Sin tamaño)' : t, style: GoogleFonts.nunito(fontSize: 13)),
                   )).toList(),
