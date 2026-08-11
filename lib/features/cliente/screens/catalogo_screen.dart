@@ -1164,30 +1164,37 @@ class _BadgeProducto extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: const Color(0xA6CA0B0B)),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            for (int i = 0; i < lineas.length; i++) ...[
-              if (i > 0)
-                Container(
-                  margin: const EdgeInsets.symmetric(vertical: 3),
-                  height: 1,
-                  width: double.infinity,
-                  color: const Color(0x59CA0B0B),
+        // IntrinsicWidth: dentro de un Positioned sin left/width, el Column no
+        // tiene un ancho acotado — el separador `width: double.infinity` de
+        // abajo necesita que el padre le dé un ancho finito para "estirarse"
+        // hasta él, si no Flutter lanza "BoxConstraints forces an infinite
+        // width" (visto en vivo en el catálogo).
+        child: IntrinsicWidth(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              for (int i = 0; i < lineas.length; i++) ...[
+                if (i > 0)
+                  Container(
+                    margin: const EdgeInsets.symmetric(vertical: 3),
+                    height: 1,
+                    width: double.infinity,
+                    color: const Color(0x59CA0B0B),
+                  ),
+                Text(
+                  lineas[i],
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.nunito(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    letterSpacing: 0.3,
+                    height: 1.3,
+                  ),
                 ),
-              Text(
-                lineas[i],
-                textAlign: TextAlign.center,
-                style: GoogleFonts.nunito(
-                  fontSize: 9.5,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                  letterSpacing: 0.3,
-                  height: 1.3,
-                ),
-              ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
