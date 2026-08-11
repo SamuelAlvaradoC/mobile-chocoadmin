@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(flutter run:*)",
+      "Bash(flutter build:*)",
+      "Bash(flutter pub:*)",
+      "Bash(cat /c/Users/samue/OneDrive/Desktop/chocoadmin/chocofreseo/src/pages/client/landing/components/*.jsx)",
+      "Bash(wc:*)",
+      "Bash(flutter clean:*)"
+    ]
+  }
+}
