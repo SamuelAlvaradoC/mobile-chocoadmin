@@ -50,6 +50,7 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
     } catch (_) {
       _error = 'Error al cargar categorías';
     }
+    if (!mounted) return;
     setState(() => _loading = false);
   }
 

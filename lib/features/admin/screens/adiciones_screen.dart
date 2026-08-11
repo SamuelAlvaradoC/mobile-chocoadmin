@@ -56,6 +56,7 @@ class _AdicionesScreenState extends State<AdicionesScreen> {
     } catch (_) {
       setState(() => _error = 'Error al cargar adiciones');
     }
+    if (!mounted) return;
     setState(() => _loading = false);
   }
 

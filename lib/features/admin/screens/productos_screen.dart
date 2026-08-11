@@ -43,6 +43,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
     try {
       final data = await ApiService.get('/api/productos');
       List rawP = data is List ? data : (data is Map && data['data'] is List ? data['data'] as List : []);
+      if (!mounted) return;
       setState(() {
         _productos = rawP.cast<Map<String, dynamic>>().map((p) {
           final img = p['imagen']?.toString().isNotEmpty == true
@@ -52,15 +53,16 @@ class _ProductosScreenState extends State<ProductosScreen> {
         }).toList();
       });
     } on ApiException catch (e) {
-      setState(() => _error = e.message);
+      if (mounted) setState(() => _error = e.message);
     } catch (_) {
-      setState(() => _error = 'Error al cargar productos');
+      if (mounted) setState(() => _error = 'Error al cargar productos');
     }
     try {
       final data = await ApiService.get('/api/categorias');
       List rawC = data is List ? data : (data is Map && data['data'] is List ? data['data'] as List : []);
-      setState(() => _categorias = rawC.cast<Map<String, dynamic>>());
+      if (mounted) setState(() => _categorias = rawC.cast<Map<String, dynamic>>());
     } catch (_) {}
+    if (!mounted) return;
     setState(() => _loading = false);
   }
 

@@ -107,11 +107,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final dom = results[2];
       List rawDom = dom is List ? dom : (dom is Map && dom['data'] is List ? dom['data'] as List : []);
       _domiciliariosDia = rawDom.cast<Map<String, dynamic>>();
+
+      // Si las 4 llamadas fallaron (cada una atrapa su propio error con
+      // catchError), no lo tratamos como "sin ventas hoy" sino como fallo real.
+      if (results.every((r) => r == null)) {
+        _error = 'No se pudo conectar con el servidor';
+      }
     } on ApiException catch (e) {
       _error = e.message;
     } catch (e) {
       _error = 'Error al cargar dashboard';
     }
+    if (!mounted) return;
     setState(() => _loading = false);
   }
 
@@ -502,12 +509,14 @@ class _EstadoTiendaCardState extends State<_EstadoTiendaCard> {
       final inner = data is Map && data['data'] is Map
           ? data['data'] as Map
           : (data is Map ? data : <String, dynamic>{});
-      setState(() {
-        _estado  = inner['estado_tienda']?.toString() ?? 'schedule';
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _estado  = inner['estado_tienda']?.toString() ?? 'schedule';
+          _loading = false;
+        });
+      }
     } catch (_) {
-      setState(() { _estado = 'schedule'; _loading = false; });
+      if (mounted) setState(() { _estado = 'schedule'; _loading = false; });
     }
   }
 
@@ -516,7 +525,7 @@ class _EstadoTiendaCardState extends State<_EstadoTiendaCard> {
     try {
       await ApiService.patch('/api/configuracion/horario',
           {'estado_tienda': nuevoEstado});
-      setState(() => _estado = nuevoEstado);
+      if (mounted) setState(() => _estado = nuevoEstado);
     } on ApiException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -114,9 +114,14 @@ class _CierreCajaScreenState extends State<CierreCajaScreen> {
       // (filtra automáticamente por el domiciliario logueado, no todas las ventas)
       final data = await ApiService.get('/api/ventas/mis-despachos', queryParams: {'estado': 'entregado', if (fecha.isNotEmpty) 'fecha': fecha});
       List raw = data is List ? data : (data is Map && data['data'] is List ? data['data'] as List : []);
-      setState(() => _ventas = raw.map(_mapVenta).where((v) => v.isNotEmpty).toList());
-    } catch (_) {}
-    setState(() => _loading = false);
+      if (mounted) setState(() => _ventas = raw.map(_mapVenta).where((v) => v.isNotEmpty).toList());
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e is ApiException ? e.message : 'Error al cargar el cierre de caja')));
+      }
+    }
+    if (mounted) setState(() => _loading = false);
   }
 
   // ── Totales ──────────────────────────────────────────────────────────────────

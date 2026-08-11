@@ -824,7 +824,21 @@ class _VentaRow extends StatelessWidget {
                       try {
                         await ApiService.patch('/api/ventas/${venta.id}/estado', {'nombre_estado': 'listo'});
                         onRefresh();
-                      } catch (_) {}
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Venta devuelta a Listo'), backgroundColor: Color(0xFF16A34A)),
+                          );
+                        }
+                      } on ApiException catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+                        }
+                      } catch (_) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Error al devolver la venta')));
+                        }
+                      }
                     }
                   },
                 ),
@@ -2174,16 +2188,18 @@ class _CrearVentaModalState extends State<_CrearVentaModal> {
     try {
       final data = await ApiService.get('/api/clientes/$clienteId/direcciones');
       final List raw = data is List ? data : (data is Map && data['data'] is List ? data['data'] as List : []);
-      setState(() {
-        _direcciones = raw
-            .cast<Map<String, dynamic>>()
-            .where((d) => d['estado'] != 0)
-            .toList();
-      });
+      if (mounted) {
+        setState(() {
+          _direcciones = raw
+              .cast<Map<String, dynamic>>()
+              .where((d) => d['estado'] != 0)
+              .toList();
+        });
+      }
     } catch (_) {
-      setState(() => _direcciones = []);
+      if (mounted) setState(() => _direcciones = []);
     }
-    setState(() => _cargandoDirs = false);
+    if (mounted) setState(() => _cargandoDirs = false);
   }
 
   Future<void> _calcularCostoDomicilio(int? id) async {
@@ -2234,7 +2250,7 @@ class _CrearVentaModalState extends State<_CrearVentaModal> {
 
     try {
       if (_clienteId == null) {
-        setState(() { _errorCrear = 'Selecciona un cliente'; _guardando = false; });
+        if (mounted) setState(() { _errorCrear = 'Selecciona un cliente'; _guardando = false; });
         return;
       }
 
@@ -2250,10 +2266,12 @@ class _CrearVentaModalState extends State<_CrearVentaModal> {
 
       // Validate mixto amounts
       if (_metodoPago == 'mixto' && (_montoEfectivo <= 0 || _montoTransfer <= 0)) {
-        setState(() {
-          _errorCrear = 'Para pago mixto ingresa los montos de efectivo y transferencia';
-          _guardando = false;
-        });
+        if (mounted) {
+          setState(() {
+            _errorCrear = 'Para pago mixto ingresa los montos de efectivo y transferencia';
+            _guardando = false;
+          });
+        }
         return;
       }
 
@@ -2312,12 +2330,12 @@ class _CrearVentaModalState extends State<_CrearVentaModal> {
         );
       }
     } on ApiException catch (e) {
-      setState(() => _errorCrear = e.message);
+      if (mounted) setState(() => _errorCrear = e.message);
     } catch (_) {
-      setState(() => _errorCrear = 'Error al crear la venta');
+      if (mounted) setState(() => _errorCrear = 'Error al crear la venta');
     }
 
-    setState(() => _guardando = false);
+    if (mounted) setState(() => _guardando = false);
   }
 
   @override

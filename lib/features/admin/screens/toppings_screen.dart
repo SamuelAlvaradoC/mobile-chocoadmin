@@ -51,6 +51,7 @@ class _ToppingsScreenState extends State<ToppingsScreen> {
     } catch (_) {
       setState(() => _error = 'Error al cargar toppings');
     }
+    if (!mounted) return;
     setState(() => _loading = false);
   }
 

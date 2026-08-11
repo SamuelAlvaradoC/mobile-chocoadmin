@@ -66,15 +66,22 @@ class _PedidosScreenState extends State<PedidosScreen> {
         ApiService.get('/api/ventas/mis-despachos', queryParams: {'estado': 'despachado', if (_fecha.isNotEmpty) 'fecha': _fecha}),
         ApiService.get('/api/ventas/mis-despachos', queryParams: {'estado': 'entregado', if (_fecha.isNotEmpty) 'fecha': _fecha}),
       ]);
-      setState(() {
-        _porDespachar = _parseVentas(results[0]);
-        _despachados  = [
-          ..._parseVentas(results[1]),
-          ..._parseVentas(results[2]),
-        ]..sort((a, b) => (b.id).compareTo(a.id));
-      });
-    } catch (_) {}
-    setState(() => _loading = false);
+      if (mounted) {
+        setState(() {
+          _porDespachar = _parseVentas(results[0]);
+          _despachados  = [
+            ..._parseVentas(results[1]),
+            ..._parseVentas(results[2]),
+          ]..sort((a, b) => (b.id).compareTo(a.id));
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e is ApiException ? e.message : 'Error al cargar pedidos')));
+      }
+    }
+    if (mounted) setState(() => _loading = false);
   }
 
   void _coger(Pedido p) async {
@@ -88,9 +95,14 @@ class _PedidosScreenState extends State<PedidosScreen> {
       } catch (_) {
         await ApiService.patch('/api/ventas/${p.id}/estado', {'nombre_estado': 'despachado'});
       }
-      _cargar();
+      if (mounted) await _cargar();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e is ApiException ? e.message : 'Error al coger el pedido')));
+      }
     } finally {
-      setState(() => _procesando = false);
+      if (mounted) setState(() => _procesando = false);
     }
   }
 
@@ -99,9 +111,14 @@ class _PedidosScreenState extends State<PedidosScreen> {
     setState(() => _procesando = true);
     try {
       await ApiService.patch('/api/ventas/${p.id}/estado', {'nombre_estado': 'listo'});
-      _cargar();
+      if (mounted) await _cargar();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e is ApiException ? e.message : 'Error al devolver el pedido')));
+      }
     } finally {
-      setState(() => _procesando = false);
+      if (mounted) setState(() => _procesando = false);
     }
   }
 
@@ -111,13 +128,20 @@ class _PedidosScreenState extends State<PedidosScreen> {
     setState(() => _procesando = true);
     try {
       await ApiService.patch('/api/ventas/${p.id}/estado', {'nombre_estado': 'entregado'});
-      setState(() {
-        _facturando = null;
-        _despachados = _despachados.map((d) =>
-            d.id == p.id ? d.copyWith(estado: 'entregado') : d).toList();
-      });
-    } catch (_) {}
-    setState(() => _procesando = false);
+      if (mounted) {
+        setState(() {
+          _facturando = null;
+          _despachados = _despachados.map((d) =>
+              d.id == p.id ? d.copyWith(estado: 'entregado') : d).toList();
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e is ApiException ? e.message : 'Error al marcar como entregado')));
+      }
+    }
+    if (mounted) setState(() => _procesando = false);
   }
 
   @override
@@ -427,8 +451,12 @@ String get _mapsUrl {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text(pedido.clienteTelefono ?? '',
-                        style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF888888))),
+                    Flexible(
+                      child: Text(pedido.clienteTelefono ?? '',
+                          style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF888888)),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 6),
@@ -463,8 +491,12 @@ String get _mapsUrl {
                 // Footer: total + botones
                 Row(
                   children: [
-                    Text(fmt.format(pedido.total),
-                        style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.w900, color: const Color(0xFF1a1a1a))),
+                    Flexible(
+                      child: Text(fmt.format(pedido.total),
+                          style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.w900, color: const Color(0xFF1a1a1a)),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                    ),
                     const Spacer(),
                     Row(children: [
                       // Maps
