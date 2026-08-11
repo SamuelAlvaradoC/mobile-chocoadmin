@@ -29,28 +29,15 @@ class _AdminLayoutState extends State<AdminLayout> {
   // confirmador_domicilio solo ve "Confirmar pedidos".
   static const _menuCompleto = [
     _MenuItem(icon: Icons.dashboard_rounded, label: 'Dashboard', path: '/admin/dashboard'),
-    _MenuItem(icon: Icons.settings_rounded, label: 'Configuración', hijos: [
-      _MenuItem(label: 'Usuarios', path: '/admin/usuarios'),
-      _MenuItem(label: 'Roles',    path: '/admin/roles'),
-    ]),
-    _MenuItem(icon: Icons.people_alt_rounded, label: 'Usuarios', hijos: [
-      _MenuItem(label: 'Clientes',  path: '/admin/clientes'),
-      _MenuItem(label: 'Empleados', path: '/admin/empleados'),
-    ]),
     _MenuItem(icon: Icons.shopping_bag_rounded, label: 'Productos', hijos: [
       _MenuItem(label: 'Categorías', path: '/admin/categorias'),
       _MenuItem(label: 'Productos',  path: '/admin/productos'),
       _MenuItem(label: 'Toppings',   path: '/admin/toppings'),
       _MenuItem(label: 'Adiciones',  path: '/admin/adiciones'),
     ]),
-    _MenuItem(icon: Icons.map_rounded, label: 'Zonas de Cobertura', hijos: [
-      _MenuItem(label: 'Ciudades', path: '/admin/ciudades'),
-      _MenuItem(label: 'Barrios',  path: '/admin/barrios'),
-    ]),
     _MenuItem(icon: Icons.receipt_long_rounded, label: 'Ventas', path: '/admin/ventas'),
     _MenuItem(icon: Icons.check_circle_rounded, label: 'Confirmar pedidos', path: '/admin/domicilios'),
     _MenuItem(icon: Icons.restaurant_menu_rounded, label: 'Panel Cocina', path: '/cocina'),
-    _MenuItem(icon: Icons.forum_rounded, label: 'Reseñas', path: '/admin/resenas'),
   ];
 
   static const _menuConfirmador = [

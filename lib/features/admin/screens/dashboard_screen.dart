@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -41,9 +40,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // Domiciliarios del día
   List<Map<String, dynamic>> _domiciliariosDia = [];
-
-  // Reseñas resumen
-  Map<String, dynamic>? _resumenResenas;
 
   // Filtro de fecha (igual React)
   String _filtroFecha = '';
@@ -149,13 +145,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _horaCierre   = int.tryParse(h['hora_cierre']?.toString()   ?? '') ?? 20;
         });
       }
-    } catch (_) {}
-    try {
-      final data = await ApiService.get('/api/resenas/resumen');
-      final inner = data is Map && data['data'] is Map
-          ? Map<String, dynamic>.from(data['data'] as Map)
-          : (data is Map ? Map<String, dynamic>.from(data) : null);
-      if (inner != null && mounted) setState(() => _resumenResenas = inner);
     } catch (_) {}
   }
 
@@ -414,45 +403,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                               ),
                       ),
-
-                      const SizedBox(height: AppSizes.lg),
-
-                      // ── Reseñas resumen (condicional) ──────────────────────
-                      if (_resumenResenas != null) ...[
-                        Container(
-                          padding: const EdgeInsets.all(AppSizes.md),
-                          decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-                            border: Border.all(color: AppColors.border),
-                            boxShadow: const [BoxShadow(color: AppColors.shadow, blurRadius: 4, offset: Offset(0, 1))],
-                          ),
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Row(children: [
-                              const Icon(Icons.star_rounded, size: 16, color: Color(0xFFF59E0B)),
-                              const SizedBox(width: 6),
-                              const Expanded(child: Text('Reseñas de clientes', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15))),
-                              GestureDetector(
-                                onTap: () => context.go('/admin/resenas'),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                                  decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
-                                  child: const Text('Ver todas', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white)),
-                                ),
-                              ),
-                            ]),
-                            const SizedBox(height: AppSizes.md),
-                            Row(children: [
-                              _ResenaStat(valor: '${_resumenResenas!['total'] ?? 0}',           label: 'Total reseñas',  color: const Color(0xFF3B82F6)),
-                              const SizedBox(width: AppSizes.sm),
-                              _ResenaStat(valor: '${_resumenResenas!['promAtencion'] ?? '-'}★', label: 'Prom. atención', color: const Color(0xFFF59E0B)),
-                              const SizedBox(width: AppSizes.sm),
-                              _ResenaStat(valor: '${_resumenResenas!['promProducto'] ?? '-'}★', label: 'Prom. producto', color: AppColors.primary),
-                            ]),
-                          ]),
-                        ),
-                        const SizedBox(height: AppSizes.lg),
-                      ],
 
                       const SizedBox(height: AppSizes.xl),
                     ],
@@ -969,32 +919,3 @@ class _HorarioInput extends StatelessWidget {
   }
 }
 
-// ────────────────────────────────────────────────────────────────────────────
-// Reseñas resumen helper
-// ────────────────────────────────────────────────────────────────────────────
-
-class _ResenaStat extends StatelessWidget {
-  final String valor;
-  final String label;
-  final Color color;
-  const _ResenaStat({required this.valor, required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFAFAFA),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(valor, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: color)),
-          const SizedBox(height: 2),
-          Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-        ]),
-      ),
-    );
-  }
-}

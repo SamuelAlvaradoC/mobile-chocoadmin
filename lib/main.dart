@@ -37,17 +37,10 @@ import 'features/cliente/screens/landing_screen.dart';
 import 'features/admin/screens/dashboard_screen.dart';
 import 'features/admin/screens/ventas_screen.dart';
 import 'features/admin/screens/domicilios_screen.dart';
-import 'features/admin/screens/resenas_screen.dart';
-import 'features/admin/screens/usuarios_screen.dart';
-import 'features/admin/screens/roles_screen.dart';
-import 'features/admin/screens/clientes_screen.dart';
-import 'features/admin/screens/empleados_screen.dart';
 import 'features/admin/screens/categorias_screen.dart';
 import 'features/admin/screens/productos_screen.dart';
 import 'features/admin/screens/toppings_screen.dart';
 import 'features/admin/screens/adiciones_screen.dart';
-import 'features/admin/screens/ciudades_screen.dart';
-import 'features/admin/screens/barrios_screen.dart';
 
 // Cocina
 import 'features/cocina/screens/cocina_screen.dart';
@@ -136,17 +129,10 @@ class _AppRouterState extends State<_AppRouter> {
         GoRoute(path: '/admin/dashboard', builder: (_, __) => const DashboardScreen()),
         GoRoute(path: '/admin/ventas', builder: (_, __) => const VentasScreen()),
         GoRoute(path: '/admin/domicilios', builder: (_, __) => const DomiciliosScreen()),
-        GoRoute(path: '/admin/resenas', builder: (_, __) => const ResenasScreen()),
-        GoRoute(path: '/admin/usuarios', builder: (_, __) => const UsuariosScreen()),
-        GoRoute(path: '/admin/roles', builder: (_, __) => const RolesScreen()),
-        GoRoute(path: '/admin/clientes', builder: (_, __) => const ClientesScreen()),
-        GoRoute(path: '/admin/empleados', builder: (_, __) => const EmpleadosScreen()),
         GoRoute(path: '/admin/categorias', builder: (_, __) => const CategoriasScreen()),
         GoRoute(path: '/admin/productos', builder: (_, __) => const ProductosScreen()),
         GoRoute(path: '/admin/toppings', builder: (_, __) => const ToppingsScreen()),
         GoRoute(path: '/admin/adiciones', builder: (_, __) => const AdicionesScreen()),
-        GoRoute(path: '/admin/ciudades', builder: (_, __) => const CiudadesScreen()),
-        GoRoute(path: '/admin/barrios', builder: (_, __) => const BarriosScreen()),
 
         // ── Cocina ───────────────────────────────────────────
         GoRoute(path: '/cocina', builder: (_, __) => const CocinaScreen()),
