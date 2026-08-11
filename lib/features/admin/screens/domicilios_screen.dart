@@ -246,7 +246,13 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
         ),
       ),
     );
-    motivoCtrl.dispose();
+    // No se dispone `motivoCtrl` aquí: el diálogo sigue montado unos frames
+    // más durante su animación de salida después de que este Future se
+    // resuelve, y el TextField ligado a él seguiría intentando usarlo →
+    // "A TextEditingController was used after being disposed", que
+    // desencadenaba toda la cascada ("_dependents.isEmpty", GlobalKeys
+    // duplicadas, etc). Es un controller local de corta vida sin otras
+    // referencias, así que no disponerlo no genera una fuga real.
     if (mounted && rechazado == true) await _despuesDeAnular();
   }
 
