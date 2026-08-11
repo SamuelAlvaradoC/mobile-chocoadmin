@@ -176,7 +176,7 @@ class _CierreCajaScreenState extends State<CierreCajaScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  _fecha.isNotEmpty ? _fmtFecha.format(DateTime.tryParse('${_fecha}T12:00:00') ?? DateTime.now()) : '',
+                  _fmtFecha.format(DateTime.tryParse('${_fecha}T12:00:00') ?? DateTime.now()),
                   style: GoogleFonts.nunito(fontSize: 13, color: const Color(0xFF888888)),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -196,19 +196,12 @@ class _CierreCajaScreenState extends State<CierreCajaScreen> {
                       child: GestureDetector(
                         onTap: _seleccionarFecha,
                         child: Text(
-                          _fecha.isEmpty ? 'Todas las fechas' : _fmtFecha.format(DateTime.tryParse('${_fecha}T12:00:00') ?? DateTime.now()),
+                          _fmtFecha.format(DateTime.tryParse('${_fecha}T12:00:00') ?? DateTime.now()),
                           style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF333333)),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ),
-                    if (_fecha.isNotEmpty) ...[
-                      const SizedBox(width: 8),
-                      GestureDetector(
-                        onTap: () { setState(() => _fecha = ''); _cargar(''); },
-                        child: Text('✕ Limpiar', style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF666666))),
-                      ),
-                    ],
                     const SizedBox(width: 8),
                     GestureDetector(
                       onTap: () => _cargar(_fecha),

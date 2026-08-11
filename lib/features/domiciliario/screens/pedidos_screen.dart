@@ -183,26 +183,12 @@ class _PedidosScreenState extends State<PedidosScreen> {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                                    _fecha.isEmpty ? 'Todas las fechas' : _fmtFechaDisplay.format(DateTime.parse(_fecha)),
+                                    _fmtFechaDisplay.format(DateTime.parse(_fecha)),
                                     style: GoogleFonts.nunito(fontSize: 13, color: const Color(0xFF444444)),
                                   ),
                                 ),
                               ),
                             ),
-                            if (_fecha.isNotEmpty) ...[
-                              const SizedBox(width: 8),
-                              GestureDetector(
-                                onTap: () { setState(() => _fecha = ''); _cargar(); },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: const Color(0xFFE0E0E0)),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text('✕ Limpiar', style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF666666))),
-                                ),
-                              ),
-                            ],
                             const SizedBox(width: 8),
                             GestureDetector(
                               onTap: _cargar,
