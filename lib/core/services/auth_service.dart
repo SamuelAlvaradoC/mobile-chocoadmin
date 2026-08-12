@@ -75,6 +75,11 @@ class AuthUser {
         return UserRole.admin;
       case 'confirmador_domicilio':
         return UserRole.confirmadorDomicilio;
+      // El backend guarda el rol como 'cocinero' (CARGO_A_ROL en
+      // empleados/service.js, ROLES_EMPLEADO en usuarios/service.js) — se
+      // acepta también 'cocina' por si algún registro antiguo/manual quedó
+      // creado con ese nombre.
+      case 'cocinero':
       case 'cocina':
         return UserRole.cocina;
       default:
