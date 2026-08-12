@@ -625,15 +625,16 @@ class _CarritoBottomBarState extends State<_CarritoBottomBar> {
                   itemBuilder: (_, i) {
                     final item = carrito.items[i];
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.only(bottom: 14),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Thumb — imagen real del producto (igual que React: imgCl(item.img))
+                          // Thumb — imagen real del producto (igual que React: imgCl(item.img, 104, 104)
+                          // renderizado en .carrito-item-thumb de 52×52)
                           ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(10),
                             child: SizedBox(
-                              width: 34, height: 34,
+                              width: 52, height: 52,
                               child: (item.producto.imagen != null && item.producto.imagen!.isNotEmpty)
                                   ? CachedNetworkImage(
                                       imageUrl: item.producto.imagen!,
@@ -644,14 +645,14 @@ class _CarritoBottomBarState extends State<_CarritoBottomBar> {
                                   : _thumbFallback(item.producto.nombre),
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 14),
                           // Info columna
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(item.producto.nombre,
-                                    style: GoogleFonts.nunito(fontSize: 12, fontWeight: FontWeight.w700),
+                                    style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w800),
                                     maxLines: 1, overflow: TextOverflow.ellipsis),
                                 if (item.tipoChocolate != null || item.toppings.isNotEmpty || item.adiciones.isNotEmpty || item.salsas.isNotEmpty) ...[
                                   const SizedBox(height: 3),
@@ -712,9 +713,9 @@ class _CarritoBottomBarState extends State<_CarritoBottomBar> {
                                     ],
                                   ),
                                 ],
-                                const SizedBox(height: 2),
+                                const SizedBox(height: 3),
                                 Text('${fmt.format(item.precioUnitario)} c/u',
-                                    style: GoogleFonts.nunito(fontSize: 10, color: AppColors.textSecondary)),
+                                    style: GoogleFonts.nunito(fontSize: 11, color: AppColors.textSecondary)),
                               ],
                             ),
                           ),
@@ -725,23 +726,23 @@ class _CarritoBottomBarState extends State<_CarritoBottomBar> {
                               GestureDetector(
                                 onTap: () => carrito.decrementar(item.lineaId),
                                 child: Container(
-                                  width: 24, height: 24,
+                                  width: 28, height: 28,
                                   decoration: BoxDecoration(color: const Color(0xFFF0F0F0), borderRadius: BorderRadius.circular(6)),
                                   alignment: Alignment.center,
-                                  child: const Text('−', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                                  child: const Text('−', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                                 ),
                               ),
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                                child: Text('${item.cantidad}', style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w700)),
+                                child: Text('${item.cantidad}', style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w700)),
                               ),
                               GestureDetector(
                                 onTap: () => carrito.incrementar(item.lineaId),
                                 child: Container(
-                                  width: 24, height: 24,
+                                  width: 28, height: 28,
                                   decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
                                   alignment: Alignment.center,
-                                  child: const Text('+', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.primary)),
+                                  child: const Text('+', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.primary)),
                                 ),
                               ),
                             ],
@@ -749,12 +750,12 @@ class _CarritoBottomBarState extends State<_CarritoBottomBar> {
                           const SizedBox(width: 8),
                           // Subtotal item
                           Text(fmt.format(item.subtotal),
-                              style: GoogleFonts.nunito(fontSize: 12, fontWeight: FontWeight.w800)),
-                          const SizedBox(width: 4),
+                              style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w800)),
+                          const SizedBox(width: 6),
                           // Quitar
                           GestureDetector(
                             onTap: () => carrito.eliminar(item.lineaId),
-                            child: const Icon(Icons.close_rounded, size: 16, color: Color(0xFFBBBBBB)),
+                            child: const Icon(Icons.close_rounded, size: 18, color: Color(0xFFBBBBBB)),
                           ),
                         ],
                       ),
