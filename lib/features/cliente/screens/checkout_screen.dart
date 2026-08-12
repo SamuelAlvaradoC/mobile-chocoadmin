@@ -21,6 +21,31 @@ import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/colombia_location_picker.dart';
 import '../providers/carrito_provider.dart';
 
+// Pago mixto (igual React handleEfectivoMixto/handleTransferMixto): al
+// escribir en un campo se recorta al rango [0,total] y el otro campo se
+// autocompleta con el complemento, de forma que la suma siempre sea igual al
+// total. Se aplica tanto al campo editado (para no dejar valores fuera de
+// rango mientras se escribe) como al campo complementario.
+void _aplicarMontoMixto({
+  required String raw,
+  required double total,
+  required TextEditingController ctrlEditado,
+  required TextEditingController ctrlComplemento,
+  required void Function(double editado, double complemento) onCalculado,
+}) {
+  final editado = (double.tryParse(raw) ?? 0).clamp(0, total).toDouble();
+  final complemento = (total - editado).clamp(0, total).toDouble();
+  final editadoTexto = editado > 0 ? editado.round().toString() : '';
+  if (ctrlEditado.text != editadoTexto) {
+    ctrlEditado.value = TextEditingValue(
+      text: editadoTexto,
+      selection: TextSelection.collapsed(offset: editadoTexto.length),
+    );
+  }
+  ctrlComplemento.text = complemento > 0 ? complemento.round().toString() : '';
+  onCalculado(editado, complemento);
+}
+
 class CheckoutScreen extends StatefulWidget {
   final int initialPuntosUsados;
   const CheckoutScreen({super.key, this.initialPuntosUsados = 0});
@@ -1044,15 +1069,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   style: const TextStyle(fontSize: 13),
                   decoration: fieldDec,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  onChanged: (v) {
-                    final e = double.tryParse(v) ?? 0;
-                    final tr = (total - e).clamp(0.0, total);
-                    setState(() {
+                  onChanged: (v) => _aplicarMontoMixto(
+                    raw: v,
+                    total: total,
+                    ctrlEditado: _efectivoCtrl,
+                    ctrlComplemento: _transferenciaCtrl,
+                    onCalculado: (e, tr) => setState(() {
                       _montoEfectivo = e;
                       _montoTransferencia = tr;
-                      _transferenciaCtrl.text = tr.toStringAsFixed(0);
-                    });
-                  },
+                    }),
+                  ),
                 ),
               ],
             ),
@@ -1066,9 +1092,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 const SizedBox(height: 4),
                 TextField(
                   controller: _transferenciaCtrl,
-                  readOnly: true,
-                  style: const TextStyle(fontSize: 13, color: Color(0xFF888888)),
-                  decoration: fieldDec.copyWith(fillColor: const Color(0xFFF9F9F9)),
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(fontSize: 13),
+                  decoration: fieldDec,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  onChanged: (v) => _aplicarMontoMixto(
+                    raw: v,
+                    total: total,
+                    ctrlEditado: _transferenciaCtrl,
+                    ctrlComplemento: _efectivoCtrl,
+                    onCalculado: (tr, e) => setState(() {
+                      _montoTransferencia = tr;
+                      _montoEfectivo = e;
+                    }),
+                  ),
                 ),
               ],
             ),

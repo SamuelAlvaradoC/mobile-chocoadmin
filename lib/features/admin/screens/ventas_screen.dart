@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
@@ -20,6 +21,34 @@ import '../../../features/cliente/widgets/toppings_modal.dart';
 import '../../../shared/layouts/admin_layout.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/colombia_location_picker.dart';
+
+// Pago mixto (igual React handleEfMixto/handleEfectivoMixto): al escribir en
+// un campo se recorta al rango [0,total] y el otro campo se autocompleta con
+// el complemento, de forma que la suma siempre sea igual al total. Se usa
+// tanto para el campo editado (para no dejar valores fuera de rango mientras
+// se escribe) como para el campo complementario.
+double _clampMonto(String raw, double total) =>
+    (double.tryParse(raw) ?? 0).clamp(0, total).toDouble();
+
+void _aplicarPagoMixto({
+  required String raw,
+  required double total,
+  required TextEditingController ctrlEditado,
+  required TextEditingController ctrlComplemento,
+  required void Function(double editado, double complemento) onCalculado,
+}) {
+  final editado = _clampMonto(raw, total);
+  final complemento = (total - editado).clamp(0, total).toDouble();
+  final editadoTexto = editado > 0 ? editado.round().toString() : '';
+  if (ctrlEditado.text != editadoTexto) {
+    ctrlEditado.value = TextEditingValue(
+      text: editadoTexto,
+      selection: TextSelection.collapsed(offset: editadoTexto.length),
+    );
+  }
+  ctrlComplemento.text = complemento > 0 ? complemento.round().toString() : '';
+  onCalculado(editado, complemento);
+}
 
 // Igual que React generarComprobante() en Ventas.jsx: recarga la venta
 // completa, recalcula subtotal/puntos y emite 'reimprimir' por socket.
@@ -1947,11 +1976,17 @@ class _EditarVentaModalState extends State<_EditarVentaModal> {
                     TextField(
                       controller: _efCtrl,
                       keyboardType: TextInputType.number,
-                      onChanged: (v) {
-                        final ef = double.tryParse(v) ?? 0;
-                        setState(() { _montoEfectivo = ef; _montoTransfer = (_total - ef).clamp(0, _total); });
-                        _trCtrl.text = _montoTransfer.round().toString();
-                      },
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onChanged: (v) => _aplicarPagoMixto(
+                        raw: v,
+                        total: _total,
+                        ctrlEditado: _efCtrl,
+                        ctrlComplemento: _trCtrl,
+                        onCalculado: (ef, tr) => setState(() {
+                          _montoEfectivo = ef;
+                          _montoTransfer = tr;
+                        }),
+                      ),
                       decoration: _buildInputDec(),
                     ),
                   ])),
@@ -1962,11 +1997,17 @@ class _EditarVentaModalState extends State<_EditarVentaModal> {
                     TextField(
                       controller: _trCtrl,
                       keyboardType: TextInputType.number,
-                      onChanged: (v) {
-                        final tr = double.tryParse(v) ?? 0;
-                        setState(() { _montoTransfer = tr; _montoEfectivo = (_total - tr).clamp(0, _total); });
-                        _efCtrl.text = _montoEfectivo.round().toString();
-                      },
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onChanged: (v) => _aplicarPagoMixto(
+                        raw: v,
+                        total: _total,
+                        ctrlEditado: _trCtrl,
+                        ctrlComplemento: _efCtrl,
+                        onCalculado: (tr, ef) => setState(() {
+                          _montoTransfer = tr;
+                          _montoEfectivo = ef;
+                        }),
+                      ),
                       decoration: _buildInputDec(),
                     ),
                   ])),
@@ -2120,6 +2161,8 @@ class _CrearVentaModalState extends State<_CrearVentaModal> {
   String _metodoPago = 'efectivo';
   double _montoEfectivo = 0;
   double _montoTransfer = 0;
+  final _efMixtoCtrl = TextEditingController();
+  final _trMixtoCtrl = TextEditingController();
   final _observacionesCtrl = TextEditingController();
 
   // Puntos fidelidad (igual React Ventas.jsx paso 3)
@@ -2151,6 +2194,8 @@ class _CrearVentaModalState extends State<_CrearVentaModal> {
     _busqProdCreateCtrl.dispose();
     _observacionesCtrl.dispose();
     _costoCtrl.dispose();
+    _efMixtoCtrl.dispose();
+    _trMixtoCtrl.dispose();
     super.dispose();
   }
 
@@ -2287,8 +2332,13 @@ class _CrearVentaModalState extends State<_CrearVentaModal> {
         if (item.chocolate != null) 'chocolate': item.chocolate,
       }).toList();
 
-      // Validate mixto amounts
-      if (_metodoPago == 'mixto' && (_montoEfectivo <= 0 || _montoTransfer <= 0)) {
+      // Validate mixto amounts — deben ser ambos > 0 y sumar exactamente el
+      // total (igual que _mixtoOk en editar venta).
+      final totalActual = _totalCarrito + _costoDomicilio - _descuentoPuntos;
+      final mixtoCuadra = _montoEfectivo > 0 &&
+          _montoTransfer > 0 &&
+          (_montoEfectivo + _montoTransfer - totalActual).abs() < 1;
+      if (_metodoPago == 'mixto' && !mixtoCuadra) {
         if (mounted) {
           setState(() {
             _errorCrear = 'Para pago mixto ingresa los montos de efectivo y transferencia';
@@ -3324,6 +3374,8 @@ class _CrearVentaModalState extends State<_CrearVentaModal> {
                       _metodoPago = 'efectivo';
                       _montoEfectivo = 0;
                       _montoTransfer = 0;
+                      _efMixtoCtrl.clear();
+                      _trMixtoCtrl.clear();
                     })),
             const SizedBox(width: AppSizes.sm),
             Expanded(
@@ -3332,6 +3384,8 @@ class _CrearVentaModalState extends State<_CrearVentaModal> {
                   _metodoPago = 'transferencia';
                   _montoEfectivo = 0;
                   _montoTransfer = 0;
+                  _efMixtoCtrl.clear();
+                  _trMixtoCtrl.clear();
                 }),
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 8),
@@ -3380,6 +3434,8 @@ class _CrearVentaModalState extends State<_CrearVentaModal> {
                       _metodoPago = 'mixto';
                       _montoEfectivo = 0;
                       _montoTransfer = 0;
+                      _efMixtoCtrl.clear();
+                      _trMixtoCtrl.clear();
                     })),
           ],
         ),
@@ -3400,20 +3456,25 @@ class _CrearVentaModalState extends State<_CrearVentaModal> {
                     const Text('Efectivo', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                     const SizedBox(height: 4),
                     TextField(
+                      controller: _efMixtoCtrl,
                       keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       decoration: const InputDecoration(
                         hintText: '0',
                         contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                         isDense: true,
                         border: OutlineInputBorder(),
                       ),
-                      onChanged: (v) {
-                        final ef = (double.tryParse(v) ?? 0).clamp(0, total).toDouble();
-                        setState(() {
+                      onChanged: (v) => _aplicarPagoMixto(
+                        raw: v,
+                        total: total,
+                        ctrlEditado: _efMixtoCtrl,
+                        ctrlComplemento: _trMixtoCtrl,
+                        onCalculado: (ef, tr) => setState(() {
                           _montoEfectivo = ef;
-                          _montoTransfer = total - ef;
-                        });
-                      },
+                          _montoTransfer = tr;
+                        }),
+                      ),
                     ),
                   ]),
                 ),
@@ -3423,20 +3484,25 @@ class _CrearVentaModalState extends State<_CrearVentaModal> {
                     const Text('Transferencia', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                     const SizedBox(height: 4),
                     TextField(
+                      controller: _trMixtoCtrl,
                       keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       decoration: const InputDecoration(
                         hintText: '0',
                         contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                         isDense: true,
                         border: OutlineInputBorder(),
                       ),
-                      onChanged: (v) {
-                        final tr = (double.tryParse(v) ?? 0).clamp(0, total).toDouble();
-                        setState(() {
+                      onChanged: (v) => _aplicarPagoMixto(
+                        raw: v,
+                        total: total,
+                        ctrlEditado: _trMixtoCtrl,
+                        ctrlComplemento: _efMixtoCtrl,
+                        onCalculado: (tr, ef) => setState(() {
                           _montoTransfer = tr;
-                          _montoEfectivo = total - tr;
-                        });
-                      },
+                          _montoEfectivo = ef;
+                        }),
+                      ),
                     ),
                   ]),
                 ),
