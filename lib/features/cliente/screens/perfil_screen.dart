@@ -942,8 +942,10 @@ class _DetallePedidoModal extends StatelessWidget {
                         children: [
                           Icon(Icons.chat_outlined, size: 14, color: Color(0xFF16A34A)),
                           SizedBox(width: 6),
-                          Text('¿Necesitas ayuda? Escríbenos por WhatsApp',
-                              style: TextStyle(fontSize: 12, color: Color(0xFF16A34A), fontWeight: FontWeight.w700)),
+                          Flexible(
+                            child: Text('¿Necesitas ayuda? Escríbenos por WhatsApp',
+                                style: TextStyle(fontSize: 12, color: Color(0xFF16A34A), fontWeight: FontWeight.w700)),
+                          ),
                         ],
                       ),
                     ),
