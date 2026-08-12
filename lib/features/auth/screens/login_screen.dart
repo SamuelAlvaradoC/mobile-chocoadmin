@@ -82,9 +82,19 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!emailOk || !passOk) return;
     setState(() => _loading = true);
     try {
-      await context.read<AuthProvider>().login(email, pass);
+      // AuthProvider.login() nunca lanza — atrapa sus propios errores y
+      // devuelve un bool. Antes este código ignoraba ese resultado y
+      // navegaba igual aunque el login fallara (credenciales incorrectas
+      // dejaban "seguir" a /landing sin haber iniciado sesión, sin mostrar
+      // ningún error).
+      final auth = context.read<AuthProvider>();
+      final ok = await auth.login(email, pass);
       if (!mounted) return;
-      final role = context.read<AuthProvider>().user?.role;
+      if (!ok) {
+        setState(() => _generalError = _parsearErrorBackend(auth.errorMessage ?? 'El correo o la contraseña son incorrectos'));
+        return;
+      }
+      final role = auth.user?.role;
       // Igual que React Login.jsx: solo admin/domiciliario tienen ruta directa;
       // cualquier otro rol (cliente, confirmador_domicilio, cocinero, etc.)
       // cae en /landing.
