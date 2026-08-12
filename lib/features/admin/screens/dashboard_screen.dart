@@ -749,8 +749,18 @@ class _TiempoEstimadoCardState extends State<_TiempoEstimadoCard> {
                   onTap: _guardando ? null : () async {
                     final v = int.tryParse(_ctrl.text) ?? widget.tiempoInicial;
                     setState(() => _guardando = true);
-                    try { await widget.onSaved(v); } catch (_) {}
-                    if (mounted) setState(() { _editando = false; _guardando = false; });
+                    try {
+                      await widget.onSaved(v);
+                      if (mounted) setState(() { _editando = false; _guardando = false; });
+                    } catch (e) {
+                      if (mounted) setState(() => _guardando = false);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text(e is ApiException ? e.message : 'Error al guardar tiempo estimado'),
+                          backgroundColor: AppColors.error,
+                        ));
+                      }
+                    }
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -868,8 +878,18 @@ class _HorarioCardState extends State<_HorarioCard> {
               GestureDetector(
                 onTap: _guardando ? null : () async {
                   setState(() => _guardando = true);
-                  try { await widget.onSaved(_nuevaApertura, _nuevoCierre); } catch (_) {}
-                  if (mounted) setState(() { _editando = false; _guardando = false; });
+                  try {
+                    await widget.onSaved(_nuevaApertura, _nuevoCierre);
+                    if (mounted) setState(() { _editando = false; _guardando = false; });
+                  } catch (e) {
+                    if (mounted) setState(() => _guardando = false);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text(e is ApiException ? e.message : 'Error al guardar el horario'),
+                        backgroundColor: AppColors.error,
+                      ));
+                    }
+                  }
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),

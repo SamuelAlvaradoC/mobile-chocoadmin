@@ -1195,7 +1195,9 @@ class _DireccionesTabState extends State<_DireccionesTab> {
       await _cargar();
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
-    } catch (_) {}
+    } catch (_) {
+      if (mounted) setState(() => _error = 'Error al eliminar dirección');
+    }
   }
 
   void _pedirConfirmacion(Map<String, dynamic> dir) {
