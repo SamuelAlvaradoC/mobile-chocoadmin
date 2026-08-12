@@ -1128,16 +1128,18 @@ class _DireccionesTabState extends State<_DireccionesTab> {
     try {
       final data = await ApiService.get('/api/auth/mis-direcciones');
       List raw = data is List ? data : (data is Map && data['data'] is List ? data['data'] as List : []);
-      setState(() => _direcciones = raw
-          .where((e) => (e as Map)['estado'] != 0)
-          .map((e) => Map<String, dynamic>.from(e as Map))
-          .toList());
+      if (mounted) {
+        setState(() => _direcciones = raw
+            .where((e) => (e as Map)['estado'] != 0)
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList());
+      }
     } on ApiException catch (e) {
-      setState(() => _error = e.message);
+      if (mounted) setState(() => _error = e.message);
     } catch (_) {
-      setState(() => _error = 'Error al cargar direcciones');
+      if (mounted) setState(() => _error = 'Error al cargar direcciones');
     }
-    setState(() => _loading = false);
+    if (mounted) setState(() => _loading = false);
   }
 
   // Validación idéntica a React SeccionDirecciones.handleAgregar
@@ -1166,19 +1168,21 @@ class _DireccionesTabState extends State<_DireccionesTab> {
         'referencia':      sv('referencia'),
         'id_barrio':       _nuevaDireccion['id_barrio'],
       });
-      setState(() {
-        _nuevaDireccion = {};
-        _errores = {};
-        _agregando = false;
-        _formKey++;
-      });
+      if (mounted) {
+        setState(() {
+          _nuevaDireccion = {};
+          _errores = {};
+          _agregando = false;
+          _formKey++;
+        });
+      }
       await _cargar();
     } on ApiException catch (e) {
-      setState(() => _error = e.message);
+      if (mounted) setState(() => _error = e.message);
     } catch (_) {
-      setState(() => _error = 'Error al guardar dirección');
+      if (mounted) setState(() => _error = 'Error al guardar dirección');
     }
-    setState(() => _guardando = false);
+    if (mounted) setState(() => _guardando = false);
   }
 
   Future<void> _eliminar(int id) async {
@@ -1186,7 +1190,7 @@ class _DireccionesTabState extends State<_DireccionesTab> {
       await ApiService.delete('/api/auth/mis-direcciones/$id');
       await _cargar();
     } on ApiException catch (e) {
-      setState(() => _error = e.message);
+      if (mounted) setState(() => _error = e.message);
     } catch (_) {}
   }
 
