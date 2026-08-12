@@ -462,7 +462,6 @@ class _HistorialTabState extends State<_HistorialTab> {
   bool _loading = true;
   String? _error;
   List<Pedido> _pedidos = [];
-  int? _expandidoId;
   int _tiempoEspera = 30;
   int _pagina = 1;
   static const int _porPagina = 5;
@@ -560,298 +559,92 @@ class _HistorialTabState extends State<_HistorialTab> {
       separatorBuilder: (_, __) => const SizedBox(height: AppSizes.sm),
       itemBuilder: (context, i) {
         final p = paginados[i];
-        final isExpanded = _expandidoId == p.id;
 
-        return GestureDetector(
-          onTap: () => setState(
-              () => _expandidoId = isExpanded ? null : p.id),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-              boxShadow: const [
-                BoxShadow(
-                    color: AppColors.shadow,
-                    blurRadius: 6,
-                    offset: Offset(0, 1)),
-              ],
-            ),
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+            boxShadow: const [
+              BoxShadow(
+                  color: AppColors.shadow,
+                  blurRadius: 6,
+                  offset: Offset(0, 1)),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSizes.md),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(AppSizes.md),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Pedido #${p.id}',
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w700),
-                            ),
-                            if (p.creadoEn != null)
-                              Text(
-                                DateFormat('dd/MM/yyyy HH:mm', 'es_CO')
-                                    .format(p.creadoEn!),
-                                style: const TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.textSecondary),
-                              ),
-                          ],
-                        ),
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start,
                         children: [
                           Text(
-                            _fmt.format(p.total),
+                            'Pedido #${p.id}',
                             style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primary,
-                            ),
+                                fontWeight: FontWeight.w700),
                           ),
-                          _EstadoBadge(estado: p.estado),
+                          if (p.creadoEn != null)
+                            Text(
+                              DateFormat('dd/MM/yyyy HH:mm', 'es_CO')
+                                  .format(p.creadoEn!),
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary),
+                            ),
                         ],
                       ),
-                      const SizedBox(width: AppSizes.xs),
-                      Icon(
-                        isExpanded
-                            ? Icons.keyboard_arrow_up_rounded
-                            : Icons.keyboard_arrow_down_rounded,
-                        color: AppColors.textSecondary,
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Detalle expandido
-                if (isExpanded) ...[
-                  const Divider(height: 1),
-                  Padding(
-                    padding: const EdgeInsets.all(AppSizes.md),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        // Dirección
-                        if (p.direccion != null && p.direccion!.isNotEmpty) ...[
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Icon(Icons.location_on_outlined, size: 12, color: AppColors.primary),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  [p.direccion, p.barrio].where((s) => s != null && s.isNotEmpty).cast<String>().join(', '),
-                                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                        ],
-                        // Productos
-                        if (p.lineas.isEmpty)
-                          const Text('Sin detalle', style: TextStyle(color: AppColors.textSecondary))
-                        else
-                          ...p.lineas.map((l) => Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: AppColors.background,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: AppColors.border),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Expanded(
-                                      child: Wrap(
-                                        crossAxisAlignment: WrapCrossAlignment.center,
-                                        spacing: 6,
-                                        children: [
-                                          Text('${l.cantidad}× ${l.nombreProducto}',
-                                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-                                          if (l.chocolate != null && l.chocolate!.isNotEmpty)
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
-                                              decoration: BoxDecoration(
-                                                color: l.chocolate == 'Negro' ? const Color(0xFF1E3A5F) : const Color(0xFFF0F0F0),
-                                                borderRadius: BorderRadius.circular(10),
-                                              ),
-                                              child: Text('Chocolate ${l.chocolate}',
-                                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
-                                                      color: l.chocolate == 'Negro' ? Colors.white : const Color(0xFF555555))),
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                    Text(_fmt.format(l.subtotal),
-                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
-                                  ],
-                                ),
-                                if (l.salsas.isNotEmpty) ...[
-                                  const SizedBox(height: 4),
-                                  Wrap(
-                                    spacing: 3, runSpacing: 3,
-                                    children: l.salsas.map((s) => Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFFFF7ED),
-                                        border: Border.all(color: const Color(0xFFEA580C)),
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: Text(s.isNotEmpty ? s[0].toUpperCase() + s.substring(1) : s,
-                                          style: const TextStyle(fontSize: 10, color: Color(0xFFEA580C), fontWeight: FontWeight.w600)),
-                                    )).toList(),
-                                  ),
-                                ],
-                                if (l.toppings.isNotEmpty || l.adiciones.isNotEmpty) ...[
-                                  const SizedBox(height: 4),
-                                  Wrap(
-                                    spacing: 3, runSpacing: 3,
-                                    children: [
-                                      ...l.toppings.map((t) => Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                        decoration: BoxDecoration(color: const Color(0xFF1A1A1A), borderRadius: BorderRadius.circular(20)),
-                                        child: Text(t, style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w600)),
-                                      )),
-                                      ...l.adiciones.map((a) => Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFFFFBEB),
-                                          border: Border.all(color: const Color(0xFFD97706)),
-                                          borderRadius: BorderRadius.circular(20),
-                                        ),
-                                        child: Text('+$a', style: const TextStyle(fontSize: 10, color: Color(0xFFD97706), fontWeight: FontWeight.w600)),
-                                      )),
-                                    ],
-                                  ),
-                                ],
-                              ],
-                            ),
-                          )),
-                        // Totales
-                        const SizedBox(height: 8),
-                        const Divider(height: 1),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Subtotal', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                            Text(_fmt.format(p.subtotal), style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                          ],
-                        ),
-                        if (p.descuentoPuntos > 0) ...[
-                          const SizedBox(height: 3),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('Descuento puntos (${p.puntosUsados} pts)',
-                                  style: const TextStyle(fontSize: 12, color: Color(0xFF16A34A), fontWeight: FontWeight.w700)),
-                              Text('-${_fmt.format(p.descuentoPuntos)}',
-                                  style: const TextStyle(fontSize: 12, color: Color(0xFF16A34A), fontWeight: FontWeight.w700)),
-                            ],
-                          ),
-                        ],
-                        if (p.puntosGanados > 0) ...[
-                          const SizedBox(height: 3),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text('Puntos ganados',
-                                  style: TextStyle(fontSize: 12, color: Color(0xFFD97706), fontWeight: FontWeight.w700)),
-                              Text('+${p.puntosGanados} pts',
-                                  style: const TextStyle(fontSize: 12, color: Color(0xFFD97706), fontWeight: FontWeight.w700)),
-                            ],
-                          ),
-                        ],
-                        const SizedBox(height: 3),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Domicilio', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                            Text(_fmt.format(p.costoDomicilio), style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        const Divider(height: 1),
-                        const SizedBox(height: 6),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Total', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF16A34A))),
-                            Text(_fmt.format(p.total), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF16A34A))),
-                          ],
-                        ),
-                        if (p.estado == 'anulado' && p.motivoAnulacion != null && p.motivoAnulacion!.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFF5F5),
-                              border: Border.all(color: const Color(0xFFFECACA)),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: RichText(text: TextSpan(
-                              style: const TextStyle(fontSize: 12, color: AppColors.primary),
-                              children: [
-                                const TextSpan(text: 'Motivo de cancelación: ', style: TextStyle(fontWeight: FontWeight.w700)),
-                                TextSpan(text: p.motivoAnulacion),
-                              ],
-                            )),
-                          ),
-                        ],
-                        if (p.metodoPago != null) ...[
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                            decoration: BoxDecoration(color: AppColors.surfaceVariant, borderRadius: BorderRadius.circular(20)),
-                            child: Text(
-                              p.metodoPago == 'efectivo' ? '💵 Efectivo' : p.metodoPago == 'transferencia' ? '🏦 Transferencia' : '💵🏦 Mixto',
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textSecondary),
-                            ),
-                          ),
-                        ],
-                        if (p.estado == 'pendiente' || p.estado == 'en_proceso') ...[
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.07),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(mainAxisSize: MainAxisSize.min, children: [
-                              const Icon(Icons.access_time_rounded, size: 12, color: AppColors.primary),
-                              const SizedBox(width: 4),
-                              Text('⏱ $_tiempoEspera–${_tiempoEspera + 20} min estimados',
-                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
-                            ]),
-                          ),
-                        ],
-                        const SizedBox(height: 10),
-                        GestureDetector(
-                          onTap: () => launchUrl(
-                            Uri.parse('https://wa.me/573159914624'),
-                            mode: LaunchMode.externalApplication,
-                          ),
-                          child: const Row(
-                            children: [
-                              Icon(Icons.chat_outlined, size: 14, color: Color(0xFF16A34A)),
-                              SizedBox(width: 6),
-                              Text('¿Necesitas ayuda? Escríbenos por WhatsApp',
-                                  style: TextStyle(fontSize: 12, color: Color(0xFF16A34A), fontWeight: FontWeight.w700)),
-                            ],
+                        Text(
+                          _fmt.format(p.total),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
                           ),
                         ),
+                        _EstadoBadge(estado: p.estado),
                       ],
                     ),
-                  ),
+                    const SizedBox(width: AppSizes.xs),
+                    // Igual React: botón dedicado "Ver detalle" que abre un
+                    // modal (antes la tarjeta entera expandía inline).
+                    IconButton(
+                      tooltip: 'Ver detalle',
+                      onPressed: () => showDialog(
+                        context: context,
+                        builder: (_) => _DetallePedidoModal(pedido: p, fmt: _fmt, tiempoEspera: _tiempoEspera),
+                      ),
+                      icon: const Icon(Icons.visibility_outlined, color: AppColors.textSecondary, size: 20),
+                    ),
+                  ],
+                ),
+                // Igual React: tiempo estimado y motivo de anulación ya
+                // visibles sin abrir el detalle.
+                if (p.estado == 'pendiente' || p.estado == 'en_proceso') ...[
+                  const SizedBox(height: 4),
+                  Row(children: [
+                    const Icon(Icons.access_time_rounded, size: 12, color: AppColors.primary),
+                    const SizedBox(width: 4),
+                    Text('$_tiempoEspera–${_tiempoEspera + 20} min estimados',
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary)),
+                  ]),
+                ],
+                if (p.estado == 'anulado' && p.motivoAnulacion != null && p.motivoAnulacion!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  RichText(text: TextSpan(
+                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                    children: [
+                      const TextSpan(text: 'Motivo: ', style: TextStyle(fontWeight: FontWeight.w700)),
+                      TextSpan(text: p.motivoAnulacion),
+                    ],
+                  )),
                 ],
               ],
             ),
@@ -882,6 +675,285 @@ class _HistorialTabState extends State<_HistorialTab> {
             ),
           ),
       ],
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Modal "Ver detalle" de un pedido — igual orden que React SeccionHistorial
+// (Pedido.jsx): header → estado+fecha → tiempo estimado → dirección →
+// productos → totales → método de pago → motivo de cancelación → WhatsApp.
+// ────────────────────────────────────────────────────────────────────────────
+
+class _DetallePedidoModal extends StatelessWidget {
+  final Pedido pedido;
+  final NumberFormat fmt;
+  final int tiempoEspera;
+  const _DetallePedidoModal({required this.pedido, required this.fmt, required this.tiempoEspera});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = pedido;
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 460),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 12, 0),
+              child: Row(
+                children: [
+                  Expanded(child: Text('Pedido #${p.id}',
+                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.textPrimary))),
+                  IconButton(icon: const Icon(Icons.close_rounded, size: 20), onPressed: () => Navigator.pop(context)),
+                ],
+              ),
+            ),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Estado + fecha
+                    Row(children: [
+                      _EstadoBadge(estado: p.estado),
+                      const SizedBox(width: 10),
+                      if (p.creadoEn != null)
+                        Text(DateFormat('dd/MM/yyyy HH:mm', 'es_CO').format(p.creadoEn!),
+                            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                    ]),
+                    // Tiempo estimado
+                    if (p.estado == 'pendiente' || p.estado == 'en_proceso') ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.07),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          const Icon(Icons.access_time_rounded, size: 12, color: AppColors.primary),
+                          const SizedBox(width: 4),
+                          Text('⏱ $tiempoEspera–${tiempoEspera + 20} min estimados',
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
+                        ]),
+                      ),
+                    ],
+                    // Dirección
+                    if (p.direccion != null && p.direccion!.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.location_on_outlined, size: 13, color: AppColors.primary),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              [p.direccion, p.barrio].where((s) => s != null && s.isNotEmpty).cast<String>().join(', '),
+                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    // Productos
+                    if (p.lineas.isEmpty)
+                      const Text('Sin detalle', style: TextStyle(color: AppColors.textSecondary))
+                    else
+                      ...p.lineas.map((l) => Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Wrap(
+                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    spacing: 6,
+                                    children: [
+                                      Text('${l.cantidad}× ${l.nombreProducto}',
+                                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                                      if (l.chocolate != null && l.chocolate!.isNotEmpty)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+                                          decoration: BoxDecoration(
+                                            color: l.chocolate == 'Negro' ? const Color(0xFF1E3A5F) : const Color(0xFFF0F0F0),
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: Text('Chocolate ${l.chocolate}',
+                                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
+                                                  color: l.chocolate == 'Negro' ? Colors.white : const Color(0xFF555555))),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                Text(fmt.format(l.subtotal),
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
+                              ],
+                            ),
+                            if (l.salsas.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Wrap(
+                                spacing: 3, runSpacing: 3,
+                                children: l.salsas.map((s) => Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFF7ED),
+                                    border: Border.all(color: const Color(0xFFEA580C)),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(s.isNotEmpty ? s[0].toUpperCase() + s.substring(1) : s,
+                                      style: const TextStyle(fontSize: 10, color: Color(0xFFEA580C), fontWeight: FontWeight.w600)),
+                                )).toList(),
+                              ),
+                            ],
+                            if (l.toppings.isNotEmpty || l.adiciones.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Wrap(
+                                spacing: 3, runSpacing: 3,
+                                children: [
+                                  ...l.toppings.map((t) => Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(color: const Color(0xFF1A1A1A), borderRadius: BorderRadius.circular(20)),
+                                    child: Text(t, style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w600)),
+                                  )),
+                                  // Igual React: adiciones sin precio en el badge (solo nombre ×cantidad).
+                                  ...l.adiciones.map((a) => Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFFFBEB),
+                                      border: Border.all(color: const Color(0xFFD97706)),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text('+${a.replaceAll(RegExp(r' \$[\d.]+$'), '')}',
+                                        style: const TextStyle(fontSize: 10, color: Color(0xFFD97706), fontWeight: FontWeight.w600)),
+                                  )),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      )),
+                    // Totales
+                    const SizedBox(height: 4),
+                    const Divider(height: 1),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Subtotal', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                        Text(fmt.format(p.subtotal), style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                      ],
+                    ),
+                    if (p.descuentoPuntos > 0) ...[
+                      const SizedBox(height: 3),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Descuento puntos (${p.puntosUsados} pts)',
+                              style: const TextStyle(fontSize: 12, color: Color(0xFF16A34A), fontWeight: FontWeight.w700)),
+                          Text('-${fmt.format(p.descuentoPuntos)}',
+                              style: const TextStyle(fontSize: 12, color: Color(0xFF16A34A), fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+                    ],
+                    if (p.puntosGanados > 0) ...[
+                      const SizedBox(height: 3),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Puntos ganados',
+                              style: TextStyle(fontSize: 12, color: Color(0xFFD97706), fontWeight: FontWeight.w700)),
+                          Text('+${p.puntosGanados} pts',
+                              style: const TextStyle(fontSize: 12, color: Color(0xFFD97706), fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: 3),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Domicilio', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                        Text(fmt.format(p.costoDomicilio), style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    const Divider(height: 1),
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Total', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF16A34A))),
+                        Text(fmt.format(p.total), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF16A34A))),
+                      ],
+                    ),
+                    // Método de pago
+                    if (p.metodoPago != null) ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                        decoration: BoxDecoration(color: AppColors.surfaceVariant, borderRadius: BorderRadius.circular(20)),
+                        child: Text(
+                          p.metodoPago == 'efectivo' ? '💵 Efectivo' : p.metodoPago == 'transferencia' ? '🏦 Transferencia' : '💵🏦 Mixto',
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textSecondary),
+                        ),
+                      ),
+                    ],
+                    // Motivo de cancelación
+                    if (p.estado == 'anulado' && p.motivoAnulacion != null && p.motivoAnulacion!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF5F5),
+                          border: Border.all(color: const Color(0xFFFECACA)),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: RichText(text: TextSpan(
+                          style: const TextStyle(fontSize: 12, color: AppColors.primary),
+                          children: [
+                            const TextSpan(text: 'Motivo de cancelación: ', style: TextStyle(fontWeight: FontWeight.w700)),
+                            TextSpan(text: p.motivoAnulacion),
+                          ],
+                        )),
+                      ),
+                    ],
+                    const SizedBox(height: 14),
+                    GestureDetector(
+                      onTap: () => launchUrl(
+                        Uri.parse('https://wa.me/573159914624'),
+                        mode: LaunchMode.externalApplication,
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.chat_outlined, size: 14, color: Color(0xFF16A34A)),
+                          SizedBox(width: 6),
+                          Text('¿Necesitas ayuda? Escríbenos por WhatsApp',
+                              style: TextStyle(fontSize: 12, color: Color(0xFF16A34A), fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
