@@ -944,7 +944,9 @@ class _DetallePedidoModal extends StatelessWidget {
                           SizedBox(width: 6),
                           Flexible(
                             child: Text('¿Necesitas ayuda? Escríbenos por WhatsApp',
-                                style: TextStyle(fontSize: 12, color: Color(0xFF16A34A), fontWeight: FontWeight.w700)),
+                                style: TextStyle(fontSize: 12, color: Color(0xFF16A34A), fontWeight: FontWeight.w700),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis),
                           ),
                         ],
                       ),

@@ -477,11 +477,16 @@ String get _mapsUrl {
                 // Footer: total + botones
                 Row(
                   children: [
+                    // FittedBox en vez de ellipsis: con hasta 5 botones de
+                    // acción visibles a la vez, el precio se achica para
+                    // caber completo en vez de truncarse con "...".
                     Flexible(
-                      child: Text(fmt.format(pedido.total),
-                          style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.w900, color: const Color(0xFF1a1a1a)),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(fmt.format(pedido.total),
+                            style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.w900, color: const Color(0xFF1a1a1a))),
+                      ),
                     ),
                     const Spacer(),
                     Row(children: [

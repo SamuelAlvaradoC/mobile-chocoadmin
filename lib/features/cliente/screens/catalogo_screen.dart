@@ -597,17 +597,23 @@ class _CarritoBottomBarState extends State<_CarritoBottomBar> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Panel expandido — altura = 75% pantalla, no se rompe nunca
+        // Panel expandido — se ajusta al contenido hasta un máximo de 75% de
+        // pantalla (antes tenía altura fija de 75% siempre, dejando mucho
+        // espacio en blanco con pocos productos).
         AnimatedContainer(
           duration: const Duration(milliseconds: 280),
           curve: Curves.easeInOut,
-          height: expandido ? MediaQuery.of(context).size.height * 0.75 : 0,
+          constraints: BoxConstraints(
+            maxHeight: expandido ? MediaQuery.of(context).size.height * 0.75 : 0,
+          ),
           decoration: const BoxDecoration(
             color: Colors.white,
             boxShadow: [BoxShadow(color: Color(0x4DCA0B0B), blurRadius: 24, offset: Offset(0, -4))],
           ),
-          child: Column(
-            children: [
+          child: ClipRect(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
               // Handle (drag pill)
               Center(
                 child: Container(
@@ -617,9 +623,11 @@ class _CarritoBottomBarState extends State<_CarritoBottomBar> {
                 ),
               ),
 
-              // Lista de items — ocupa el espacio disponible
-              Expanded(
+              // Lista de items — se ajusta a su contenido, con scroll propio
+              // si supera el máximo de altura del panel.
+              Flexible(
                 child: ListView.builder(
+                  shrinkWrap: true,
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
                   itemCount: carrito.items.length,
                   itemBuilder: (_, i) {
@@ -917,7 +925,8 @@ class _CarritoBottomBarState extends State<_CarritoBottomBar> {
                   ],
                 ),
               ),
-            ],
+              ],
+            ),
           ),
         ),
 
