@@ -123,13 +123,13 @@ class _ProductosScreenState extends State<ProductosScreen> {
   }
 
   void _abrirCrear() {
-    showDialog(context: context,
-      builder: (_) => _ProductoFormDialog(categorias: _categorias, onGuardado: _cargar));
+    Navigator.push(context, MaterialPageRoute(
+      builder: (_) => _ProductoFormScreen(categorias: _categorias, onGuardado: _cargar)));
   }
 
   void _abrirEditar(Map<String, dynamic> p) {
-    showDialog(context: context,
-      builder: (_) => _ProductoFormDialog(categorias: _categorias, producto: p, onGuardado: _cargar));
+    Navigator.push(context, MaterialPageRoute(
+      builder: (_) => _ProductoFormScreen(categorias: _categorias, producto: p, onGuardado: _cargar)));
   }
 
   void _abrirDetalle(Map<String, dynamic> p) {
@@ -363,16 +363,16 @@ class _ProductosScreenState extends State<ProductosScreen> {
 
 // ─── Dialogs ──────────────────────────────────────────────────────────────────
 
-class _ProductoFormDialog extends StatefulWidget {
+class _ProductoFormScreen extends StatefulWidget {
   final Map<String, dynamic>? producto;
   final List<Map<String, dynamic>> categorias;
   final VoidCallback onGuardado;
-  const _ProductoFormDialog({this.producto, required this.categorias, required this.onGuardado});
+  const _ProductoFormScreen({this.producto, required this.categorias, required this.onGuardado});
   @override
-  State<_ProductoFormDialog> createState() => _ProductoFormDialogState();
+  State<_ProductoFormScreen> createState() => _ProductoFormScreenState();
 }
 
-class _ProductoFormDialogState extends State<_ProductoFormDialog> {
+class _ProductoFormScreenState extends State<_ProductoFormScreen> {
   late final TextEditingController _nombreCtrl;
   late final TextEditingController _descCtrl;
   late final TextEditingController _precioCtrl;
@@ -505,28 +505,14 @@ class _ProductoFormDialogState extends State<_ProductoFormDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 520),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 16, 0),
-            child: Row(children: [
-              Expanded(child: Text(_esEditar ? 'Editar producto' : 'Nuevo producto',
-                  style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.w800, color: const Color(0xFF1a1a1a)))),
-              IconButton(icon: const Icon(Icons.close, size: 20), onPressed: () => Navigator.pop(context)),
-            ]),
-          ),
-          const Divider(height: 16),
-          // Form (scrollable)
-          ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.65),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Text(_esEditar ? 'Editar producto' : 'Nuevo producto'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 // Categoría
                 Text('Categoría', style: GoogleFonts.nunito(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF888888))),
                 const SizedBox(height: 8),
@@ -714,40 +700,33 @@ class _ProductoFormDialogState extends State<_ProductoFormDialog> {
                     child: Text(_error!, style: GoogleFonts.nunito(color: AppColors.error, fontSize: 13)),
                   ),
                 ],
-                const SizedBox(height: 8),
+                const SizedBox(height: 24),
+                Row(children: [
+                  Expanded(child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFFE0E0E0)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: Text('Cancelar', style: GoogleFonts.nunito(color: const Color(0xFF666666), fontWeight: FontWeight.w600)),
+                  )),
+                  const SizedBox(width: 10),
+                  Expanded(child: ElevatedButton(
+                    onPressed: _guardando ? null : _guardar,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      elevation: 0,
+                    ),
+                    child: _guardando
+                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : Text(_esEditar ? 'Guardar cambios' : 'Crear producto',
+                            style: GoogleFonts.nunito(color: Colors.white, fontWeight: FontWeight.w700)),
+                  )),
+                ]),
               ]),
-            ),
-          ),
-          // Footer
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
-            child: Row(children: [
-              Expanded(child: OutlinedButton(
-                onPressed: () => Navigator.pop(context),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Color(0xFFE0E0E0)),
-                  padding: const EdgeInsets.symmetric(vertical: 11),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                child: Text('Cancelar', style: GoogleFonts.nunito(color: const Color(0xFF666666), fontWeight: FontWeight.w600)),
-              )),
-              const SizedBox(width: 10),
-              Expanded(child: ElevatedButton(
-                onPressed: _guardando ? null : _guardar,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(vertical: 11),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  elevation: 0,
-                ),
-                child: _guardando
-                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : Text(_esEditar ? 'Guardar cambios' : 'Crear producto',
-                        style: GoogleFonts.nunito(color: Colors.white, fontWeight: FontWeight.w700)),
-              )),
-            ]),
-          ),
-        ]),
       ),
     );
   }
