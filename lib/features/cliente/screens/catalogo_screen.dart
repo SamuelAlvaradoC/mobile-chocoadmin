@@ -732,30 +732,27 @@ class _CarritoBottomBarState extends State<_CarritoBottomBar> {
                             ),
                           ),
                           const SizedBox(width: 6),
-                          // Controles − cantidad +
+                          // Controles − cantidad + — el cuadro visual se
+                          // mantiene compacto (28px) para no ensanchar la
+                          // fila, pero el área tocable real es 44x44 con
+                          // ripple (Material+InkWell en vez de GestureDetector).
                           Row(
                             children: [
-                              GestureDetector(
+                              _CantidadBtn(
+                                label: '−',
+                                bg: const Color(0xFFF0F0F0),
+                                fg: const Color(0xFF1a1a1a),
                                 onTap: () => carrito.decrementar(item.lineaId),
-                                child: Container(
-                                  width: 28, height: 28,
-                                  decoration: BoxDecoration(color: const Color(0xFFF0F0F0), borderRadius: BorderRadius.circular(6)),
-                                  alignment: Alignment.center,
-                                  child: const Text('−', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                                ),
                               ),
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 8),
                                 child: Text('${item.cantidad}', style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w700)),
                               ),
-                              GestureDetector(
+                              _CantidadBtn(
+                                label: '+',
+                                bg: AppColors.primary.withValues(alpha: 0.12),
+                                fg: AppColors.primary,
                                 onTap: () => carrito.incrementar(item.lineaId),
-                                child: Container(
-                                  width: 28, height: 28,
-                                  decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
-                                  alignment: Alignment.center,
-                                  child: const Text('+', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.primary)),
-                                ),
                               ),
                             ],
                           ),
@@ -1208,6 +1205,42 @@ class _BadgeProducto extends StatelessWidget {
                 ),
               ],
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Botón +/- del carrito: visual compacto (28px) pero área tocable de 44x44
+// con ripple, para no perder densidad visual en la fila y a la vez cumplir
+// el tap target mínimo recomendado.
+class _CantidadBtn extends StatelessWidget {
+  final String label;
+  final Color bg;
+  final Color fg;
+  final VoidCallback onTap;
+
+  const _CantidadBtn({required this.label, required this.bg, required this.fg, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(6),
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Center(
+            child: Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
+              alignment: Alignment.center,
+              child: Text(label, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: fg)),
+            ),
           ),
         ),
       ),
