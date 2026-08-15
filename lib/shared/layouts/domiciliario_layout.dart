@@ -84,32 +84,22 @@ class _DomiciliarioBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFF0F0F0))),
-        boxShadow: [BoxShadow(color: Color(0x0F000000), blurRadius: 12, offset: Offset(0, -2))],
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 60,
-          child: Row(
-            children: [
-              for (final item in _items)
-                Expanded(
-                  child: _NavButton(
-                    item: item,
-                    active: currentRoute.startsWith(item.path),
-                    onTap: () {
-                      if (!currentRoute.startsWith(item.path)) context.go(item.path);
-                    },
-                  ),
-                ),
-            ],
+    final activeIndex = _items.indexWhere((i) => currentRoute.startsWith(i.path)).clamp(0, _items.length - 1);
+    // BottomNavigationBar nativo: trae el ripple/highlight táctil que el
+    // bottom nav custom anterior (GestureDetector) no daba.
+    return BottomNavigationBar(
+      currentIndex: activeIndex,
+      onTap: (i) {
+        if (!currentRoute.startsWith(_items[i].path)) context.go(_items[i].path);
+      },
+      items: [
+        for (final item in _items)
+          BottomNavigationBarItem(
+            icon: Icon(item.icon),
+            activeIcon: Icon(item.activeIcon),
+            label: item.label,
           ),
-        ),
-      ),
+      ],
     );
   }
 }
@@ -120,32 +110,4 @@ class _NavItem {
   final String label;
   final String path;
   const _NavItem({required this.icon, required this.activeIcon, required this.label, required this.path});
-}
-
-class _NavButton extends StatelessWidget {
-  final _NavItem item;
-  final bool active;
-  final VoidCallback onTap;
-
-  const _NavButton({required this.item, required this.active, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = active ? AppColors.primary : const Color(0xFF9A9A9A);
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(active ? item.activeIcon : item.icon, color: color, size: 24),
-          const SizedBox(height: 3),
-          Text(
-            item.label,
-            style: GoogleFonts.nunito(fontSize: 11, fontWeight: active ? FontWeight.w800 : FontWeight.w600, color: color),
-          ),
-        ],
-      ),
-    );
-  }
 }
