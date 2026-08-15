@@ -3,11 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/models/pedido.dart';
 import '../../../core/services/api_service.dart';
-import '../../../shared/layouts/admin_layout.dart';
+import '../../auth/providers/auth_provider.dart';
 
 class CocinaScreen extends StatefulWidget {
   const CocinaScreen({super.key});
@@ -101,13 +102,26 @@ class _CocinaScreenState extends State<CocinaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AdminLayout(
-      currentRoute: '/cocina',
+    // Rol de una sola pantalla: AppBar simple, sin drawer/hamburguesa (no
+    // hay a dónde más navegar) y sin bottom nav.
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Panel Cocina'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout_rounded, color: AppColors.error),
+            tooltip: 'Cerrar sesión',
+            onPressed: () => context.read<AuthProvider>().logout(),
+          ),
+          const SizedBox(width: 4),
+        ],
+      ),
       body: Column(
         children: [
-          // Page header — matches React's .page-header
+          // Barra de estado — cuenta de pedidos + refrescar manual.
           Container(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
             decoration: const BoxDecoration(
               color: Colors.white,
               border: Border(bottom: BorderSide(color: Color(0xFFF0F0F0))),
@@ -115,23 +129,12 @@ class _CocinaScreenState extends State<CocinaScreen> {
             child: Row(
               children: [
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('Panel Cocina',
-                          style: GoogleFonts.nunito(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w900,
-                              color: const Color(0xFF1a1a1a))),
-                      Text(
-                        '${_pedidos.length} pedido${_pedidos.length != 1 ? 's' : ''} en preparación',
-                        style: GoogleFonts.nunito(
-                            fontSize: 13,
-                            color: const Color(0xFF888888),
-                            fontWeight: FontWeight.w600),
-                      ),
-                    ],
+                  child: Text(
+                    '${_pedidos.length} pedido${_pedidos.length != 1 ? 's' : ''} en preparación',
+                    style: GoogleFonts.nunito(
+                        fontSize: 13,
+                        color: const Color(0xFF888888),
+                        fontWeight: FontWeight.w600),
                   ),
                 ),
                 // Actualizar button — matches React's green button style
