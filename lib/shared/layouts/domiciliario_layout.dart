@@ -33,6 +33,7 @@ class DomiciliarioLayout extends StatelessWidget {
         surfaceTintColor: Colors.white,
         shadowColor: const Color(0xFFF0F0F0),
         scrolledUnderElevation: 1,
+        automaticallyImplyLeading: false,
         title: Row(
           children: [
             CachedNetworkImage(
@@ -53,219 +54,96 @@ class DomiciliarioLayout extends StatelessWidget {
             tooltip: 'Ir a la tienda',
             onPressed: () => context.go('/landing'),
           ),
-        ],
-        leading: Builder(
-          builder: (ctx) => IconButton(
-            icon: const Icon(Icons.menu_rounded, color: Color(0xFF1a1a1a)),
-            onPressed: () => Scaffold.of(ctx).openDrawer(),
+          IconButton(
+            icon: const Icon(Icons.logout_rounded, color: AppColors.error),
+            tooltip: 'Cerrar sesión',
+            onPressed: () => auth.logout(),
           ),
-        ),
+          const SizedBox(width: 4),
+        ],
       ),
-      drawer: _DomiciliarioDrawer(
-        currentRoute: currentRoute,
-        onLogout: () => auth.logout(),
-      ),
+      bottomNavigationBar: _DomiciliarioBottomNav(currentRoute: currentRoute),
       body: body,
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Drawer
+// Bottom nav — reemplaza el Drawer/hamburguesa (solo 2 destinos: Pedidos y
+// Caja del día, caben perfecto como bottom nav en vez de sidebar web).
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _DomiciliarioDrawer extends StatelessWidget {
+class _DomiciliarioBottomNav extends StatelessWidget {
   final String currentRoute;
-  final VoidCallback onLogout;
-
-  const _DomiciliarioDrawer({
-    required this.currentRoute,
-    required this.onLogout,
-  });
+  const _DomiciliarioBottomNav({required this.currentRoute});
 
   static const _items = [
-    _DrawerItem(
-      icon: Icons.local_shipping_outlined,
-      label: 'Pedidos',
-      path: '/domiciliario/pedidos',
-    ),
-    _DrawerItem(
-      icon: Icons.attach_money,
-      label: 'Total del día',
-      path: '/domiciliario/caja',
-    ),
+    _NavItem(icon: Icons.local_shipping_outlined, activeIcon: Icons.local_shipping_rounded, label: 'Pedidos', path: '/domiciliario/pedidos'),
+    _NavItem(icon: Icons.payments_outlined, activeIcon: Icons.payments_rounded, label: 'Caja del día', path: '/domiciliario/caja'),
   ];
 
   @override
   Widget build(BuildContext context) {
-    return Drawer(
-      backgroundColor: Colors.white,
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Color(0xFFF0F0F0))),
+        boxShadow: [BoxShadow(color: Color(0x0F000000), blurRadius: 12, offset: Offset(0, -2))],
+      ),
       child: SafeArea(
-        child: Column(
-          children: [
-            // ── Header (logo + nombre + borde rojo, igual React) ──
-            Container(
-              height: 64,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: AppColors.primary, width: 2)),
-              ),
-              child: Row(
-                children: [
-                  Image.network(
-                    'https://res.cloudinary.com/dnoxlv5kn/image/upload/v1778822634/logo_sin_fondo_remove_uuu8tt.png',
-                    width: 36,
-                    height: 36,
-                    fit: BoxFit.contain,
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'ChocoFreseo',
-                    style: GoogleFonts.nunito(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: const Color(0xFF1a1a1a),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // ── Nav ─────────────────────────────────────────
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 16),
-                children: [
-                  ..._items.map((item) {
-                    final activo = currentRoute.startsWith(item.path);
-                    return _DrawerTile(
-                      icon: item.icon,
-                      label: item.label,
-                      activo: activo,
-                      onTap: () {
-                        Navigator.pop(context);
-                        context.go(item.path);
-                      },
-                    );
-                  }),
-                ],
-              ),
-            ),
-
-            // ── Footer "ChocoFreseo © 2026" (igual que React) ──
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: Color(0xFFF0F0F0))),
-              ),
-              child: Text(
-                'ChocoFreseo © 2026',
-                style: GoogleFonts.nunito(
-                    fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFFBBBBBB)),
-              ),
-            ),
-
-            // ── Cerrar sesión ────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.pop(context);
-                  onLogout();
-                },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFE0E0E0)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.logout_rounded, size: 18, color: AppColors.error),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Cerrar sesión',
-                        style: GoogleFonts.nunito(
-                            fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.error),
-                      ),
-                    ],
+        top: false,
+        child: SizedBox(
+          height: 60,
+          child: Row(
+            children: [
+              for (final item in _items)
+                Expanded(
+                  child: _NavButton(
+                    item: item,
+                    active: currentRoute.startsWith(item.path),
+                    onTap: () {
+                      if (!currentRoute.startsWith(item.path)) context.go(item.path);
+                    },
                   ),
                 ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _DrawerItem {
+class _NavItem {
   final IconData icon;
+  final IconData activeIcon;
   final String label;
   final String path;
-  const _DrawerItem({required this.icon, required this.label, required this.path});
+  const _NavItem({required this.icon, required this.activeIcon, required this.label, required this.path});
 }
 
-class _DrawerTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool activo;
+class _NavButton extends StatelessWidget {
+  final _NavItem item;
+  final bool active;
   final VoidCallback onTap;
 
-  const _DrawerTile({
-    required this.icon,
-    required this.label,
-    required this.activo,
-    required this.onTap,
-  });
+  const _NavButton({required this.item, required this.active, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 2),
-      decoration: BoxDecoration(
-        color: activo ? const Color(0xFFFFF5F5) : Colors.transparent,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Stack(
+    final color = active ? AppColors.primary : const Color(0xFF9A9A9A);
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          ListTile(
-            leading: Icon(
-              icon,
-              size: 18,
-              color: activo ? AppColors.primary : const Color(0xFF888888),
-            ),
-            title: Text(
-              label,
-              style: GoogleFonts.nunito(
-                fontSize: 14,
-                fontWeight: activo ? FontWeight.w800 : FontWeight.w600,
-                color: activo ? AppColors.primary : const Color(0xFF888888),
-              ),
-            ),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            onTap: onTap,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
-            dense: true,
+          Icon(active ? item.activeIcon : item.icon, color: color, size: 24),
+          const SizedBox(height: 3),
+          Text(
+            item.label,
+            style: GoogleFonts.nunito(fontSize: 11, fontWeight: active ? FontWeight.w800 : FontWeight.w600, color: color),
           ),
-          // Indicador izquierdo (React: border-left: 3px solid #CA0B0B)
-          if (activo)
-            Positioned(
-              left: 0, top: 0, bottom: 0,
-              child: Container(
-                width: 3,
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(10),
-                    bottomLeft: Radius.circular(10),
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     );
