@@ -8,6 +8,8 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/models/pedido.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/services/auth_service.dart' show UserRole;
+import '../../../shared/layouts/admin_bottom_nav.dart';
 import '../../auth/providers/auth_provider.dart';
 
 class CocinaScreen extends StatefulWidget {
@@ -102,8 +104,11 @@ class _CocinaScreenState extends State<CocinaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Rol de una sola pantalla: AppBar simple, sin drawer/hamburguesa (no
-    // hay a dónde más navegar) y sin bottom nav.
+    // Rol de una sola pantalla (cocina): AppBar simple, sin drawer ni
+    // hamburguesa. Si quien mira esta pantalla es el admin (llegó aquí desde
+    // su propio tab "Cocina"), sí necesita el bottom nav para poder salir a
+    // otra sección — el rol cocina en cambio no tiene a dónde más navegar.
+    final esAdmin = context.watch<AuthProvider>().user?.role == UserRole.admin;
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -117,6 +122,7 @@ class _CocinaScreenState extends State<CocinaScreen> {
           const SizedBox(width: 4),
         ],
       ),
+      bottomNavigationBar: esAdmin ? const AdminBottomNav(currentRoute: '/cocina') : null,
       body: Column(
         children: [
           // Barra de estado — cuenta de pedidos + refrescar manual.

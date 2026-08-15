@@ -8,7 +8,9 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/pedido.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/services/auth_service.dart' show UserRole;
 import '../../../features/auth/providers/auth_provider.dart';
+import '../../../shared/layouts/admin_bottom_nav.dart';
 import '../../../shared/widgets/brand_icons.dart';
 
 class DomiciliosScreen extends StatefulWidget {
@@ -257,8 +259,11 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Rol de una sola pantalla (confirmador): AppBar simple, sin drawer ni
-    // bottom nav (no hay a dónde más navegar).
+    // Rol de una sola pantalla (confirmador): AppBar simple, sin drawer.
+    // Si quien mira esta pantalla es el admin (llegó desde su tab
+    // "Confirmar"), sí necesita el bottom nav para salir a otra sección — el
+    // rol confirmador en cambio no tiene a dónde más navegar.
+    final esAdmin = context.watch<AuthProvider>().user?.role == UserRole.admin;
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -272,6 +277,7 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
           const SizedBox(width: 4),
         ],
       ),
+      bottomNavigationBar: esAdmin ? const AdminBottomNav(currentRoute: '/admin/domicilios') : null,
       body: _loading
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primary))
