@@ -93,30 +93,39 @@ class _ChipSeccion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-        decoration: BoxDecoration(
-          color: active ? AppColors.primary : AppColors.background,
-          borderRadius: BorderRadius.circular(AppSizes.radiusCircle),
-          border: Border.all(color: active ? AppColors.primary : const Color(0xFFE0E0E0)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: active ? Colors.white : const Color(0xFF888888)),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: GoogleFonts.nunito(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: active ? Colors.white : const Color(0xFF888888),
-              ),
+    // Material + InkWell (en vez de GestureDetector) para ripple táctil;
+    // ConstrainedBox asegura los ~44px mínimos de alto tocable.
+    final radius = BorderRadius.circular(AppSizes.radiusCircle);
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 44),
+      child: Material(
+        color: active ? AppColors.primary : AppColors.background,
+        borderRadius: radius,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: radius,
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: radius,
+              border: Border.all(color: active ? AppColors.primary : const Color(0xFFE0E0E0)),
             ),
-          ],
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 16, color: active ? Colors.white : const Color(0xFF888888)),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: GoogleFonts.nunito(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: active ? Colors.white : const Color(0xFF888888),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
