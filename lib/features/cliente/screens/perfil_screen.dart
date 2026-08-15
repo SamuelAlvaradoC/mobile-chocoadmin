@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -11,6 +10,7 @@ import '../../../core/services/api_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../providers/carrito_provider.dart';
+import '../../../shared/layouts/client_bottom_nav.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/colombia_location_picker.dart';
@@ -26,49 +26,10 @@ class _PerfilScreenState extends State<PerfilScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
-  // Puntos card state
-  int _puntos    = 0;
-  double _saldo  = 0;
-  bool _loadingPuntos = true;
-
-  final _fmtMoneda = NumberFormat.currency(
-      locale: 'es_CO', symbol: '\$', decimalDigits: 0);
-
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _inicializarPuntos());
-  }
-
-  void _inicializarPuntos() {
-    if (!mounted) return;
-    final role = context.read<AuthProvider>().user?.role;
-    if (role == UserRole.cliente || role == UserRole.domiciliario || role == UserRole.admin) {
-      _cargarPuntos();
-    } else {
-      setState(() => _loadingPuntos = false);
-    }
-  }
-
-  Future<void> _cargarPuntos() async {
-    try {
-      final data = await ApiService.get('/api/puntos/mis-puntos');
-      final inner = data is Map && data['data'] is Map
-          ? data['data'] as Map
-          : (data is Map ? data : <String, dynamic>{});
-      setState(() {
-        _puntos = (inner['puntos'] ?? 0) is int
-            ? inner['puntos'] as int
-            : int.tryParse(inner['puntos']?.toString() ?? '0') ?? 0;
-        _saldo = double.tryParse(
-                (inner['saldo'] ?? (_puntos * 12.5)).toString()) ??
-            (_puntos * 12.5);
-        _loadingPuntos = false;
-      });
-    } catch (_) {
-      setState(() => _loadingPuntos = false);
-    }
   }
 
   @override
@@ -82,19 +43,11 @@ class _PerfilScreenState extends State<PerfilScreen>
     final auth = context.watch<AuthProvider>();
     final user = auth.user;
 
-    final mostrarPuntos = user?.role == UserRole.cliente ||
-        user?.role == UserRole.domiciliario ||
-        user?.role == UserRole.admin;
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Mi perfil'),
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => context.go('/catalogo'),
-        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout_rounded),
@@ -105,75 +58,9 @@ class _PerfilScreenState extends State<PerfilScreen>
           ),
         ],
       ),
+      bottomNavigationBar: const ClientBottomNav(currentRoute: '/perfil'),
       body: Column(
         children: [
-          // ── Puntos card (solo cliente / domiciliario / admin) ──────────
-          if (mostrarPuntos) Container(
-            margin: const EdgeInsets.all(AppSizes.md),
-            padding: const EdgeInsets.all(AppSizes.md),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.primary, Color(0xFF8B0000)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.35),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: _loadingPuntos
-                ? const Center(
-                    child: SizedBox(
-                      height: 40,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                    ),
-                  )
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('MIS PUNTOS CHOCOFRESEO',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white70, letterSpacing: 1)),
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('$_puntos',
-                                    style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Colors.white, height: 1)),
-                                const Text('puntos disponibles', style: TextStyle(fontSize: 12, color: Colors.white70)),
-                              ],
-                            ),
-                          ),
-                          Container(width: 1, height: 50, color: Colors.white30),
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 20),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(_fmtMoneda.format(_saldo),
-                                      style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Colors.white, height: 1)),
-                                  const Text('saldo disponible', style: TextStyle(fontSize: 12, color: Colors.white70)),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      const Text('1 punto = \$12.50 · Se acumulan con cada compra',
-                          style: TextStyle(fontSize: 11, color: Colors.white60)),
-                    ],
-                  ),
-          ),
-
           // ── Header usuario ─────────────────────────────────────────────
           Container(
             color: AppColors.surface,
@@ -210,25 +97,8 @@ class _PerfilScreenState extends State<PerfilScreen>
             ),
           ),
 
-          // ── Tabs ────────────────────────────────────────────────────────
-          Container(
-            color: AppColors.surface,
-            child: TabBar(
-              controller: _tabController,
-              labelColor: AppColors.primary,
-              unselectedLabelColor: AppColors.textSecondary,
-              indicatorColor: AppColors.primary,
-              labelStyle: const TextStyle(
-                  fontWeight: FontWeight.w700, fontSize: 13),
-              isScrollable: true,
-              tabs: const [
-                Tab(text: 'Datos personales'),
-                Tab(text: 'Historial'),
-                Tab(text: 'Contraseña'),
-                Tab(text: 'Mis direcciones'),
-              ],
-            ),
-          ),
+          // ── Selector de secciones (segmented pills, no TabBar subrayado) ──
+          _PerfilSegmentedControl(controller: _tabController),
 
           Expanded(
             child: TabBarView(
@@ -242,6 +112,94 @@ class _PerfilScreenState extends State<PerfilScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Selector de secciones — chips horizontales que controlan el mismo
+// TabController (mismo índice, mismo TabBarView), solo cambia la
+// presentación visual del TabBar subrayado tipo web a pills nativos.
+// ────────────────────────────────────────────────────────────────────────────
+
+class _PerfilSegmentedControl extends StatelessWidget {
+  final TabController controller;
+  const _PerfilSegmentedControl({required this.controller});
+
+  static const _secciones = [
+    (icon: Icons.person_outline_rounded, label: 'Datos'),
+    (icon: Icons.receipt_long_rounded, label: 'Historial'),
+    (icon: Icons.lock_outline_rounded, label: 'Contraseña'),
+    (icon: Icons.location_on_outlined, label: 'Direcciones'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.surface,
+      padding: const EdgeInsets.fromLTRB(AppSizes.md, 4, AppSizes.md, 12),
+      child: AnimatedBuilder(
+        animation: controller,
+        builder: (context, _) {
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (int i = 0; i < _secciones.length; i++)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: _SegmentPill(
+                      icon: _secciones[i].icon,
+                      label: _secciones[i].label,
+                      active: controller.index == i,
+                      onTap: () => controller.animateTo(i),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _SegmentPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  const _SegmentPill({required this.icon, required this.label, required this.active, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        decoration: BoxDecoration(
+          color: active ? AppColors.primary : AppColors.background,
+          borderRadius: BorderRadius.circular(AppSizes.radiusCircle),
+          border: Border.all(color: active ? AppColors.primary : AppColors.border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 15, color: active ? Colors.white : AppColors.textSecondary),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: active ? Colors.white : AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
