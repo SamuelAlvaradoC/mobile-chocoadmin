@@ -23,7 +23,7 @@ class AdminBottomNav extends StatelessWidget {
       icon: Icons.shopping_bag_rounded,
       label: 'Productos',
       path: '/admin/productos',
-      isActive: (r) => r == '/admin/categorias' || r == '/admin/productos' || r == '/admin/toppings' || r == '/admin/adiciones',
+      isActive: (r) => r == '/admin/productos',
     ),
     _NavItem(
       icon: Icons.receipt_long_rounded,
