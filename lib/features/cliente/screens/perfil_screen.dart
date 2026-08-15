@@ -175,30 +175,40 @@ class _SegmentPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-        decoration: BoxDecoration(
-          color: active ? AppColors.primary : AppColors.background,
-          borderRadius: BorderRadius.circular(AppSizes.radiusCircle),
-          border: Border.all(color: active ? AppColors.primary : AppColors.border),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 15, color: active ? Colors.white : AppColors.textSecondary),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: active ? Colors.white : AppColors.textSecondary,
-              ),
+    // Material + InkWell (en vez de GestureDetector) para que la pill dé
+    // ripple táctil al tocarla; ConstrainedBox asegura los ~44px mínimos de
+    // alto tocable aunque el contenido visual sea más compacto.
+    final radius = BorderRadius.circular(AppSizes.radiusCircle);
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 44),
+      child: Material(
+        color: active ? AppColors.primary : AppColors.background,
+        borderRadius: radius,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: radius,
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: radius,
+              border: Border.all(color: active ? AppColors.primary : AppColors.border),
             ),
-          ],
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 15, color: active ? Colors.white : AppColors.textSecondary),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: active ? Colors.white : AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
