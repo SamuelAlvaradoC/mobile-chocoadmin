@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-
-import '../../core/constants/app_colors.dart';
 
 /// Bottom nav nativo del rol Administrador — reemplaza el Drawer/sidebar web
 /// que tenía AdminLayout. 5 destinos: Dashboard, Productos (agrupa
@@ -47,32 +44,20 @@ class AdminBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFF0F0F0))),
-        boxShadow: [BoxShadow(color: Color(0x0F000000), blurRadius: 12, offset: Offset(0, -2))],
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 60,
-          child: Row(
-            children: [
-              for (final item in _items)
-                Expanded(
-                  child: _NavButton(
-                    item: item,
-                    active: item.isActive(currentRoute),
-                    onTap: () {
-                      if (!item.isActive(currentRoute)) context.go(item.path);
-                    },
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
+    final activeIndex = _items.indexWhere((i) => i.isActive(currentRoute)).clamp(0, _items.length - 1);
+    // BottomNavigationBar nativo: trae el ripple/highlight táctil que el
+    // bottom nav custom anterior (GestureDetector) no daba. El theme global
+    // fuerza type: fixed, así que los 5 items quedan con ancho igual (sin la
+    // animación "shifting" que Material usaría por defecto con más de 3).
+    return BottomNavigationBar(
+      currentIndex: activeIndex,
+      onTap: (i) {
+        if (!_items[i].isActive(currentRoute)) context.go(_items[i].path);
+      },
+      items: [
+        for (final item in _items)
+          BottomNavigationBarItem(icon: Icon(item.icon), label: item.label),
+      ],
     );
   }
 }
@@ -83,32 +68,4 @@ class _NavItem {
   final String path;
   final bool Function(String currentRoute) isActive;
   const _NavItem({required this.icon, required this.label, required this.path, required this.isActive});
-}
-
-class _NavButton extends StatelessWidget {
-  final _NavItem item;
-  final bool active;
-  final VoidCallback onTap;
-
-  const _NavButton({required this.item, required this.active, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = active ? AppColors.primary : const Color(0xFF9A9A9A);
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(item.icon, color: color, size: 23),
-          const SizedBox(height: 3),
-          Text(
-            item.label,
-            style: GoogleFonts.nunito(fontSize: 10.5, fontWeight: active ? FontWeight.w800 : FontWeight.w600, color: color),
-          ),
-        ],
-      ),
-    );
-  }
 }
