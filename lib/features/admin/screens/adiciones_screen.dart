@@ -7,7 +7,6 @@ import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/cloudinary_service.dart';
-import '../../../shared/layouts/admin_layout.dart';
 
 const _porPagina = 5;
 
@@ -142,9 +141,7 @@ class _AdicionesScreenState extends State<AdicionesScreen> {
     final paginados =
         filtrados.skip((paginaActual - 1) * _porPagina).take(_porPagina).toList();
 
-    return AdminLayout(
-      currentRoute: '/admin/adiciones',
-      body: Column(
+    return Column(
         children: [
           // ── Header ────────────────────────────────────────────────────────────
           Container(
@@ -390,8 +387,7 @@ class _AdicionesScreenState extends State<AdicionesScreen> {
                           ),
           ),
         ],
-      ),
-    );
+      );
   }
 }
 

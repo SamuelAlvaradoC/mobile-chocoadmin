@@ -5,7 +5,6 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/cloudinary_service.dart';
-import '../../../shared/layouts/admin_layout.dart';
 
 const _porPagina = 5;
 
@@ -137,9 +136,7 @@ class _ToppingsScreenState extends State<ToppingsScreen> {
     final paginados =
         filtrados.skip((paginaActual - 1) * _porPagina).take(_porPagina).toList();
 
-    return AdminLayout(
-      currentRoute: '/admin/toppings',
-      body: Column(
+    return Column(
         children: [
           // ── Header ────────────────────────────────────────────────────────────
           Container(
@@ -374,8 +371,7 @@ class _ToppingsScreenState extends State<ToppingsScreen> {
                           ),
           ),
         ],
-      ),
-    );
+      );
   }
 }
 

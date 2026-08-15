@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/api_service.dart';
-import '../../../shared/layouts/admin_layout.dart';
 
 class CategoriasScreen extends StatefulWidget {
   const CategoriasScreen({super.key});
@@ -135,9 +134,7 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
     final paginaActual = _pagina.clamp(1, totalPaginas);
     final paginadas = filtradas.skip((paginaActual - 1) * porPagina).take(porPagina).toList();
 
-    return AdminLayout(
-      currentRoute: '/admin/categorias',
-      body: Column(
+    return Column(
         children: [
           // Header
           Container(
@@ -374,8 +371,7 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
                           ),
           ),
         ],
-      ),
-    );
+      );
   }
 }
 

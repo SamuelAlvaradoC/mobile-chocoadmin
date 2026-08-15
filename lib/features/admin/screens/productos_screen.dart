@@ -8,7 +8,6 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/cloudinary_service.dart';
-import '../../../shared/layouts/admin_layout.dart';
 
 class ProductosScreen extends StatefulWidget {
   const ProductosScreen({super.key});
@@ -162,9 +161,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
     final q = _busquedaCtrl.text.trim();
     if (q.isNotEmpty) countText += ' con "$q"';
 
-    return AdminLayout(
-      currentRoute: '/admin/productos',
-      body: Column(children: [
+    return Column(children: [
         // Header
         Container(
           color: Colors.white,
@@ -356,8 +353,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                   ],
                 ),
         ),
-      ]),
-    );
+      ]);
   }
 }
 

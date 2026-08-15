@@ -37,10 +37,7 @@ import 'features/cliente/screens/landing_screen.dart';
 import 'features/admin/screens/dashboard_screen.dart';
 import 'features/admin/screens/ventas_screen.dart';
 import 'features/admin/screens/domicilios_screen.dart';
-import 'features/admin/screens/categorias_screen.dart';
-import 'features/admin/screens/productos_screen.dart';
-import 'features/admin/screens/toppings_screen.dart';
-import 'features/admin/screens/adiciones_screen.dart';
+import 'features/admin/screens/productos_modulo_screen.dart';
 
 // Cocina
 import 'features/cocina/screens/cocina_screen.dart';
@@ -129,10 +126,7 @@ class _AppRouterState extends State<_AppRouter> {
         GoRoute(path: '/admin/dashboard', builder: (_, __) => const DashboardScreen()),
         GoRoute(path: '/admin/ventas', builder: (_, __) => const VentasScreen()),
         GoRoute(path: '/admin/domicilios', builder: (_, __) => const DomiciliosScreen()),
-        GoRoute(path: '/admin/categorias', builder: (_, __) => const CategoriasScreen()),
-        GoRoute(path: '/admin/productos', builder: (_, __) => const ProductosScreen()),
-        GoRoute(path: '/admin/toppings', builder: (_, __) => const ToppingsScreen()),
-        GoRoute(path: '/admin/adiciones', builder: (_, __) => const AdicionesScreen()),
+        GoRoute(path: '/admin/productos', builder: (_, __) => const ProductosModuloScreen()),
 
         // ── Cocina ───────────────────────────────────────────
         GoRoute(path: '/cocina', builder: (_, __) => const CocinaScreen()),
