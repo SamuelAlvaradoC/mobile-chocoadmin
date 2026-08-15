@@ -13,7 +13,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_config.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/services/api_service.dart';
-import '../../../shared/layouts/client_layout.dart';
+import '../../../shared/layouts/client_bottom_nav.dart';
 import '../../../core/models/producto.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../providers/catalogo_provider.dart';
@@ -238,10 +238,14 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('ChocoFreseo'),
+        actions: const [ClientVolverAlPanelAction()],
+      ),
+      bottomNavigationBar: const ClientBottomNav(currentRoute: '/catalogo'),
       body: SafeArea(
         child: Column(
           children: [
-            const ClientNavbar(currentRoute: '/catalogo'),
             Expanded(
               child: Stack(
                 children: [
