@@ -784,11 +784,63 @@ class _VentaRow extends StatelessWidget {
       context,
       MaterialPageRoute(builder: (_) => _EditarVentaScreen(pedido: venta, onRefresh: onRefresh)),
     );
+    Future<void> devolver() async {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text('¿Devolver la venta ${venta.idFormateado}?'),
+          content: const Text('Volverá a estado Listo para poder editarla antes del despacho.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFEF3C7), foregroundColor: const Color(0xFFCA8A04)),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Devolver'),
+            ),
+          ],
+        ),
+      );
+      if (confirm == true) {
+        try {
+          await ApiService.patch('/api/ventas/${venta.id}/estado', {'nombre_estado': 'listo'});
+          onRefresh();
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Venta devuelta a Listo'), backgroundColor: Color(0xFF16A34A)),
+            );
+          }
+        } on ApiException catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+          }
+        } catch (_) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Error al devolver la venta')));
+          }
+        }
+      }
+    }
 
-    return Container(
+    // Mismas condiciones que antes tenía cada _VBtn individual — solo se
+    // reorganizan como entradas de un menú overflow en vez de íconos sueltos.
+    final mostrarEditar = venta.estado != 'anulado' && puedeGestionar;
+    final mostrarDevolver = venta.estado == 'despachado' || venta.estado == 'entregado';
+    final mostrarAnular = venta.estado != 'anulado' &&
+        venta.estado != 'entregado' &&
+        venta.estado != 'despachado' &&
+        puedeAnular;
+
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+      onTap: abrirDetalle,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
         borderRadius: BorderRadius.circular(10),
         boxShadow: const [BoxShadow(color: Color(0x0A000000), blurRadius: 4, offset: Offset(0, 1))],
       ),
@@ -834,7 +886,11 @@ class _VentaRow extends StatelessWidget {
 
           const SizedBox(height: 8),
 
-          // ── Fila 4: Total + método + botones ──
+          // ── Fila 4: Total + método + menú overflow ──
+          // Antes: hasta 5 _VBtn (ver/editar/imprimir/devolver/anular) en
+          // fila apretada. Ahora: tocar la tarjeta = ver detalle (InkWell de
+          // arriba); el resto queda en un PopupMenuButton de 3 puntos con
+          // area tocable nativa (~48x48), mismas condiciones de antes.
           Row(
             children: [
               Text(fmt.format(venta.total),
@@ -844,75 +900,59 @@ class _VentaRow extends StatelessWidget {
                 _MetodoBadge(venta.metodoPago!),
               ],
               const Spacer(),
-              _VBtn(icon: Icons.visibility_outlined, onTap: abrirDetalle),
-              const SizedBox(width: 5),
-              if (venta.estado != 'anulado' && puedeGestionar) ...[
-                _VBtn(icon: Icons.edit_outlined, onTap: abrirEditar),
-                const SizedBox(width: 5),
-              ],
-              _VBtn(icon: Icons.receipt_long_outlined, onTap: () => _confirmarImprimir(context, venta)),
-              // Igual que React: visible desde despachado O entregado, siempre vuelve a "listo"
-              if (venta.estado == 'despachado' || venta.estado == 'entregado') ...[
-                const SizedBox(width: 5),
-                _VBtn(
-                  icon: Icons.replay_rounded,
-                  color: const Color(0xFFCA8A04),
-                  bg: const Color(0xFFFEF3C7),
-                  onTap: () async {
-                    final confirm = await showDialog<bool>(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: Text('¿Devolver la venta ${venta.idFormateado}?'),
-                        content: const Text('Volverá a estado Listo para poder editarla antes del despacho.'),
-                        actions: [
-                          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFFEF3C7), foregroundColor: const Color(0xFFCA8A04)),
-                            onPressed: () => Navigator.pop(ctx, true),
-                            child: const Text('Devolver'),
-                          ),
-                        ],
-                      ),
-                    );
-                    if (confirm == true) {
-                      try {
-                        await ApiService.patch('/api/ventas/${venta.id}/estado', {'nombre_estado': 'listo'});
-                        onRefresh();
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Venta devuelta a Listo'), backgroundColor: Color(0xFF16A34A)),
-                          );
-                        }
-                      } on ApiException catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
-                        }
-                      } catch (_) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Error al devolver la venta')));
-                        }
-                      }
-                    }
-                  },
-                ),
-              ],
-              if (venta.estado != 'anulado' &&
-                  venta.estado != 'entregado' &&
-                  venta.estado != 'despachado' &&
-                  puedeAnular) ...[
-                const SizedBox(width: 5),
-                _VBtn(
-                  icon: Icons.close_rounded,
-                  color: AppColors.error,
-                  bg: const Color(0xFFFFF5F5),
-                  onTap: () => _anularVentaRapidoDialog(context, venta, onRefresh),
-                ),
-              ],
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert_rounded, color: Color(0xFF888888)),
+                onSelected: (v) {
+                  switch (v) {
+                    case 'editar': abrirEditar(); break;
+                    case 'imprimir': _confirmarImprimir(context, venta); break;
+                    case 'devolver': devolver(); break;
+                    case 'anular': _anularVentaRapidoDialog(context, venta, onRefresh); break;
+                  }
+                },
+                itemBuilder: (_) => [
+                  if (mostrarEditar)
+                    const PopupMenuItem(
+                      value: 'editar',
+                      child: Row(children: [
+                        Icon(Icons.edit_outlined, size: 18, color: Color(0xFF666666)),
+                        SizedBox(width: 10),
+                        Text('Editar'),
+                      ]),
+                    ),
+                  const PopupMenuItem(
+                    value: 'imprimir',
+                    child: Row(children: [
+                      Icon(Icons.receipt_long_outlined, size: 18, color: Color(0xFF666666)),
+                      SizedBox(width: 10),
+                      Text('Imprimir comprobante'),
+                    ]),
+                  ),
+                  if (mostrarDevolver)
+                    const PopupMenuItem(
+                      value: 'devolver',
+                      child: Row(children: [
+                        Icon(Icons.replay_rounded, size: 18, color: Color(0xFFCA8A04)),
+                        SizedBox(width: 10),
+                        Text('Devolver a listo', style: TextStyle(color: Color(0xFFCA8A04))),
+                      ]),
+                    ),
+                  if (mostrarAnular)
+                    const PopupMenuItem(
+                      value: 'anular',
+                      child: Row(children: [
+                        Icon(Icons.close_rounded, size: 18, color: AppColors.error),
+                        SizedBox(width: 10),
+                        Text('Anular venta', style: TextStyle(color: AppColors.error)),
+                      ]),
+                    ),
+                ],
+              ),
             ],
           ),
         ],
+      ),
+      ),
       ),
     );
   }
@@ -922,29 +962,6 @@ class _EstadoStyle {
   final Color bg;
   final Color fg;
   const _EstadoStyle({required this.bg, required this.fg});
-}
-
-class _VBtn extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final Color bg;
-  final VoidCallback? onTap;
-  const _VBtn({
-    required this.icon,
-    this.color = const Color(0xFF888888),
-    this.bg = const Color(0xFFF5F5F5),
-    this.onTap,
-  });
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
-    child: Container(
-      width: 32, height: 32,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(7)),
-      child: Icon(icon, size: 15, color: color),
-    ),
-  );
 }
 
 class _MetodoBadge extends StatelessWidget {
