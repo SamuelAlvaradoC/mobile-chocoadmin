@@ -108,16 +108,16 @@ class _ToppingsScreenState extends State<ToppingsScreen> {
   }
 
   void _abrirCrear() {
-    showDialog(
-      context: context,
-      builder: (_) => _ToppingFormDialog(onGuardado: _cargar),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => _ToppingFormScreen(onGuardado: _cargar)),
     );
   }
 
   void _abrirEditar(Map<String, dynamic> item) {
-    showDialog(
-      context: context,
-      builder: (_) => _ToppingFormDialog(item: item, onGuardado: _cargar),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => _ToppingFormScreen(item: item, onGuardado: _cargar)),
     );
   }
 
@@ -379,18 +379,18 @@ class _ToppingsScreenState extends State<ToppingsScreen> {
   }
 }
 
-// ─── Form Dialog ──────────────────────────────────────────────────────────────
+// ─── Form Screen (pantalla completa, push/pop nativo) ──────────────────────────
 
-class _ToppingFormDialog extends StatefulWidget {
+class _ToppingFormScreen extends StatefulWidget {
   final Map<String, dynamic>? item;
   final VoidCallback onGuardado;
-  const _ToppingFormDialog({this.item, required this.onGuardado});
+  const _ToppingFormScreen({this.item, required this.onGuardado});
 
   @override
-  State<_ToppingFormDialog> createState() => _ToppingFormDialogState();
+  State<_ToppingFormScreen> createState() => _ToppingFormScreenState();
 }
 
-class _ToppingFormDialogState extends State<_ToppingFormDialog> {
+class _ToppingFormScreenState extends State<_ToppingFormScreen> {
   late final TextEditingController _nombreCtrl;
   late final TextEditingController _gramajeCtrl;
   late final TextEditingController _descCtrl;
@@ -485,42 +485,14 @@ class _ToppingFormDialogState extends State<_ToppingFormDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 500),
-        decoration:
-            BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // ── Header ───────────────────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 16, 0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        _esEditar ? 'Editar topping' : 'Nuevo topping',
-                        style: GoogleFonts.nunito(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF1a1a1a)),
-                      ),
-                    ),
-                    IconButton(
-                        icon: const Icon(Icons.close, size: 20),
-                        onPressed: () => Navigator.pop(context)),
-                  ],
-                ),
-              ),
-              const Divider(height: 16),
-
-              // ── Fields ───────────────────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
-                child: Column(
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Text(_esEditar ? 'Editar topping' : 'Nuevo topping'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Nombre
@@ -607,61 +579,53 @@ class _ToppingFormDialogState extends State<_ToppingFormDialog> {
                                 color: AppColors.error, fontSize: 13)),
                       ),
                     ],
-                  ],
-                ),
-              ),
-
-              // ── Buttons ──────────────────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFFE0E0E0)),
-                          padding: const EdgeInsets.symmetric(vertical: 11),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                        ),
-                        child: Text('Cancelar',
-                            style: GoogleFonts.nunito(
-                                color: const Color(0xFF666666),
-                                fontWeight: FontWeight.w600)),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: _guardando ? null : _guardar,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          padding: const EdgeInsets.symmetric(vertical: 11),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                          elevation: 0,
-                        ),
-                        child: _guardando
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                    color: Colors.white, strokeWidth: 2))
-                            : Text(
-                                _esEditar
-                                    ? 'Guardar cambios'
-                                    : 'Crear topping',
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Color(0xFFE0E0E0)),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                            ),
+                            child: Text('Cancelar',
                                 style: GoogleFonts.nunito(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700)),
-                      ),
+                                    color: const Color(0xFF666666),
+                                    fontWeight: FontWeight.w600)),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: _guardando ? null : _guardar,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                              elevation: 0,
+                            ),
+                            child: _guardando
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                        color: Colors.white, strokeWidth: 2))
+                                : Text(
+                                    _esEditar
+                                        ? 'Guardar cambios'
+                                        : 'Crear topping',
+                                    style: GoogleFonts.nunito(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w700)),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
