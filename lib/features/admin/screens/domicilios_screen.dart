@@ -9,7 +9,6 @@ import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/pedido.dart';
 import '../../../core/services/api_service.dart';
 import '../../../features/auth/providers/auth_provider.dart';
-import '../../../shared/layouts/admin_layout.dart';
 import '../../../shared/widgets/brand_icons.dart';
 
 class DomiciliosScreen extends StatefulWidget {
@@ -258,8 +257,21 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AdminLayout(
-      currentRoute: '/admin/domicilios',
+    // Rol de una sola pantalla (confirmador): AppBar simple, sin drawer ni
+    // bottom nav (no hay a dónde más navegar).
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Confirmar pedidos'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout_rounded, color: AppColors.error),
+            tooltip: 'Cerrar sesión',
+            onPressed: () => context.read<AuthProvider>().logout(),
+          ),
+          const SizedBox(width: 4),
+        ],
+      ),
       body: _loading
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primary))
@@ -291,31 +303,17 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
                           AppSizes.screenPadding,
                           0),
                       child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Pedidos por confirmar',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '${_pedidos.length} pedidos esperando confirmación',
-                                  style: const TextStyle(
-                                      fontSize: 13,
-                                      color: AppColors.textSecondary),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
+                            child: Text(
+                              '${_pedidos.length} pedidos esperando confirmación',
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.textSecondary),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 8),
