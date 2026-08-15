@@ -107,21 +107,16 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
   }
 
   void _abrirCrear() {
-    showDialog(
-      context: context,
-      builder: (_) => _CategoriaFormDialog(
-        onGuardado: _cargar,
-      ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => _CategoriaFormScreen(onGuardado: _cargar)),
     );
   }
 
   void _abrirEditar(Map<String, dynamic> cat) {
-    showDialog(
-      context: context,
-      builder: (_) => _CategoriaFormDialog(
-        categoria: cat,
-        onGuardado: _cargar,
-      ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => _CategoriaFormScreen(categoria: cat, onGuardado: _cargar)),
     );
   }
 
@@ -384,19 +379,19 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
   }
 }
 
-// ─── Dialogs ──────────────────────────────────────────────────────────────────
+// ─── Formulario crear/editar — pantalla completa (push/pop nativo) ────────────
 
-class _CategoriaFormDialog extends StatefulWidget {
+class _CategoriaFormScreen extends StatefulWidget {
   final Map<String, dynamic>? categoria;
   final VoidCallback onGuardado;
 
-  const _CategoriaFormDialog({this.categoria, required this.onGuardado});
+  const _CategoriaFormScreen({this.categoria, required this.onGuardado});
 
   @override
-  State<_CategoriaFormDialog> createState() => _CategoriaFormDialogState();
+  State<_CategoriaFormScreen> createState() => _CategoriaFormScreenState();
 }
 
-class _CategoriaFormDialogState extends State<_CategoriaFormDialog> {
+class _CategoriaFormScreenState extends State<_CategoriaFormScreen> {
   late final TextEditingController _nombreCtrl;
   late final TextEditingController _descCtrl;
   bool _estado = true;
@@ -484,139 +479,101 @@ class _CategoriaFormDialogState extends State<_CategoriaFormDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 500),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-        ),
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Text(_esEditar ? 'Editar categoría' : 'Nueva categoría'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 16, 0),
-              child: Row(
+            _FormField(label: 'Nombre *', child: TextField(
+              controller: _nombreCtrl,
+              onChanged: (_) => setState(() => _errores.remove('nombre')),
+              style: GoogleFonts.nunito(fontSize: 14),
+              decoration: _inputDec('Nombre de la categoría', error: _errores['nombre']),
+            )),
+            if (_errores['nombre'] != null) _errMsg(_errores['nombre']!),
+            const SizedBox(height: 14),
+            _FormField(label: 'Descripción', child: TextField(
+              controller: _descCtrl,
+              style: GoogleFonts.nunito(fontSize: 14),
+              decoration: _inputDec('Descripción'),
+            )),
+            if (_esEditar) ...[
+              const SizedBox(height: 14),
+              Row(
                 children: [
-                  Expanded(
-                    child: Text(
-                      _esEditar ? 'Editar categoría' : 'Nueva categoría',
-                      style: GoogleFonts.nunito(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF1a1a1a),
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 20),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 16),
-
-            // Form
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _FormField(label: 'Nombre *', child: TextField(
-                    controller: _nombreCtrl,
-                    onChanged: (_) => setState(() => _errores.remove('nombre')),
-                    style: GoogleFonts.nunito(fontSize: 14),
-                    decoration: _inputDec('Nombre de la categoría', error: _errores['nombre']),
-                  )),
-                  if (_errores['nombre'] != null) _errMsg(_errores['nombre']!),
-                  const SizedBox(height: 14),
-                  _FormField(label: 'Descripción', child: TextField(
-                    controller: _descCtrl,
-                    style: GoogleFonts.nunito(fontSize: 14),
-                    decoration: _inputDec('Descripción'),
-                  )),
-                  if (_esEditar) ...[
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () => setState(() => _estado = !_estado),
-                          child: _ToggleWidget(activo: _estado),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          _estado ? 'Activo' : 'Inactivo',
-                          style: GoogleFonts.nunito(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: _estado ? const Color(0xFF22c55e) : AppColors.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                  if (_error != null) ...[
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppColors.errorLight,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(_error!,
-                          style: GoogleFonts.nunito(color: AppColors.error, fontSize: 13)),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-
-            // Footer
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFFE0E0E0)),
-                        padding: const EdgeInsets.symmetric(vertical: 11),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      child: Text('Cancelar',
-                          style: GoogleFonts.nunito(
-                              color: const Color(0xFF666666), fontWeight: FontWeight.w600)),
-                    ),
+                  GestureDetector(
+                    onTap: () => setState(() => _estado = !_estado),
+                    child: _ToggleWidget(activo: _estado),
                   ),
                   const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _guardando ? null : _guardar,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 11),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        elevation: 0,
-                      ),
-                      child: _guardando
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                  color: Colors.white, strokeWidth: 2))
-                          : Text(
-                              _esEditar ? 'Guardar cambios' : 'Crear categoría',
-                              style: GoogleFonts.nunito(
-                                  color: Colors.white, fontWeight: FontWeight.w700),
-                            ),
+                  Text(
+                    _estado ? 'Activo' : 'Inactivo',
+                    style: GoogleFonts.nunito(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: _estado ? const Color(0xFF22c55e) : AppColors.primary,
                     ),
                   ),
                 ],
               ),
+            ],
+            if (_error != null) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.errorLight,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(_error!,
+                    style: GoogleFonts.nunito(color: AppColors.error, fontSize: 13)),
+              ),
+            ],
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFFE0E0E0)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: Text('Cancelar',
+                        style: GoogleFonts.nunito(
+                            color: const Color(0xFF666666), fontWeight: FontWeight.w600)),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _guardando ? null : _guardar,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      elevation: 0,
+                    ),
+                    child: _guardando
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2))
+                        : Text(
+                            _esEditar ? 'Guardar cambios' : 'Crear categoría',
+                            style: GoogleFonts.nunito(
+                                color: Colors.white, fontWeight: FontWeight.w700),
+                          ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
