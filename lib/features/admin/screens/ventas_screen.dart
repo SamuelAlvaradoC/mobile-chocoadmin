@@ -778,9 +778,9 @@ class _VentaRow extends StatelessWidget {
     final puedeAnular    = auth.tienePermiso('anular_venta');
     final dir = venta.direccion;
 
-    void abrirDetalle() => showModalBottomSheet(
-      context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
-      builder: (_) => _VentaDetalleModal(pedido: venta, fmt: fmt, onRefresh: onRefresh),
+    void abrirDetalle() => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => _VentaDetalleScreen(pedido: venta, fmt: fmt, onRefresh: onRefresh)),
     );
     void abrirEditar() => showModalBottomSheet(
       context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
@@ -975,19 +975,19 @@ class _MetodoBadge extends StatelessWidget {
 // Modal detalle venta admin
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _VentaDetalleModal extends StatefulWidget {
+class _VentaDetalleScreen extends StatefulWidget {
   final Pedido pedido;
   final NumberFormat fmt;
   final VoidCallback onRefresh;
 
-  const _VentaDetalleModal(
+  const _VentaDetalleScreen(
       {required this.pedido, required this.fmt, required this.onRefresh});
 
   @override
-  State<_VentaDetalleModal> createState() => _VentaDetalleModalState();
+  State<_VentaDetalleScreen> createState() => _VentaDetalleScreenState();
 }
 
-class _VentaDetalleModalState extends State<_VentaDetalleModal> {
+class _VentaDetalleScreenState extends State<_VentaDetalleScreen> {
   // Igual que React ModalDetalle: es de solo lectura, sin acciones que
   // cambien estado — esas viven únicamente en la fila de la tabla.
 
@@ -996,45 +996,12 @@ class _VentaDetalleModalState extends State<_VentaDetalleModal> {
     final p = widget.pedido;
     final fmt = widget.fmt;
 
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.85,
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Text('Venta ${p.idFormateado}'),
       ),
-      child: Column(
-        children: [
-          const SizedBox(height: 12),
-          Center(
-            child: Container(
-              width: 40, height: 4,
-              decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2)),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 8, 0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Venta ${p.idFormateado}',
-                    style: Theme.of(context)
-                        .textTheme
-                        .headlineSmall
-                        ?.copyWith(fontWeight: FontWeight.w700),
-                  ),
-                ),
-                IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context)),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          Expanded(
-            child: SingleChildScrollView(
+      body: SingleChildScrollView(
               padding: const EdgeInsets.all(AppSizes.screenPadding),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1207,44 +1174,39 @@ class _VentaDetalleModalState extends State<_VentaDetalleModal> {
                               fontSize: 16)),
                     ],
                   ),
+
+                  // Botón acción — solo WhatsApp, igual React ModalDetalle (solo lectura)
+                  if (p.clienteTelefono != null && p.clienteTelefono!.isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF25D366),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                        ),
+                        icon: const Icon(Icons.chat_outlined, size: 18),
+                        label: const Text('WhatsApp',
+                            style: TextStyle(fontWeight: FontWeight.w700)),
+                        onPressed: () async {
+                          final tel = p.clienteTelefono!.replaceAll(RegExp(r'\D'), '');
+                          final numero = tel.startsWith('57') ? tel : '57$tel';
+                          final msg = Uri.encodeComponent(
+                            'Hola ${p.clienteNombre ?? ''}, tu pedido ${p.idFormateado} de ChocoFreseo ya está confirmado y en preparación 🍫🍦',
+                          );
+                          final url = Uri.parse('https://wa.me/$numero?text=$msg');
+                          if (await canLaunchUrl(url)) {
+                            await launchUrl(url, mode: LaunchMode.externalApplication);
+                          }
+                        },
+                      ),
+                    ),
+                  ],
                 ],
               ),
-            ),
-          ),
-
-          // Botones acción — solo WhatsApp, igual React ModalDetalle (solo lectura)
-          if (p.clienteTelefono != null && p.clienteTelefono!.isNotEmpty)
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                  16, 8, 16, MediaQuery.of(context).viewInsets.bottom + 16),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF25D366),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                  ),
-                  icon: const Icon(Icons.chat_outlined, size: 18),
-                  label: const Text('WhatsApp',
-                      style: TextStyle(fontWeight: FontWeight.w700)),
-                  onPressed: () async {
-                    final tel = p.clienteTelefono!.replaceAll(RegExp(r'\D'), '');
-                    final numero = tel.startsWith('57') ? tel : '57$tel';
-                    final msg = Uri.encodeComponent(
-                      'Hola ${p.clienteNombre ?? ''}, tu pedido ${p.idFormateado} de ChocoFreseo ya está confirmado y en preparación 🍫🍦',
-                    );
-                    final url = Uri.parse('https://wa.me/$numero?text=$msg');
-                    if (await canLaunchUrl(url)) {
-                      await launchUrl(url, mode: LaunchMode.externalApplication);
-                    }
-                  },
-                ),
-              ),
-            ),
-        ],
       ),
     );
   }
