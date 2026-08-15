@@ -782,9 +782,9 @@ class _VentaRow extends StatelessWidget {
       context,
       MaterialPageRoute(builder: (_) => _VentaDetalleScreen(pedido: venta, fmt: fmt, onRefresh: onRefresh)),
     );
-    void abrirEditar() => showModalBottomSheet(
-      context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
-      builder: (_) => _EditarVentaModal(pedido: venta, onRefresh: onRefresh),
+    void abrirEditar() => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => _EditarVentaScreen(pedido: venta, onRefresh: onRefresh)),
     );
 
     return Container(
@@ -1347,15 +1347,15 @@ class _ItemEdit {
         salsas       = salsas       ?? const [];
 }
 
-class _EditarVentaModal extends StatefulWidget {
+class _EditarVentaScreen extends StatefulWidget {
   final Pedido pedido;
   final VoidCallback onRefresh;
-  const _EditarVentaModal({required this.pedido, required this.onRefresh});
+  const _EditarVentaScreen({required this.pedido, required this.onRefresh});
   @override
-  State<_EditarVentaModal> createState() => _EditarVentaModalState();
+  State<_EditarVentaScreen> createState() => _EditarVentaScreenState();
 }
 
-class _EditarVentaModalState extends State<_EditarVentaModal> {
+class _EditarVentaScreenState extends State<_EditarVentaScreen> {
   late double _costoDomicilio;
   bool _overrideDomicilio = false;
   late String _metodoPago;
@@ -1490,26 +1490,15 @@ class _EditarVentaModalState extends State<_EditarVentaModal> {
   Widget build(BuildContext context) {
     final p = widget.pedido;
     final esEntregada = p.estado == 'entregado';
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.85,
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Text(esEntregada ? 'Cambiar método de pago — ${p.idFormateado}' : 'Editar venta ${p.idFormateado}'),
       ),
-      child: Column(children: [
-        const SizedBox(height: 12),
-        Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)))),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 8, 0),
-          child: Row(children: [
-            Expanded(child: Text(esEntregada ? 'Cambiar método de pago — ${p.idFormateado}' : 'Editar venta ${p.idFormateado}',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700))),
-            IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
-          ]),
-        ),
+      body: Column(children: [
         if (esEntregada)
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            margin: const EdgeInsets.fromLTRB(20, 12, 20, 0),
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(color: const Color(0xFFFEF3C7), border: Border.all(color: const Color(0xFFFDE68A)), borderRadius: BorderRadius.circular(8)),
             child: const Row(children: [
@@ -1518,7 +1507,6 @@ class _EditarVentaModalState extends State<_EditarVentaModal> {
               Expanded(child: Text('Este pedido ya fue entregado. Solo puedes cambiar el método de pago.', style: TextStyle(fontSize: 13, color: Color(0xFF92400E)))),
             ]),
           ),
-        const Divider(height: 1),
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
