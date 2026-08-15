@@ -24,6 +24,7 @@ import 'features/cliente/screens/catalogo_screen.dart';
 import 'features/cliente/screens/checkout_screen.dart';
 import 'features/cliente/screens/pedido_exitoso_screen.dart';
 import 'features/cliente/screens/perfil_screen.dart';
+import 'features/cliente/screens/puntos_screen.dart';
 
 // Domiciliario
 import 'features/domiciliario/screens/pedidos_screen.dart';
@@ -114,6 +115,7 @@ class _AppRouterState extends State<_AppRouter> {
                   distanciaKm: (extra?['distanciaKm'] as num?)?.toDouble() ?? 0);
             }),
         GoRoute(path: '/perfil', builder: (_, __) => const PerfilScreen()),
+        GoRoute(path: '/puntos', builder: (_, __) => const PuntosScreen()),
 
         // ── Domiciliario ─────────────────────────────────────
         GoRoute(
