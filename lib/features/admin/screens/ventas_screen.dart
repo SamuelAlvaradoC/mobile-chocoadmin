@@ -393,11 +393,9 @@ class _VentasScreenState extends State<VentasScreen> {
   }
 
   void _abrirCrearVenta() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _CrearVentaModal(onVentaCreada: _cargar),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => _CrearVentaScreen(onVentaCreada: _cargar)),
     );
   }
 
@@ -2073,16 +2071,16 @@ class _CarritoItemCreate {
   double get subtotal => precioUnitario * cantidad;
 }
 
-class _CrearVentaModal extends StatefulWidget {
+class _CrearVentaScreen extends StatefulWidget {
   final VoidCallback onVentaCreada;
 
-  const _CrearVentaModal({required this.onVentaCreada});
+  const _CrearVentaScreen({required this.onVentaCreada});
 
   @override
-  State<_CrearVentaModal> createState() => _CrearVentaModalState();
+  State<_CrearVentaScreen> createState() => _CrearVentaScreenState();
 }
 
-class _CrearVentaModalState extends State<_CrearVentaModal> {
+class _CrearVentaScreenState extends State<_CrearVentaScreen> {
   int _paso = 0;
 
   // Cliente search — igual que React: se carga la lista completa una sola
@@ -2363,46 +2361,13 @@ class _CrearVentaModalState extends State<_CrearVentaModal> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.9,
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Nueva venta manual'),
       ),
-      child: Column(
+      body: Column(
         children: [
-          const SizedBox(height: 12),
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.screenPadding),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Nueva venta manual',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-          ),
-
           // Stepper
           Padding(
             padding: const EdgeInsets.symmetric(
