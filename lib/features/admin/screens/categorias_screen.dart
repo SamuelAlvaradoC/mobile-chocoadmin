@@ -264,23 +264,25 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
                                     itemBuilder: (context, i) {
                                       final cat = paginadas[i];
                                       final activo = cat['estado'] == true || cat['estado'] == 1;
-                                      return Container(
-                                        padding: const EdgeInsets.all(14),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
+                                      return Material(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: InkWell(
+                                          onTap: () => _abrirDetalle(cat),
                                           borderRadius: BorderRadius.circular(10),
-                                          boxShadow: const [
-                                            BoxShadow(
-                                              color: Color(0x0A000000),
-                                              blurRadius: 4,
-                                              offset: Offset(0, 1),
+                                          child: Container(
+                                            padding: const EdgeInsets.all(14),
+                                            decoration: BoxDecoration(
+                                              borderRadius: BorderRadius.circular(10),
+                                              boxShadow: const [
+                                                BoxShadow(
+                                                  color: Color(0x0A000000),
+                                                  blurRadius: 4,
+                                                  offset: Offset(0, 1),
+                                                ),
+                                              ],
                                             ),
-                                          ],
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
+                                            child: Row(
                                               children: [
                                                 Container(
                                                   width: 40,
@@ -313,7 +315,8 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
                                                           color: const Color(0xFF1a1a1a),
                                                         ),
                                                       ),
-                                                      if ((cat['descripcion'] ?? '').toString().isNotEmpty)
+                                                      if ((cat['descripcion'] ?? '').toString().isNotEmpty) ...[
+                                                        const SizedBox(height: 2),
                                                         Text(
                                                           cat['descripcion'].toString(),
                                                           style: GoogleFonts.nunito(
@@ -323,6 +326,7 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
                                                           maxLines: 2,
                                                           overflow: TextOverflow.ellipsis,
                                                         ),
+                                                      ],
                                                     ],
                                                   ),
                                                 ),
@@ -331,30 +335,34 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
                                                   onTap: () => _toggleEstado(cat),
                                                   child: _ToggleWidget(activo: activo),
                                                 ),
+                                                PopupMenuButton<String>(
+                                                  icon: const Icon(Icons.more_vert_rounded, color: Color(0xFF888888)),
+                                                  onSelected: (v) {
+                                                    if (v == 'editar') _abrirEditar(cat);
+                                                    if (v == 'eliminar') _eliminar(cat);
+                                                  },
+                                                  itemBuilder: (_) => [
+                                                    const PopupMenuItem(
+                                                      value: 'editar',
+                                                      child: Row(children: [
+                                                        Icon(Icons.edit_outlined, size: 18, color: Color(0xFF666666)),
+                                                        SizedBox(width: 10),
+                                                        Text('Editar'),
+                                                      ]),
+                                                    ),
+                                                    const PopupMenuItem(
+                                                      value: 'eliminar',
+                                                      child: Row(children: [
+                                                        Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                                                        SizedBox(width: 10),
+                                                        Text('Eliminar', style: TextStyle(color: AppColors.error)),
+                                                      ]),
+                                                    ),
+                                                  ],
+                                                ),
                                               ],
                                             ),
-                                            const SizedBox(height: 8),
-                                            Row(
-                                              mainAxisAlignment: MainAxisAlignment.end,
-                                              children: [
-                                                _ActionBtn(
-                                                  icon: Icons.visibility_outlined,
-                                                  onTap: () => _abrirDetalle(cat),
-                                                ),
-                                                const SizedBox(width: 6),
-                                                _ActionBtn(
-                                                  icon: Icons.edit_outlined,
-                                                  onTap: () => _abrirEditar(cat),
-                                                ),
-                                                const SizedBox(width: 6),
-                                                _ActionBtn(
-                                                  icon: Icons.delete_outline,
-                                                  onTap: () => _eliminar(cat),
-                                                  danger: true,
-                                                ),
-                                              ],
-                                            ),
-                                          ],
+                                          ),
                                         ),
                                       );
                                     },
@@ -804,35 +812,6 @@ class _ToggleWidget extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ActionBtn extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool danger;
-
-  const _ActionBtn({required this.icon, required this.onTap, this.danger = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: const Color(0xFFF5F5F5),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        alignment: Alignment.center,
-        child: Icon(
-          icon,
-          size: 16,
-          color: danger ? AppColors.error : const Color(0xFF666666),
-        ),
       ),
     );
   }
