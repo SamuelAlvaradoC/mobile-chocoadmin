@@ -270,10 +270,15 @@ class _ToppingsScreenState extends State<ToppingsScreen> {
                                           item['img']?.toString() ?? '';
                                       return Opacity(
                                         opacity: activo ? 1.0 : 0.6,
+                                        child: Material(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: InkWell(
+                                        onTap: () => _abrirDetalle(item),
+                                        borderRadius: BorderRadius.circular(10),
                                         child: Container(
                                           padding: const EdgeInsets.all(14),
                                           decoration: BoxDecoration(
-                                            color: Colors.white,
                                             borderRadius:
                                                 BorderRadius.circular(10),
                                             boxShadow: const [
@@ -331,29 +336,38 @@ class _ToppingsScreenState extends State<ToppingsScreen> {
                                                         overflow: TextOverflow.ellipsis,
                                                       ),
                                                     ],
-                                                    const SizedBox(height: 8),
-                                                    Row(
-                                                      mainAxisAlignment: MainAxisAlignment.end,
-                                                      children: [
-                                                        _ActionBtn(
-                                                            icon: Icons.visibility_outlined,
-                                                            onTap: () => _abrirDetalle(item)),
-                                                        const SizedBox(width: 6),
-                                                        _ActionBtn(
-                                                            icon: Icons.edit_outlined,
-                                                            onTap: () => _abrirEditar(item)),
-                                                        const SizedBox(width: 6),
-                                                        _ActionBtn(
-                                                            icon: Icons.delete_outline,
-                                                            onTap: () => _eliminar(item),
-                                                            danger: true),
-                                                      ],
-                                                    ),
                                                   ],
                                                 ),
                                               ),
+                                              PopupMenuButton<String>(
+                                                icon: const Icon(Icons.more_vert_rounded, color: Color(0xFF888888)),
+                                                onSelected: (v) {
+                                                  if (v == 'editar') _abrirEditar(item);
+                                                  if (v == 'eliminar') _eliminar(item);
+                                                },
+                                                itemBuilder: (_) => [
+                                                  const PopupMenuItem(
+                                                    value: 'editar',
+                                                    child: Row(children: [
+                                                      Icon(Icons.edit_outlined, size: 18, color: Color(0xFF666666)),
+                                                      SizedBox(width: 10),
+                                                      Text('Editar'),
+                                                    ]),
+                                                  ),
+                                                  const PopupMenuItem(
+                                                    value: 'eliminar',
+                                                    child: Row(children: [
+                                                      Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                                                      SizedBox(width: 10),
+                                                      Text('Eliminar', style: TextStyle(color: AppColors.error)),
+                                                    ]),
+                                                  ),
+                                                ],
+                                              ),
                                             ],
                                           ),
+                                        ),
+                                        ),
                                         ),
                                       );
                                     },
@@ -1055,32 +1069,6 @@ class _ToggleWidget extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ActionBtn extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool danger;
-  const _ActionBtn(
-      {required this.icon, required this.onTap, this.danger = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-            color: const Color(0xFFF5F5F5),
-            borderRadius: BorderRadius.circular(6)),
-        alignment: Alignment.center,
-        child: Icon(icon,
-            size: 16,
-            color: danger ? AppColors.error : const Color(0xFF666666)),
       ),
     );
   }
