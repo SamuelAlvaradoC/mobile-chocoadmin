@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
@@ -46,6 +47,14 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('es_CO', null);
   GoogleFonts.config.allowRuntimeFetching = true;
+  // Status bar transparente con íconos oscuros: el AppBar es blanco
+  // (AppColors.surface) en toda la app, así que se funde con el contenido
+  // en vez de mostrar la barra gris/blanca por defecto del sistema.
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+    statusBarBrightness: Brightness.light,
+  ));
   runApp(const ChocAdminApp());
 }
 
