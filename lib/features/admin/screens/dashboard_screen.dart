@@ -581,50 +581,55 @@ class _EstadoTiendaCardState extends State<_EstadoTiendaCard> {
                       ],
                     ),
                     const SizedBox(height: AppSizes.md),
-                    // Botones
+                    // Botones — Material+InkWell (ripple) y ConstrainedBox
+                    // con minHeight 44 para cumplir el tap target minimo.
                     Row(
                       children: _opciones.map((op) {
                         final key     = op['key']!;
                         final label   = op['label']!;
                         final isActive = _estado == key;
                         final opColor  = _colores[key] ?? AppColors.primary;
+                        final radius = BorderRadius.circular(8);
                         return Expanded(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 3),
-                            child: GestureDetector(
-                              onTap: _guardando || isActive
-                                  ? null
-                                  : () => _cambiar(key),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                padding: const EdgeInsets.symmetric(vertical: 9),
-                                decoration: BoxDecoration(
-                                  color: isActive
-                                      ? opColor
-                                      : opColor.withValues(alpha: 0.08),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: isActive ? opColor : opColor.withValues(alpha: 0.3),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(minHeight: 44),
+                              child: Material(
+                                color: isActive ? opColor : opColor.withValues(alpha: 0.08),
+                                borderRadius: radius,
+                                child: InkWell(
+                                  onTap: _guardando || isActive ? null : () => _cambiar(key),
+                                  borderRadius: radius,
+                                  child: Ink(
+                                    decoration: BoxDecoration(
+                                      borderRadius: radius,
+                                      border: Border.all(
+                                        color: isActive ? opColor : opColor.withValues(alpha: 0.3),
+                                      ),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(vertical: 9),
+                                    child: Center(
+                                      child: _guardando && !isActive
+                                          ? SizedBox(
+                                              width: 14, height: 14,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: opColor,
+                                              ),
+                                            )
+                                          : Text(
+                                              label,
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w700,
+                                                color: isActive ? Colors.white : opColor,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                    ),
                                   ),
                                 ),
-                                alignment: Alignment.center,
-                                child: _guardando && !isActive
-                                    ? SizedBox(
-                                        width: 14, height: 14,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: opColor,
-                                        ),
-                                      )
-                                    : Text(
-                                        label,
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w700,
-                                          color: isActive ? Colors.white : opColor,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
                               ),
                             ),
                           ),
@@ -680,121 +685,149 @@ class _FinancialCard extends StatelessWidget {
 // Tiempo estimado card (editable inline)
 // ────────────────────────────────────────────────────────────────────────────
 
-class _TiempoEstimadoCard extends StatefulWidget {
+class _TiempoEstimadoCard extends StatelessWidget {
   final int tiempoInicial;
   final Future<void> Function(int) onSaved;
   const _TiempoEstimadoCard({required this.tiempoInicial, required this.onSaved});
 
-  @override
-  State<_TiempoEstimadoCard> createState() => _TiempoEstimadoCardState();
-}
-
-class _TiempoEstimadoCardState extends State<_TiempoEstimadoCard> {
-  bool _editando  = false;
-  bool _guardando = false;
-  late final _ctrl = TextEditingController(text: widget.tiempoInicial.toString());
-
-  @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
-
-  @override
-  void didUpdateWidget(_TiempoEstimadoCard old) {
-    super.didUpdateWidget(old);
-    if (!_editando && old.tiempoInicial != widget.tiempoInicial) {
-      _ctrl.text = widget.tiempoInicial.toString();
-    }
+  // La edición vive en un bottom sheet en vez de campos+botones diminutos
+  // dentro de la tarjeta (86px de ancho útil no alcanzan para un TextField +
+  // dos botones de 44x44 sin desbordar) — mismo patrón que el resto de la
+  // app usa para flujos cortos.
+  void _abrirEditor(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => _EditarTiempoSheet(valorInicial: tiempoInicial, onSaved: onSaved),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     const grey = Color(0xFF374151);
-    return GestureDetector(
-      onTap: _editando ? null : () => setState(() => _editando = true),
-      child: Container(
-        padding: const EdgeInsets.all(AppSizes.md),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-          boxShadow: const [BoxShadow(color: AppColors.shadow, blurRadius: 6, offset: Offset(0, 2))],
-        ),
-        child: Row(children: [
-          Container(
-            width: 40, height: 40,
-            decoration: BoxDecoration(color: grey.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
-            alignment: Alignment.center,
-            child: const Icon(Icons.access_time_rounded, size: 20, color: grey),
+    return Material(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+      child: InkWell(
+        onTap: () => _abrirEditor(context),
+        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        child: Container(
+          padding: const EdgeInsets.all(AppSizes.md),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+            boxShadow: const [BoxShadow(color: AppColors.shadow, blurRadius: 6, offset: Offset(0, 2))],
           ),
-          const SizedBox(width: AppSizes.sm),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
-            if (_editando) ...[
-              Row(children: [
-                SizedBox(
-                  width: 44,
-                  child: TextField(
-                    controller: _ctrl,
-                    keyboardType: TextInputType.number,
-                    autofocus: true,
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: grey),
-                    decoration: const InputDecoration(
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 3),
-                const Text('min', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
-                const SizedBox(width: 4),
-                GestureDetector(
-                  onTap: _guardando ? null : () async {
-                    final v = int.tryParse(_ctrl.text) ?? widget.tiempoInicial;
-                    setState(() => _guardando = true);
-                    try {
-                      await widget.onSaved(v);
-                      if (mounted) setState(() { _editando = false; _guardando = false; });
-                    } catch (e) {
-                      if (mounted) setState(() => _guardando = false);
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          content: Text(e is ApiException ? e.message : 'Error al guardar tiempo estimado'),
-                          backgroundColor: AppColors.error,
-                        ));
-                      }
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(color: grey, borderRadius: BorderRadius.circular(4)),
-                    child: _guardando
-                        ? const SizedBox(width: 10, height: 10, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Text('✓', style: TextStyle(color: Colors.white, fontSize: 11)),
-                  ),
-                ),
-                const SizedBox(width: 3),
-                GestureDetector(
-                  onTap: () => setState(() { _editando = false; _ctrl.text = widget.tiempoInicial.toString(); }),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                    decoration: BoxDecoration(border: Border.all(color: AppColors.border), borderRadius: BorderRadius.circular(4)),
-                    child: const Text('✕', style: TextStyle(fontSize: 11)),
-                  ),
-                ),
-              ]),
-            ] else ...[
-              Text('${widget.tiempoInicial} min',
+          child: Row(children: [
+            Container(
+              width: 40, height: 40,
+              decoration: BoxDecoration(color: grey.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+              alignment: Alignment.center,
+              child: const Icon(Icons.access_time_rounded, size: 20, color: grey),
+            ),
+            const SizedBox(width: AppSizes.sm),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
+              Text('$tiempoInicial min',
                   style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: grey),
                   maxLines: 1, overflow: TextOverflow.ellipsis),
-            ],
-            const Text('Tiempo estimado', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
-            if (!_editando)
+              const Text('Tiempo estimado', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
               Container(
                 margin: const EdgeInsets.only(top: 2),
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(color: const Color(0xFF2563EB), borderRadius: BorderRadius.circular(6)),
                 child: const Text('✏ Editar', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Colors.white)),
               ),
-          ])),
-        ]),
+            ])),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+class _EditarTiempoSheet extends StatefulWidget {
+  final int valorInicial;
+  final Future<void> Function(int) onSaved;
+  const _EditarTiempoSheet({required this.valorInicial, required this.onSaved});
+
+  @override
+  State<_EditarTiempoSheet> createState() => _EditarTiempoSheetState();
+}
+
+class _EditarTiempoSheetState extends State<_EditarTiempoSheet> {
+  late final _ctrl = TextEditingController(text: widget.valorInicial.toString());
+  bool _guardando = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _guardar() async {
+    final v = int.tryParse(_ctrl.text);
+    if (v == null || v <= 0) {
+      setState(() => _error = 'Ingresa un número de minutos válido');
+      return;
+    }
+    setState(() { _guardando = true; _error = null; });
+    try {
+      await widget.onSaved(v);
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _guardando = false;
+          _error = e is ApiException ? e.message : 'Error al guardar tiempo estimado';
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40, height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)),
+            ),
+          ),
+          Text('Tiempo estimado de entrega',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+          const SizedBox(height: AppSizes.md),
+          TextField(
+            controller: _ctrl,
+            keyboardType: TextInputType.number,
+            autofocus: true,
+            decoration: InputDecoration(labelText: 'Minutos', suffixText: 'min', errorText: _error),
+          ),
+          const SizedBox(height: AppSizes.lg),
+          Row(children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _guardando ? null : () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
+            ),
+            const SizedBox(width: AppSizes.sm),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: _guardando ? null : _guardar,
+                child: _guardando
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('Guardar'),
+              ),
+            ),
+          ]),
+        ],
       ),
     );
   }
@@ -804,120 +837,159 @@ class _TiempoEstimadoCardState extends State<_TiempoEstimadoCard> {
 // Horario editable card
 // ────────────────────────────────────────────────────────────────────────────
 
-class _HorarioCard extends StatefulWidget {
+class _HorarioCard extends StatelessWidget {
   final int horaApertura;
   final int horaCierre;
   final Future<void> Function(int apertura, int cierre) onSaved;
   const _HorarioCard({required this.horaApertura, required this.horaCierre, required this.onSaved});
 
-  @override
-  State<_HorarioCard> createState() => _HorarioCardState();
-}
-
-class _HorarioCardState extends State<_HorarioCard> {
-  bool _editando  = false;
-  bool _guardando = false;
-  late int _nuevaApertura;
-  late int _nuevoCierre;
-
-  @override
-  void initState() {
-    super.initState();
-    _nuevaApertura = widget.horaApertura;
-    _nuevoCierre   = widget.horaCierre;
-  }
-
-  @override
-  void didUpdateWidget(_HorarioCard old) {
-    super.didUpdateWidget(old);
-    if (!_editando) {
-      _nuevaApertura = widget.horaApertura;
-      _nuevoCierre   = widget.horaCierre;
-    }
+  // Mismo patron que Tiempo estimado: editar abre un bottom sheet en vez de
+  // campos+botones diminutos inline.
+  void _abrirEditor(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => _EditarHorarioSheet(apertura: horaApertura, cierre: horaCierre, onSaved: onSaved),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     const darkBlue = Color(0xFF1E3A5F);
-    return Container(
-      padding: const EdgeInsets.all(AppSizes.md),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
+    return Material(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+      child: InkWell(
+        onTap: () => _abrirEditor(context),
         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-        boxShadow: const [BoxShadow(color: AppColors.shadow, blurRadius: 6, offset: Offset(0, 2))],
-      ),
-      child: GestureDetector(
-        onTap: _editando ? null : () => setState(() => _editando = true),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Container(
-              width: 40, height: 40,
-              decoration: BoxDecoration(color: darkBlue.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
-              alignment: Alignment.center,
-              child: const Icon(Icons.schedule_rounded, size: 20, color: darkBlue),
-            ),
-            const SizedBox(width: AppSizes.sm),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Horario de atención', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
-              if (!_editando)
-                Text('${widget.horaApertura}:00 – ${widget.horaCierre}:00',
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: darkBlue)),
-            ])),
-          ]),
-          if (_editando) ...[
-            const SizedBox(height: AppSizes.sm),
+        child: Container(
+          padding: const EdgeInsets.all(AppSizes.md),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+            boxShadow: const [BoxShadow(color: AppColors.shadow, blurRadius: 6, offset: Offset(0, 2))],
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              const Text('Abre', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
-              const SizedBox(width: 6),
-              _HorarioInput(value: _nuevaApertura, onChanged: (v) => setState(() => _nuevaApertura = v)),
-              const SizedBox(width: 12),
-              const Text('Cierra', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
-              const SizedBox(width: 6),
-              _HorarioInput(value: _nuevoCierre, onChanged: (v) => setState(() => _nuevoCierre = v)),
-              const Spacer(),
-              GestureDetector(
-                onTap: _guardando ? null : () async {
-                  setState(() => _guardando = true);
-                  try {
-                    await widget.onSaved(_nuevaApertura, _nuevoCierre);
-                    if (mounted) setState(() { _editando = false; _guardando = false; });
-                  } catch (e) {
-                    if (mounted) setState(() => _guardando = false);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text(e is ApiException ? e.message : 'Error al guardar el horario'),
-                        backgroundColor: AppColors.error,
-                      ));
-                    }
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(color: darkBlue, borderRadius: BorderRadius.circular(6)),
-                  child: _guardando
-                      ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Text('Guardar', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
-                ),
+              Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(color: darkBlue.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+                alignment: Alignment.center,
+                child: const Icon(Icons.schedule_rounded, size: 20, color: darkBlue),
               ),
-              const SizedBox(width: 6),
-              GestureDetector(
-                onTap: () => setState(() => _editando = false),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                  decoration: BoxDecoration(border: Border.all(color: AppColors.border), borderRadius: BorderRadius.circular(6)),
-                  child: const Text('Cancelar', style: TextStyle(fontSize: 12)),
-                ),
-              ),
+              const SizedBox(width: AppSizes.sm),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('Horario de atención', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+                Text('$horaApertura:00 – $horaCierre:00',
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: darkBlue)),
+              ])),
             ]),
-          ] else ...[
             const SizedBox(height: AppSizes.xs),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
               decoration: BoxDecoration(color: darkBlue, borderRadius: BorderRadius.circular(6)),
               child: const Text('✏ Editar horario', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
             ),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+class _EditarHorarioSheet extends StatefulWidget {
+  final int apertura;
+  final int cierre;
+  final Future<void> Function(int apertura, int cierre) onSaved;
+  const _EditarHorarioSheet({required this.apertura, required this.cierre, required this.onSaved});
+
+  @override
+  State<_EditarHorarioSheet> createState() => _EditarHorarioSheetState();
+}
+
+class _EditarHorarioSheetState extends State<_EditarHorarioSheet> {
+  late int _apertura = widget.apertura;
+  late int _cierre = widget.cierre;
+  bool _guardando = false;
+  String? _error;
+
+  Future<void> _guardar() async {
+    if (_cierre <= _apertura) {
+      setState(() => _error = 'La hora de cierre debe ser mayor a la de apertura');
+      return;
+    }
+    setState(() { _guardando = true; _error = null; });
+    try {
+      await widget.onSaved(_apertura, _cierre);
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _guardando = false;
+          _error = e is ApiException ? e.message : 'Error al guardar el horario';
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40, height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)),
+            ),
+          ),
+          Text('Horario de atención',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+          const SizedBox(height: AppSizes.md),
+          Row(children: [
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('Abre', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+                const SizedBox(height: 6),
+                _HorarioInput(value: _apertura, onChanged: (v) => setState(() { _apertura = v; _error = null; })),
+              ]),
+            ),
+            const SizedBox(width: AppSizes.md),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('Cierra', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+                const SizedBox(height: 6),
+                _HorarioInput(value: _cierre, onChanged: (v) => setState(() { _cierre = v; _error = null; })),
+              ]),
+            ),
+          ]),
+          if (_error != null) ...[
+            const SizedBox(height: AppSizes.sm),
+            Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
           ],
-        ]),
+          const SizedBox(height: AppSizes.lg),
+          Row(children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _guardando ? null : () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
+            ),
+            const SizedBox(width: AppSizes.sm),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: _guardando ? null : _guardar,
+                child: _guardando
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('Guardar'),
+              ),
+            ),
+          ]),
+        ],
       ),
     );
   }
@@ -930,20 +1002,18 @@ class _HorarioInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 46,
-      child: TextFormField(
-        initialValue: value.toString(),
-        keyboardType: TextInputType.number,
-        textAlign: TextAlign.center,
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF1E3A5F)),
-        decoration: const InputDecoration(
-          isDense: true,
-          contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-          border: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF1E3A5F), width: 2)),
-        ),
-        onChanged: (v) { final n = int.tryParse(v); if (n != null) onChanged(n.clamp(0, 23)); },
+    return TextFormField(
+      initialValue: value.toString(),
+      keyboardType: TextInputType.number,
+      textAlign: TextAlign.center,
+      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF1E3A5F)),
+      decoration: const InputDecoration(
+        isDense: true,
+        suffixText: ':00',
+        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+        border: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF1E3A5F), width: 2)),
       ),
+      onChanged: (v) { final n = int.tryParse(v); if (n != null) onChanged(n.clamp(0, 23)); },
     );
   }
 }
