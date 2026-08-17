@@ -26,6 +26,8 @@ import 'features/cliente/screens/checkout_screen.dart';
 import 'features/cliente/screens/pedido_exitoso_screen.dart';
 import 'features/cliente/screens/perfil_screen.dart';
 import 'features/cliente/screens/puntos_screen.dart';
+import 'shared/layouts/client_bottom_nav.dart';
+import 'shared/layouts/root_shell_scaffold.dart';
 
 // Domiciliario
 import 'features/domiciliario/screens/pedidos_screen.dart';
@@ -105,7 +107,6 @@ class _AppRouterState extends State<_AppRouter> {
 
         // ── Cliente ─────────────────────────────────────────
         GoRoute(path: '/landing', builder: (_, __) => const LandingScreen()),
-        GoRoute(path: '/catalogo', builder: (_, __) => const CatalogoScreen()),
         GoRoute(
           path: '/checkout',
           builder: (_, state) {
@@ -120,8 +121,28 @@ class _AppRouterState extends State<_AppRouter> {
               return PedidoExitosoScreen(
                   distanciaKm: (extra?['distanciaKm'] as num?)?.toDouble() ?? 0);
             }),
-        GoRoute(path: '/perfil', builder: (_, __) => const PerfilScreen()),
-        GoRoute(path: '/puntos', builder: (_, __) => const PuntosScreen()),
+
+        // Shell del rol Cliente: Catálogo/Puntos/Perfil, cada uno con su
+        // propio Navigator (historial de "atrás" independiente por tab).
+        // Checkout y PedidoExitoso quedan fuera a propósito (no tendría
+        // sentido que "atrás" devuelva a mitad de un pedido ya hecho).
+        StatefulShellRoute.indexedStack(
+          builder: (context, state, navigationShell) => RootShellScaffold(
+            navigationShell: navigationShell,
+            bottomNavBuilder: (shell) => ClientBottomNav(navigationShell: shell),
+          ),
+          branches: [
+            StatefulShellBranch(routes: [
+              GoRoute(path: '/catalogo', builder: (_, __) => const CatalogoScreen()),
+            ]),
+            StatefulShellBranch(routes: [
+              GoRoute(path: '/puntos', builder: (_, __) => const PuntosScreen()),
+            ]),
+            StatefulShellBranch(routes: [
+              GoRoute(path: '/perfil', builder: (_, __) => const PerfilScreen()),
+            ]),
+          ],
+        ),
 
         // ── Domiciliario ─────────────────────────────────────
         GoRoute(

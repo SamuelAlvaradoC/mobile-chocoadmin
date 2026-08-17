@@ -242,7 +242,6 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
         title: const Text('ChocoFreseo'),
         actions: const [ClientVolverAlPanelAction()],
       ),
-      bottomNavigationBar: const ClientBottomNav(currentRoute: '/catalogo'),
       body: SafeArea(
         child: Column(
           children: [

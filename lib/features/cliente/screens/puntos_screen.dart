@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/services/api_service.dart';
-import '../../../shared/layouts/client_bottom_nav.dart';
 
 /// Pantalla propia para "Mis puntos" — antes era una card fija arriba de
 /// Perfil (PerfilScreen), ahora es su propio ítem del bottom nav. Misma
@@ -53,7 +52,6 @@ class _PuntosScreenState extends State<PuntosScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('Mis puntos'), centerTitle: true),
-      bottomNavigationBar: const ClientBottomNav(currentRoute: '/puntos'),
       body: RefreshIndicator(
         color: AppColors.primary,
         onRefresh: _cargar,

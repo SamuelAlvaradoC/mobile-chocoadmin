@@ -6,39 +6,48 @@ import '../../core/services/auth_service.dart' show UserRole;
 import '../../features/auth/providers/auth_provider.dart';
 
 /// Bottom nav nativo para las 3 pantallas raíz del cliente (Catálogo, Puntos,
-/// Perfil) — reemplaza el ClientNavbar (navbar web con hamburguesa) que
-/// tenían estas pantallas. Misma lista de destinos que antes ofrecía el
-/// navbar según el estado de auth, solo que como barra inferior:
-/// - Sin sesión: Catálogo + Iniciar sesión (antes: botones "Iniciar sesión"/
-///   "Registrarse" del navbar).
-/// - Con sesión: Catálogo + Puntos + Perfil (antes: avatar → /perfil +
-///   PerfilScreen mostraba la card de puntos).
+/// Perfil) — cada una vive en su propio branch de un StatefulShellRoute
+/// (Navigator independiente por tab, así el historial de "atrás" de cada
+/// sección es propio, no uno solo compartido). Misma lista de destinos que
+/// antes ofrecía el navbar web según el estado de auth:
+/// - Sin sesión: Catálogo + Iniciar sesión (Iniciar sesión no es un branch
+///   del shell, es una ruta plana — sale del shell por completo).
+/// - Con sesión: Catálogo + Puntos + Perfil.
 class ClientBottomNav extends StatelessWidget {
-  final String currentRoute;
-  const ClientBottomNav({super.key, required this.currentRoute});
+  final StatefulNavigationShell navigationShell;
+  const ClientBottomNav({super.key, required this.navigationShell});
 
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
 
     final items = <_NavItem>[
-      const _NavItem(icon: Icons.storefront_rounded, label: 'Catálogo', path: '/catalogo'),
+      const _NavItem(icon: Icons.storefront_rounded, label: 'Catálogo', branchIndex: 0),
       if (user != null) ...[
-        const _NavItem(icon: Icons.stars_rounded, label: 'Puntos', path: '/puntos'),
-        const _NavItem(icon: Icons.person_rounded, label: 'Perfil', path: '/perfil'),
+        const _NavItem(icon: Icons.stars_rounded, label: 'Puntos', branchIndex: 1),
+        const _NavItem(icon: Icons.person_rounded, label: 'Perfil', branchIndex: 2),
       ] else
-        const _NavItem(icon: Icons.login_rounded, label: 'Ingresar', path: '/login'),
+        const _NavItem(icon: Icons.login_rounded, label: 'Ingresar', externalRoute: '/login'),
     ];
 
-    final activeIndex = items.indexWhere((i) => i.path == currentRoute).clamp(0, items.length - 1);
+    // Sin sesión, el único branch alcanzable es Catálogo (0) — el resto ya
+    // redirige a /catalogo (ver _redirect en main.dart).
+    final activeIndex = user != null
+        ? items.indexWhere((i) => i.branchIndex == navigationShell.currentIndex).clamp(0, items.length - 1)
+        : 0;
 
-    // BottomNavigationBar nativo de Material: toma colores/tipografía de
-    // bottomNavigationBarTheme (app_theme.dart) y trae gratis el ripple/
-    // highlight táctil que el bottom nav custom anterior no tenía.
     return BottomNavigationBar(
       currentIndex: activeIndex,
       onTap: (i) {
-        if (items[i].path != currentRoute) context.go(items[i].path);
+        final item = items[i];
+        if (item.branchIndex != null) {
+          navigationShell.goBranch(
+            item.branchIndex!,
+            initialLocation: item.branchIndex == navigationShell.currentIndex,
+          );
+        } else if (item.externalRoute != null) {
+          context.go(item.externalRoute!);
+        }
       },
       items: [
         for (final item in items)
@@ -87,6 +96,7 @@ class ClientVolverAlPanelAction extends StatelessWidget {
 class _NavItem {
   final IconData icon;
   final String label;
-  final String path;
-  const _NavItem({required this.icon, required this.label, required this.path});
+  final int? branchIndex;
+  final String? externalRoute;
+  const _NavItem({required this.icon, required this.label, this.branchIndex, this.externalRoute});
 }

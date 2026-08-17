@@ -10,7 +10,6 @@ import '../../../core/services/api_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../providers/carrito_provider.dart';
-import '../../../shared/layouts/client_bottom_nav.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/colombia_location_picker.dart';
@@ -58,7 +57,6 @@ class _PerfilScreenState extends State<PerfilScreen>
           ),
         ],
       ),
-      bottomNavigationBar: const ClientBottomNav(currentRoute: '/perfil'),
       body: Column(
         children: [
           // ── Header usuario ─────────────────────────────────────────────
