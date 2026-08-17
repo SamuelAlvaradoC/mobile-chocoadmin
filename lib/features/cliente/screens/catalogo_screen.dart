@@ -61,6 +61,14 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     super.dispose();
   }
 
+  Future<void> _refrescar() async {
+    await Future.wait([
+      context.read<CatalogoProvider>().cargarTodo(),
+      _fetchEstadoTienda(),
+      _fetchTiempoEspera(),
+    ]);
+  }
+
   Future<void> _fetchEstadoTienda() async {
     try {
       final res = await http.get(Uri.parse('${AppConfig.apiBaseUrl}/configuracion/estado-tienda'));
@@ -421,26 +429,30 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
 
         // ── Grid de productos ────────────────────────────────
         Expanded(
-          child: filtrados.isEmpty
-              ? const Center(child: Text('No se encontraron productos'))
-              : GridView.builder(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSizes.screenPadding, AppSizes.screenPadding,
-                    AppSizes.screenPadding, 80, // espacio para bottom bar
+          child: RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: _refrescar,
+            child: filtrados.isEmpty
+                ? const Center(child: Text('No se encontraron productos'))
+                : GridView.builder(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSizes.screenPadding, AppSizes.screenPadding,
+                      AppSizes.screenPadding, 80, // espacio para bottom bar
+                    ),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 0.62,
+                    ),
+                    itemCount: filtrados.length,
+                    itemBuilder: (_, i) => _ProductoCard(
+                      producto: filtrados[i],
+                      fmt: fmt,
+                      onAgregar: () => _agregarProducto(filtrados[i]),
+                    ),
                   ),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 0.62,
-                  ),
-                  itemCount: filtrados.length,
-                  itemBuilder: (_, i) => _ProductoCard(
-                    producto: filtrados[i],
-                    fmt: fmt,
-                    onAgregar: () => _agregarProducto(filtrados[i]),
-                  ),
-                ),
+          ),
         ),
       ],
     );

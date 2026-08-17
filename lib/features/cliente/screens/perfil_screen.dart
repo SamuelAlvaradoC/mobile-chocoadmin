@@ -519,7 +519,10 @@ class _HistorialTabState extends State<_HistorialTab> {
     return Column(
       children: [
         Expanded(
-          child: ListView.separated(
+          child: RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: _cargar,
+            child: ListView.separated(
       padding: const EdgeInsets.all(AppSizes.screenPadding),
       itemCount: paginados.length,
       separatorBuilder: (_, __) => const SizedBox(height: AppSizes.sm),
@@ -617,6 +620,7 @@ class _HistorialTabState extends State<_HistorialTab> {
           ),
         );
       },
+          ),
           ),
         ),
         if (totalPaginas > 1)
@@ -1243,7 +1247,10 @@ class _DireccionesTabState extends State<_DireccionesTab> {
     if (_loading) {
       return const Center(child: CircularProgressIndicator(color: AppColors.primary));
     }
-    return SingleChildScrollView(
+    return RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: _cargar,
+      child: SingleChildScrollView(
       padding: const EdgeInsets.all(AppSizes.screenPadding),
       child: Column(
         children: [
@@ -1388,6 +1395,7 @@ class _DireccionesTabState extends State<_DireccionesTab> {
               );
             }),
         ],
+      ),
       ),
     );
   }
