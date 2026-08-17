@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -11,7 +10,6 @@ import '../../../core/models/pedido.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/auth_service.dart' show UserRole;
 import '../../../shared/layouts/admin_bottom_nav.dart';
-import '../../../shared/widgets/double_back_to_exit.dart';
 import '../../auth/providers/auth_provider.dart';
 
 class CocinaScreen extends StatefulWidget {
@@ -21,7 +19,7 @@ class CocinaScreen extends StatefulWidget {
   State<CocinaScreen> createState() => _CocinaScreenState();
 }
 
-class _CocinaScreenState extends State<CocinaScreen> with DoubleBackToExitMixin<CocinaScreen> {
+class _CocinaScreenState extends State<CocinaScreen> {
   List<Pedido> _pedidos = [];
   bool _cargando = true;
   bool _marcando = false;
@@ -110,25 +108,20 @@ class _CocinaScreenState extends State<CocinaScreen> with DoubleBackToExitMixin<
     // hamburguesa. Si quien mira esta pantalla es el admin (llegó aquí desde
     // su propio tab "Cocina"), sí necesita el bottom nav para poder salir a
     // otra sección — el rol cocina en cambio no tiene a dónde más navegar.
+    // El back del sistema (ir al Dashboard si es admin / doble-back-para-
+    // salir si es cocina) se maneja en el flatRouteHandler de '/cocina'
+    // dentro de ShellAwareBackButtonDispatcher, conectado en main.dart -- no
+    // aquí con PopScope, que no se dispara en la raíz de una ruta sin nada
+    // que popear (ver double_back_to_exit.dart).
+    //
+    // Limitación conocida: si _detalleAbierto o _confirmandoId están
+    // abiertos (overlays por setState, no rutas reales), el back del sistema
+    // NO los cierra primero -- va directo al Dashboard/doble-back-para-salir.
+    // El intento anterior de resolver esto vía PopScope nunca llegó a
+    // funcionar (PopScope no se dispara en este escenario), así que queda
+    // como gap documentado en vez de una solución a medias.
     final esAdmin = context.watch<AuthProvider>().user?.role == UserRole.admin;
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
-        // Si hay un detalle o confirmación abierta (overlay via setState,
-        // no una ruta), el back la cierra primero en vez de saltar directo
-        // a salir/navegar — mismo criterio que si fuera un modal real.
-        if (_detalleAbierto != null || _confirmandoId != null) {
-          setState(() { _detalleAbierto = null; _confirmandoId = null; });
-          return;
-        }
-        if (esAdmin) {
-          context.go('/admin/dashboard');
-        } else {
-          handleDoubleBackToExit(context);
-        }
-      },
-      child: Scaffold(
+    return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Panel Cocina'),
@@ -212,7 +205,6 @@ class _CocinaScreenState extends State<CocinaScreen> with DoubleBackToExitMixin<
             ),
           ),
         ],
-      ),
       ),
     );
   }

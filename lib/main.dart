@@ -28,6 +28,7 @@ import 'features/cliente/screens/perfil_screen.dart';
 import 'features/cliente/screens/puntos_screen.dart';
 import 'shared/layouts/client_bottom_nav.dart';
 import 'shared/layouts/root_shell_scaffold.dart';
+import 'shared/widgets/double_back_to_exit.dart';
 
 // Domiciliario
 import 'features/domiciliario/screens/pedidos_screen.dart';
@@ -128,6 +129,13 @@ class _AppRouterState extends State<_AppRouter> {
         // propio Navigator (historial de "atrás" independiente por tab).
         // Checkout y PedidoExitoso quedan fuera a propósito (no tendría
         // sentido que "atrás" devuelva a mitad de un pedido ya hecho).
+        //
+        // El back en la raíz de cada branch (ir al tab home, o doble-back-
+        // para-salir si ya es home) lo maneja ShellAwareBackButtonDispatcher
+        // (double_back_to_exit.dart), conectado más abajo en
+        // MaterialApp.router. No usa PopScope ni onExit -- ver el comentario
+        // completo en double_back_to_exit.dart y root_shell_scaffold.dart
+        // sobre por qué ninguno de los dos funciona en la raíz de un branch.
         StatefulShellRoute.indexedStack(
           builder: (context, state, navigationShell) => RootShellScaffold(
             navigationShell: navigationShell,
@@ -135,13 +143,22 @@ class _AppRouterState extends State<_AppRouter> {
           ),
           branches: [
             StatefulShellBranch(routes: [
-              GoRoute(path: '/catalogo', builder: (_, __) => const CatalogoScreen()),
+              GoRoute(
+                path: '/catalogo',
+                builder: (_, __) => const CatalogoScreen(),
+              ),
             ]),
             StatefulShellBranch(routes: [
-              GoRoute(path: '/puntos', builder: (_, __) => const PuntosScreen()),
+              GoRoute(
+                path: '/puntos',
+                builder: (_, __) => const PuntosScreen(),
+              ),
             ]),
             StatefulShellBranch(routes: [
-              GoRoute(path: '/perfil', builder: (_, __) => const PerfilScreen()),
+              GoRoute(
+                path: '/perfil',
+                builder: (_, __) => const PerfilScreen(),
+              ),
             ]),
           ],
         ),
@@ -150,7 +167,8 @@ class _AppRouterState extends State<_AppRouter> {
         // 2 branches (Pedidos y Caja), sin Navigator.push internos en
         // ninguna de las 2 pantallas (confirmado por grep) -- el unico caso
         // de atras que aplica aqui es "raiz de tab no-home -> home" y
-        // "raiz de home -> doble-back-para-salir".
+        // "raiz de home -> doble-back-para-salir", resuelto via
+        // ShellAwareBackButtonDispatcher.
         StatefulShellRoute.indexedStack(
           builder: (context, state, navigationShell) => RootShellScaffold(
             navigationShell: navigationShell,
@@ -158,10 +176,16 @@ class _AppRouterState extends State<_AppRouter> {
           ),
           branches: [
             StatefulShellBranch(routes: [
-              GoRoute(path: '/domiciliario/pedidos', builder: (_, __) => const PedidosScreen()),
+              GoRoute(
+                path: '/domiciliario/pedidos',
+                builder: (_, __) => const PedidosScreen(),
+              ),
             ]),
             StatefulShellBranch(routes: [
-              GoRoute(path: '/domiciliario/caja', builder: (_, __) => const CierreCajaScreen()),
+              GoRoute(
+                path: '/domiciliario/caja',
+                builder: (_, __) => const CierreCajaScreen(),
+              ),
             ]),
           ],
         ),
@@ -191,8 +215,9 @@ class _AppRouterState extends State<_AppRouter> {
         // (confirmaciones, motivo de anulacion, visor de comprobante) usan
         // el rootNavigator por defecto de Flutter, pero eso no afecta el
         // back -- un dialog siempre es la ruta activa mas alta sin importar
-        // que Navigator lo aloje, y lo cierra el back antes que cualquier
-        // PopScope de nivel shell.
+        // que Navigator lo aloje, y lo cierra el back antes que se llegue a
+        // consultar el onExit de la raiz del branch (solo se llega ahi si
+        // NINGUN Navigator tiene nada que popear).
         StatefulShellRoute.indexedStack(
           builder: (context, state, navigationShell) => RootShellScaffold(
             navigationShell: navigationShell,
@@ -200,20 +225,41 @@ class _AppRouterState extends State<_AppRouter> {
           ),
           branches: [
             StatefulShellBranch(routes: [
-              GoRoute(path: '/admin/dashboard', builder: (_, __) => const DashboardScreen()),
+              GoRoute(
+                path: '/admin/dashboard',
+                builder: (_, __) => const DashboardScreen(),
+              ),
             ]),
             StatefulShellBranch(routes: [
-              GoRoute(path: '/admin/productos', builder: (_, __) => const ProductosModuloScreen()),
+              GoRoute(
+                path: '/admin/productos',
+                builder: (_, __) => const ProductosModuloScreen(),
+              ),
             ]),
             StatefulShellBranch(routes: [
-              GoRoute(path: '/admin/ventas', builder: (_, __) => const VentasScreen()),
+              GoRoute(
+                path: '/admin/ventas',
+                builder: (_, __) => const VentasScreen(),
+              ),
             ]),
           ],
         ),
-        GoRoute(path: '/admin/domicilios', builder: (_, __) => const DomiciliosScreen()),
+
+        // Confirmar pedidos y Panel Cocina: rutas planas compartidas con
+        // los roles confirmador/cocina (ver comentario arriba). El back
+        // consciente del rol (admin vuelve al Dashboard, confirmador/cocina
+        // aplican doble-back-para-salir) vive en los `flatRouteHandlers` de
+        // ShellAwareBackButtonDispatcher, más abajo en este archivo.
+        GoRoute(
+          path: '/admin/domicilios',
+          builder: (_, __) => const DomiciliosScreen(),
+        ),
 
         // ── Cocina ───────────────────────────────────────────
-        GoRoute(path: '/cocina', builder: (_, __) => const CocinaScreen()),
+        GoRoute(
+          path: '/cocina',
+          builder: (_, __) => const CocinaScreen(),
+        ),
       ],
     );
   }
@@ -265,6 +311,18 @@ class _AppRouterState extends State<_AppRouter> {
     return null;
   }
 
+  // Handler compartido para las rutas planas /admin/domicilios y /cocina
+  // (ver comentario en las rutas): admin vuelve al Dashboard sin salir;
+  // confirmador/cocina aplican doble-back-para-salir.
+  Future<bool> _staffFlatRouteExitHandler(BuildContext context) async {
+    final role = context.read<AuthProvider>().user?.role;
+    if (role == UserRole.admin) {
+      _router.go('/admin/dashboard');
+      return false;
+    }
+    return BackExitController.attemptExit(context);
+  }
+
   String _homeForRole(UserRole? role) {
     switch (role) {
       case UserRole.domiciliario:
@@ -291,7 +349,29 @@ class _AppRouterState extends State<_AppRouter> {
       title: 'ChocAdmin',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      routerConfig: _router,
+      // No se usa `routerConfig:` porque MaterialApp.router prohíbe
+      // combinarlo con un backButtonDispatcher propio (assertion en
+      // app.dart: "If the routerConfig is provided, all the other router
+      // delegates must not be provided") -- hay que pasar las piezas de
+      // GoRouter por separado para poder conectar
+      // ShellAwareBackButtonDispatcher (ver double_back_to_exit.dart).
+      routeInformationProvider: _router.routeInformationProvider,
+      routeInformationParser: _router.routeInformationParser,
+      routerDelegate: _router.routerDelegate,
+      backButtonDispatcher: ShellAwareBackButtonDispatcher(
+        _router,
+        nonHomeToHome: const {
+          '/puntos': '/catalogo',
+          '/perfil': '/catalogo',
+          '/domiciliario/caja': '/domiciliario/pedidos',
+          '/admin/productos': '/admin/dashboard',
+          '/admin/ventas': '/admin/dashboard',
+        },
+        flatRouteHandlers: {
+          '/admin/domicilios': _staffFlatRouteExitHandler,
+          '/cocina': _staffFlatRouteExitHandler,
+        },
+      ),
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,

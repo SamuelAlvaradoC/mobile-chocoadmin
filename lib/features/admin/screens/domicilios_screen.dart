@@ -1,6 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -13,7 +12,6 @@ import '../../../core/services/auth_service.dart' show UserRole;
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../shared/layouts/admin_bottom_nav.dart';
 import '../../../shared/widgets/brand_icons.dart';
-import '../../../shared/widgets/double_back_to_exit.dart';
 
 class DomiciliosScreen extends StatefulWidget {
   const DomiciliosScreen({super.key});
@@ -22,7 +20,7 @@ class DomiciliosScreen extends StatefulWidget {
   State<DomiciliosScreen> createState() => _DomiciliosScreenState();
 }
 
-class _DomiciliosScreenState extends State<DomiciliosScreen> with DoubleBackToExitMixin<DomiciliosScreen> {
+class _DomiciliosScreenState extends State<DomiciliosScreen> {
   bool _loading = true;
   String? _error;
   List<Pedido> _pedidos = [];
@@ -265,18 +263,13 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> with DoubleBackToEx
     // Si quien mira esta pantalla es el admin (llegó desde su tab
     // "Confirmar"), sí necesita el bottom nav para salir a otra sección — el
     // rol confirmador en cambio no tiene a dónde más navegar.
+    // El back del sistema (ir al Dashboard si es admin / doble-back-para-
+    // salir si es confirmador) se maneja en el flatRouteHandler de
+    // '/admin/domicilios' dentro de ShellAwareBackButtonDispatcher, conectado
+    // en main.dart -- no aquí con PopScope, que no se dispara en la raíz de
+    // una ruta sin nada que popear (ver double_back_to_exit.dart).
     final esAdmin = context.watch<AuthProvider>().user?.role == UserRole.admin;
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
-        if (esAdmin) {
-          context.go('/admin/dashboard');
-        } else {
-          handleDoubleBackToExit(context);
-        }
-      },
-      child: Scaffold(
+    return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Confirmar pedidos'),
@@ -489,7 +482,6 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> with DoubleBackToEx
                     ],
                   ],
                 ),
-      ),
     );
   }
 }
