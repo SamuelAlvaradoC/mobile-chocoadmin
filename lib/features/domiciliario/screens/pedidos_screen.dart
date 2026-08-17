@@ -242,6 +242,7 @@ class _PedidosScreenState extends State<PedidosScreen> {
                   if (_facturando != null)
                     _ModalConfirmarEntrega(
                       pedido: _facturando!, fmt: _fmt,
+                      procesando: _procesando,
                       onClose: () => setState(() => _facturando = null),
                       onConfirmar: () => _marcarEntregado(_facturando!),
                     ),
@@ -897,15 +898,20 @@ class _TotalFila extends StatelessWidget {
 class _ModalConfirmarEntrega extends StatelessWidget {
   final Pedido pedido;
   final NumberFormat fmt;
+  final bool procesando;
   final VoidCallback onClose;
   final VoidCallback onConfirmar;
 
-  const _ModalConfirmarEntrega({required this.pedido, required this.fmt, required this.onClose, required this.onConfirmar});
+  const _ModalConfirmarEntrega({required this.pedido, required this.fmt, required this.procesando, required this.onClose, required this.onConfirmar});
 
   @override
   Widget build(BuildContext context) {
+    // Igual que React (ModalConfirmarEntrega): mientras la petición de
+    // marcar entregado está en curso, no se puede cerrar el modal ni por
+    // el fondo ni por "Cancelar" -- evita que se cierre a mitad de la
+    // petición y se pierda de vista si falló o no.
     return GestureDetector(
-      onTap: onClose,
+      onTap: procesando ? null : onClose,
       child: Container(
         color: Colors.black.withValues(alpha: 0.5),
         child: Center(
@@ -930,7 +936,7 @@ class _ModalConfirmarEntrega extends StatelessWidget {
                   const SizedBox(height: 24),
                   Row(children: [
                     Expanded(child: OutlinedButton(
-                      onPressed: onClose,
+                      onPressed: procesando ? null : onClose,
                       style: OutlinedButton.styleFrom(side: const BorderSide(color: Color(0xFFE0E0E0)),
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
@@ -938,7 +944,7 @@ class _ModalConfirmarEntrega extends StatelessWidget {
                     )),
                     const SizedBox(width: 12),
                     Expanded(child: ElevatedButton(
-                      onPressed: onConfirmar,
+                      onPressed: procesando ? null : onConfirmar,
                       style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF16A34A),
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), elevation: 0),
