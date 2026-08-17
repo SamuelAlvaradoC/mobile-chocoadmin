@@ -303,61 +303,77 @@ class _CierreCajaScreenState extends State<CierreCajaScreen> {
                             style: GoogleFonts.nunito(color: const Color(0xFF888888)))),
                       )
                     else
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: DataTable(
-                          headingRowHeight: 40,
-                          dataRowMinHeight: 44,
-                          dataRowMaxHeight: 60,
-                          columnSpacing: 16,
-                          headingTextStyle: GoogleFonts.nunito(fontSize: 11, fontWeight: FontWeight.w800, color: const Color(0xFF888888)),
-                          dataTextStyle: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF1a1a1a)),
-                          columns: const [
-                            DataColumn(label: Text('No. Venta')),
-                            DataColumn(label: Text('Hora')),
-                            DataColumn(label: Text('Cliente')),
-                            DataColumn(label: Text('Forma pago')),
-                            DataColumn(label: Text('Domicilio'), numeric: true),
-                            DataColumn(label: Text('Valor'), numeric: true),
-                            DataColumn(label: Text('Estado')),
-                          ],
-                          rows: _ventas.map((v) {
-                            final fp = v['forma_pago'] as String;
-                            return DataRow(cells: [
-                              DataCell(Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                decoration: BoxDecoration(color: const Color(0xFFF5F5F5), borderRadius: BorderRadius.circular(5)),
-                                child: Text('V-${(v['id']).toString().padLeft(4, '0')}',
-                                    style: GoogleFonts.nunito(fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFF666666))),
-                              )),
-                              DataCell(Text(v['hora'] as String,
-                                  style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF888888)))),
-                              DataCell(Text(v['cliente'] as String,
-                                  style: GoogleFonts.nunito(fontSize: 12, fontWeight: FontWeight.w700))),
-                              DataCell(_PagoBadgeCaja(formaPago: fp)),
-                              DataCell(Text(_fmt.format(v['costo_domicilio']),
-                                  style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF888888)))),
-                              DataCell(Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(_fmt.format(v['total']),
-                                      style: GoogleFonts.nunito(fontSize: 12, fontWeight: FontWeight.w800)),
-                                  if (fp == 'mixto')
-                                    Text(
-                                      'Ef. ${_fmt.format(v['monto_efectivo'])} + Tr. ${_fmt.format(v['monto_transf'])}',
-                                      style: GoogleFonts.nunito(fontSize: 9, color: const Color(0xFF888888)),
+                      // Antes: DataTable de 7 columnas con scroll horizontal
+                      // (mismo problema que "Domiciliarios del día" en el
+                      // Dashboard admin). Ahora: mismo patrón de lista
+                      // vertical -- una tarjeta por venta con los mismos 7
+                      // datos (id/hora/cliente/forma de pago/domicilio/
+                      // valor/estado), sin scroll horizontal.
+                      Column(
+                        children: List.generate(_ventas.length, (i) {
+                          final v = _ventas[i];
+                          final fp = v['forma_pago'] as String;
+                          final isLast = i == _ventas.length - 1;
+                          return Container(
+                            decoration: BoxDecoration(
+                              border: isLast ? null : const Border(bottom: BorderSide(color: Color(0xFFF0F0F0))),
+                            ),
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                      decoration: BoxDecoration(color: const Color(0xFFF5F5F5), borderRadius: BorderRadius.circular(5)),
+                                      child: Text('V-${(v['id']).toString().padLeft(4, '0')}',
+                                          style: GoogleFonts.nunito(fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFF666666))),
                                     ),
-                                ],
-                              )),
-                              DataCell(Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                                decoration: BoxDecoration(color: const Color(0xFFDCFCE7), borderRadius: BorderRadius.circular(20)),
-                                child: Text('✓ Facturado', style: GoogleFonts.nunito(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF16A34A))),
-                              )),
-                            ]);
-                          }).toList(),
-                        ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(v['cliente'] as String,
+                                          style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w700),
+                                          overflow: TextOverflow.ellipsis),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [
+                                        Text(_fmt.format(v['total']),
+                                            style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w800)),
+                                        if (fp == 'mixto')
+                                          Text(
+                                            'Ef. ${_fmt.format(v['monto_efectivo'])} + Tr. ${_fmt.format(v['monto_transf'])}',
+                                            style: GoogleFonts.nunito(fontSize: 9, color: const Color(0xFF888888)),
+                                          ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 6,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  children: [
+                                    Text(v['hora'] as String,
+                                        style: GoogleFonts.nunito(fontSize: 11, color: const Color(0xFF888888))),
+                                    _PagoBadgeCaja(formaPago: fp),
+                                    Text('Domicilio: ${_fmt.format(v['costo_domicilio'])}',
+                                        style: GoogleFonts.nunito(fontSize: 11, color: const Color(0xFF888888))),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                      decoration: BoxDecoration(color: const Color(0xFFDCFCE7), borderRadius: BorderRadius.circular(20)),
+                                      child: Text('✓ Facturado', style: GoogleFonts.nunito(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF16A34A))),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
                       ),
                   ],
                 ),
