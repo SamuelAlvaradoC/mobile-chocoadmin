@@ -373,6 +373,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const SizedBox(height: AppSizes.lg),
 
                       // ── Domiciliarios del día ──────────────────────────────
+                      // Antes: DataTable con scroll horizontal (6 columnas no
+                      // caben en un celular). Ahora: mismo patron de lista que
+                      // "Productos mas vendidos" arriba -- una tarjeta por
+                      // domiciliario con su desglose, sin scroll horizontal.
                       Text('Domiciliarios del día',
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
                       const SizedBox(height: AppSizes.sm),
@@ -387,27 +391,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 padding: EdgeInsets.all(AppSizes.lg),
                                 child: Center(child: Text('Sin entregas registradas hoy', style: TextStyle(color: AppColors.textSecondary))),
                               )
-                            : SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: DataTable(
-                                  headingRowColor: WidgetStateProperty.all(const Color(0xFFF9FAFB)),
-                                  columns: const [
-                                    DataColumn(label: Text('Domiciliario', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: AppColors.textSecondary))),
-                                    DataColumn(label: Text('Entregas',     style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: AppColors.textSecondary))),
-                                    DataColumn(label: Text('Efectivo',     style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: AppColors.textSecondary))),
-                                    DataColumn(label: Text('Transf.',      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: AppColors.textSecondary))),
-                                    DataColumn(label: Text('Total',        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: AppColors.textSecondary))),
-                                    DataColumn(label: Text('Total envíos', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: AppColors.textSecondary))),
-                                  ],
-                                  rows: _domiciliariosDia.map((d) => DataRow(cells: [
-                                    DataCell(Text(d['nombre']?.toString() ?? '-',                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13))),
-                                    DataCell(Text(d['entregas']?.toString() ?? '0',              style: const TextStyle(color: Color(0xFF3B82F6), fontWeight: FontWeight.w700, fontSize: 13))),
-                                    DataCell(Text(_fmt.format(_toDouble(d['efectivo']      ?? 0)), style: const TextStyle(color: Color(0xFF16A34A), fontWeight: FontWeight.w700, fontSize: 13))),
-                                    DataCell(Text(_fmt.format(_toDouble(d['transferencia'] ?? 0)), style: const TextStyle(color: Color(0xFF7C3AED), fontWeight: FontWeight.w700, fontSize: 13))),
-                                    DataCell(Text(_fmt.format(_toDouble(d['total']         ?? 0)), style: const TextStyle(color: AppColors.primary,  fontWeight: FontWeight.w800, fontSize: 13))),
-                                    DataCell(Text(_fmt.format(_toDouble(d['total_domicilios'] ?? 0)), style: const TextStyle(color: Color(0xFF0369A1), fontWeight: FontWeight.w700, fontSize: 13))),
-                                  ])).toList(),
-                                ),
+                            : Column(
+                                children: List.generate(_domiciliariosDia.length, (i) {
+                                  final d = _domiciliariosDia[i];
+                                  final nombre = d['nombre']?.toString() ?? '-';
+                                  final isLast = i == _domiciliariosDia.length - 1;
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      border: isLast ? null : const Border(bottom: BorderSide(color: AppColors.divider)),
+                                    ),
+                                    padding: const EdgeInsets.all(AppSizes.md),
+                                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                      Row(children: [
+                                        Container(
+                                          width: 32, height: 32,
+                                          alignment: Alignment.center,
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Text(nombre.isNotEmpty ? nombre[0].toUpperCase() : '?',
+                                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF3B82F6))),
+                                        ),
+                                        const SizedBox(width: AppSizes.sm),
+                                        Expanded(
+                                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                            Text(nombre, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                                            Text('${d['entregas']?.toString() ?? '0'} entregas',
+                                                style: const TextStyle(fontSize: 12, color: Color(0xFF3B82F6), fontWeight: FontWeight.w600)),
+                                          ]),
+                                        ),
+                                        Text(_fmt.format(_toDouble(d['total'] ?? 0)),
+                                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.primary)),
+                                      ]),
+                                      const SizedBox(height: 8),
+                                      Wrap(spacing: 6, runSpacing: 6, children: [
+                                        _DomiciliarioChip(label: 'Efectivo', valor: _fmt.format(_toDouble(d['efectivo'] ?? 0)), color: const Color(0xFF16A34A)),
+                                        _DomiciliarioChip(label: 'Transferencia', valor: _fmt.format(_toDouble(d['transferencia'] ?? 0)), color: const Color(0xFF7C3AED)),
+                                        _DomiciliarioChip(label: 'Total envíos', valor: _fmt.format(_toDouble(d['total_domicilios'] ?? 0)), color: const Color(0xFF0369A1)),
+                                      ]),
+                                    ]),
+                                  );
+                                }),
                               ),
                       ),
 
@@ -1014,6 +1039,30 @@ class _HorarioInput extends StatelessWidget {
         border: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF1E3A5F), width: 2)),
       ),
       onChanged: (v) { final n = int.tryParse(v); if (n != null) onChanged(n.clamp(0, 23)); },
+    );
+  }
+}
+
+class _DomiciliarioChip extends StatelessWidget {
+  final String label;
+  final String valor;
+  final Color color;
+  const _DomiciliarioChip({required this.label, required this.valor, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text.rich(
+        TextSpan(children: [
+          TextSpan(text: '$label: ', style: TextStyle(fontSize: 11, color: color.withValues(alpha: 0.8))),
+          TextSpan(text: valor, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+        ]),
+      ),
     );
   }
 }
