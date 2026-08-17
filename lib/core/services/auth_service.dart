@@ -258,6 +258,15 @@ class AuthService {
       await ApiService.post('/api/auth/logout', {});
     } catch (_) {}
 
+    await clearSessionLocal();
+  }
+
+  /// Limpia la sesión guardada localmente SIN llamar al backend. Se usa
+  /// cuando ya se sabe que el token es inválido (401 de sesión expirada,
+  /// ver ApiService.onUnauthorized) -- llamar a /api/auth/logout con un
+  /// token que el servidor ya rechazó no tiene sentido y arriesgaría otro
+  /// 401 en cascada.
+  static Future<void> clearSessionLocal() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_keyToken);
     await prefs.remove(_keyUserId);

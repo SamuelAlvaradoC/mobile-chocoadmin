@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'core/constants/app_theme.dart';
+import 'core/services/api_service.dart';
 import 'core/services/auth_service.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/cliente/providers/catalogo_provider.dart';
@@ -97,6 +98,7 @@ class _AppRouter extends StatefulWidget {
 
 class _AppRouterState extends State<_AppRouter> {
   late final GoRouter _router;
+  bool _manejandoSesionExpirada = false;
 
   @override
   void initState() {
@@ -271,6 +273,34 @@ class _AppRouterState extends State<_AppRouter> {
         ),
       ],
     );
+
+    // Interceptor global de sesión expirada: ApiService no tiene
+    // BuildContext propio (es una clase estática), así que expone este
+    // enganche y acá se resuelve con lo que main.dart sí tiene -- el
+    // GoRouter y el AuthProvider. Solo se dispara para un 401 en un
+    // endpoint que SÍ requería sesión (ver auth:true en ApiService), nunca
+    // para el 401 de "credenciales incorrectas" del login mismo.
+    ApiService.onUnauthorized = () async {
+      if (_manejandoSesionExpirada) return;
+      _manejandoSesionExpirada = true;
+      try {
+        // Primero se limpia la sesión (y se espera a que notifique) para
+        // que _redirect ya vea status==unauthenticated cuando se navegue a
+        // /login -- si no, seguiría viendo status==authenticated y
+        // rebotaría de vuelta al home del rol.
+        await authProvider.sessionExpired();
+        _router.go('/login');
+        final ctx = _router.routerDelegate.navigatorKey.currentContext;
+        if (ctx != null && ctx.mounted) {
+          ScaffoldMessenger.of(ctx).clearSnackBars();
+          ScaffoldMessenger.of(ctx).showSnackBar(
+            const SnackBar(content: Text('Tu sesión expiró, inicia sesión de nuevo')),
+          );
+        }
+      } finally {
+        _manejandoSesionExpirada = false;
+      }
+    };
   }
 
   String? _redirect(BuildContext context, GoRouterState state) {

@@ -21,6 +21,15 @@ class ApiService {
   static final String _baseUrl = AppConfig.apiBaseUrl.replaceAll(RegExp(r'/api$'), '');
   static const Duration _timeout = Duration(seconds: 30);
 
+  /// Registrado una sola vez desde _AppRouterState.initState() (main.dart).
+  /// Se dispara cuando un endpoint que SÍ requería sesión (auth:true)
+  /// responde 401 -- es decir, un token expirado/inválido, no el 401 de
+  /// "credenciales incorrectas" del login mismo (que llama con auth:false
+  /// y por eso nunca pasa por acá). ApiService es una clase estática sin
+  /// BuildContext propio, así que solo expone el enganche; la limpieza de
+  /// sesión, la navegación a /login y el aviso al usuario viven en main.dart.
+  static void Function()? onUnauthorized;
+
   // ─── Headers ────────────────────────────────────────────────────────────────
 
   static Future<Map<String, String>> _headers({bool auth = true}) async {
@@ -40,7 +49,7 @@ class ApiService {
 
   // ─── Response handler ───────────────────────────────────────────────────────
 
-  static dynamic _handleResponse(http.Response response) {
+  static dynamic _handleResponse(http.Response response, {required bool auth}) {
     final body = utf8.decode(response.bodyBytes);
     final data = body.isNotEmpty ? jsonDecode(body) : {};
 
@@ -49,6 +58,10 @@ class ApiService {
     }
 
     final message = data is Map ? (data['message'] ?? data['error'] ?? 'Error desconocido') : 'Error ${ response.statusCode}';
+
+    if (response.statusCode == 401 && auth) {
+      onUnauthorized?.call();
+    }
 
     throw ApiException(message.toString(), statusCode: response.statusCode);
   }
@@ -72,7 +85,7 @@ class ApiService {
       final response = await http
           .get(uri, headers: await _headers(auth: auth))
           .timeout(_timeout);
-      return _handleResponse(response);
+      return _handleResponse(response, auth: auth);
     } on SocketException {
       throw ApiException('Sin conexión a internet');
     } on HttpException {
@@ -100,7 +113,7 @@ class ApiService {
             body: jsonEncode(body),
           )
           .timeout(_timeout);
-      return _handleResponse(response);
+      return _handleResponse(response, auth: auth);
     } on SocketException {
       throw ApiException('Sin conexión a internet');
     } on HttpException {
@@ -128,7 +141,7 @@ class ApiService {
             body: jsonEncode(body),
           )
           .timeout(_timeout);
-      return _handleResponse(response);
+      return _handleResponse(response, auth: auth);
     } on SocketException {
       throw ApiException('Sin conexión a internet');
     } on TimeoutException {
@@ -154,7 +167,7 @@ class ApiService {
             body: jsonEncode(body),
           )
           .timeout(_timeout);
-      return _handleResponse(response);
+      return _handleResponse(response, auth: auth);
     } on SocketException {
       throw ApiException('Sin conexión a internet');
     } on TimeoutException {
@@ -178,7 +191,7 @@ class ApiService {
             headers: await _headers(auth: auth),
           )
           .timeout(_timeout);
-      return _handleResponse(response);
+      return _handleResponse(response, auth: auth);
     } on SocketException {
       throw ApiException('Sin conexión a internet');
     } on TimeoutException {

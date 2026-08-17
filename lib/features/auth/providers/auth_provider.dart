@@ -124,6 +124,17 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Se llama desde ApiService.onUnauthorized (ver main.dart) cuando un
+  /// endpoint autenticado responde 401 -- el token ya es inválido en el
+  /// servidor, así que limpia la sesión solo localmente (sin el logout
+  /// normal, que además llama a /api/auth/logout con ese mismo token).
+  Future<void> sessionExpired() async {
+    await AuthService.clearSessionLocal();
+    _user = null;
+    _status = AuthStatus.unauthenticated;
+    notifyListeners();
+  }
+
   void clearError() {
     _errorMessage = null;
     if (_status == AuthStatus.error) {
