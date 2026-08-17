@@ -261,23 +261,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                       const SizedBox(height: AppSizes.sm),
 
-                      // ── Cards financieras (mismo tamaño que KPIs) ──────────
-                      LayoutBuilder(builder: (_, bc) {
-                        final ratio = bc.maxWidth < 340 ? 1.45 : 1.6;
-                        return GridView.count(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: AppSizes.sm,
-                          mainAxisSpacing: AppSizes.sm,
-                          childAspectRatio: ratio,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          children: [
-                            _FinancialCard(icono: Icons.account_balance_wallet_outlined, titulo: 'Efectivo del día (neto)', valor: _fmt.format(_totalEfectivo),      color: const Color(0xFF065F46)),
-                            _FinancialCard(icono: Icons.trending_up_rounded,              titulo: 'Transferencia del día',   valor: _fmt.format(_totalTransferencia), color: const Color(0xFF1E40AF)),
-                            _FinancialCard(icono: Icons.delivery_dining_rounded,          titulo: 'Total domicilios',        valor: _fmt.format(_totalDomicilios),    color: const Color(0xFF5B21B6)),
-                          ],
-                        );
-                      }),
+                      // ── Cards financieras ───────────────────────────────────
+                      // 3 elementos en un GridView de 2 columnas dejaba la
+                      // tercera tarjeta sola en su fila, ocupando solo medio
+                      // ancho con un hueco vacío al lado. En vez de forzar un
+                      // grid parejo que no cuadra con una cantidad impar, se
+                      // arma deliberado: 2 tarjetas lado a lado + 1 a todo el
+                      // ancho abajo (que de paso le da mas protagonismo al
+                      // total de domicilios).
+                      Row(children: [
+                        Expanded(
+                          child: _FinancialCard(icono: Icons.account_balance_wallet_outlined, titulo: 'Efectivo del día (neto)', valor: _fmt.format(_totalEfectivo), color: const Color(0xFF065F46)),
+                        ),
+                        const SizedBox(width: AppSizes.sm),
+                        Expanded(
+                          child: _FinancialCard(icono: Icons.trending_up_rounded, titulo: 'Transferencia del día', valor: _fmt.format(_totalTransferencia), color: const Color(0xFF1E40AF)),
+                        ),
+                      ]),
+                      const SizedBox(height: AppSizes.sm),
+                      _FinancialCard(icono: Icons.delivery_dining_rounded, titulo: 'Total domicilios', valor: _fmt.format(_totalDomicilios), color: const Color(0xFF5B21B6)),
 
                       const SizedBox(height: AppSizes.sm),
 
