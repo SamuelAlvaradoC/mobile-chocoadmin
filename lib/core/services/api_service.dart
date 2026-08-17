@@ -21,6 +21,14 @@ class ApiService {
   static final String _baseUrl = AppConfig.apiBaseUrl.replaceAll(RegExp(r'/api$'), '');
   static const Duration _timeout = Duration(seconds: 30);
 
+  /// Cliente HTTP inyectable -- por defecto un http.Client real. Los tests
+  /// pueden reemplazarlo por un MockClient (package:http/testing.dart) para
+  /// simular respuestas del backend (401, timeouts, respuestas lentas) sin
+  /// red real ni tocar ningún comportamiento de producción; todas las
+  /// llamadas de este archivo pasan por `client` en vez de las funciones
+  /// top-level http.get/post/etc.
+  static http.Client client = http.Client();
+
   /// Registrado una sola vez desde _AppRouterState.initState() (main.dart).
   /// Se dispara cuando un endpoint que SÍ requería sesión (auth:true)
   /// responde 401 -- es decir, un token expirado/inválido, no el 401 de
@@ -82,7 +90,7 @@ class ApiService {
           ),
         );
       }
-      final response = await http
+      final response = await client
           .get(uri, headers: await _headers(auth: auth))
           .timeout(_timeout);
       return _handleResponse(response, auth: auth);
@@ -106,7 +114,7 @@ class ApiService {
     bool auth = true,
   }) async {
     try {
-      final response = await http
+      final response = await client
           .post(
             Uri.parse('$_baseUrl$endpoint'),
             headers: await _headers(auth: auth),
@@ -134,7 +142,7 @@ class ApiService {
     bool auth = true,
   }) async {
     try {
-      final response = await http
+      final response = await client
           .put(
             Uri.parse('$_baseUrl$endpoint'),
             headers: await _headers(auth: auth),
@@ -160,7 +168,7 @@ class ApiService {
     bool auth = true,
   }) async {
     try {
-      final response = await http
+      final response = await client
           .patch(
             Uri.parse('$_baseUrl$endpoint'),
             headers: await _headers(auth: auth),
@@ -185,7 +193,7 @@ class ApiService {
     bool auth = true,
   }) async {
     try {
-      final response = await http
+      final response = await client
           .delete(
             Uri.parse('$_baseUrl$endpoint'),
             headers: await _headers(auth: auth),
