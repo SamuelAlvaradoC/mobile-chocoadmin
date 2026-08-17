@@ -72,7 +72,16 @@ class ChocAdminApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => CatalogoProvider()),
-        ChangeNotifierProvider(create: (_) => CarritoProvider()),
+        // El carrito se sincroniza (carga/persiste) con el id del usuario
+        // autenticado -- ver comentario en CarritoProvider.sincronizarUsuario.
+        // Se dispara al arrancar la app y cada vez que AuthProvider cambia
+        // (login/logout), así que el carrito guardado de un cliente nunca se
+        // muestra bajo la sesión de otro en el mismo dispositivo.
+        ChangeNotifierProxyProvider<AuthProvider, CarritoProvider>(
+          create: (_) => CarritoProvider(),
+          update: (_, auth, carrito) =>
+              (carrito ?? CarritoProvider())..sincronizarUsuario(auth.user?.id),
+        ),
       ],
       child: const _AppRouter(),
     );
