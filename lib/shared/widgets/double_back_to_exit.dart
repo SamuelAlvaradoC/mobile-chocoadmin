@@ -31,6 +31,14 @@ class BackExitController {
     _ultimoIntento = null;
     return true;
   }
+
+  /// Solo para tests: el debounce usa DateTime.now() (tiempo real, no el
+  /// reloj simulado de flutter_test), así que varios tests en el mismo
+  /// archivo pueden "verse" unos a otros si corren en menos de 2 segundos
+  /// de tiempo real. Llamar en setUp()/tearDown() para que cada test
+  /// empiece limpio.
+  @visibleForTesting
+  static void resetParaTests() => _ultimoIntento = null;
 }
 
 /// BackButtonDispatcher a medida: intercepta el back del sistema ANTES de
