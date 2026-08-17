@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -10,6 +11,7 @@ import '../../../core/models/pedido.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/auth_service.dart' show UserRole;
 import '../../../shared/layouts/admin_bottom_nav.dart';
+import '../../../shared/widgets/double_back_to_exit.dart';
 import '../../auth/providers/auth_provider.dart';
 
 class CocinaScreen extends StatefulWidget {
@@ -19,7 +21,7 @@ class CocinaScreen extends StatefulWidget {
   State<CocinaScreen> createState() => _CocinaScreenState();
 }
 
-class _CocinaScreenState extends State<CocinaScreen> {
+class _CocinaScreenState extends State<CocinaScreen> with DoubleBackToExitMixin<CocinaScreen> {
   List<Pedido> _pedidos = [];
   bool _cargando = true;
   bool _marcando = false;
@@ -109,7 +111,24 @@ class _CocinaScreenState extends State<CocinaScreen> {
     // su propio tab "Cocina"), sí necesita el bottom nav para poder salir a
     // otra sección — el rol cocina en cambio no tiene a dónde más navegar.
     final esAdmin = context.watch<AuthProvider>().user?.role == UserRole.admin;
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        // Si hay un detalle o confirmación abierta (overlay via setState,
+        // no una ruta), el back la cierra primero en vez de saltar directo
+        // a salir/navegar — mismo criterio que si fuera un modal real.
+        if (_detalleAbierto != null || _confirmandoId != null) {
+          setState(() { _detalleAbierto = null; _confirmandoId = null; });
+          return;
+        }
+        if (esAdmin) {
+          context.go('/admin/dashboard');
+        } else {
+          handleDoubleBackToExit(context);
+        }
+      },
+      child: Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Panel Cocina'),
@@ -122,7 +141,7 @@ class _CocinaScreenState extends State<CocinaScreen> {
           const SizedBox(width: 4),
         ],
       ),
-      bottomNavigationBar: esAdmin ? const AdminBottomNav(currentRoute: '/cocina') : null,
+      bottomNavigationBar: esAdmin ? const AdminBottomNav.flat(currentRoute: '/cocina') : null,
       body: Column(
         children: [
           // Barra de estado — cuenta de pedidos + refrescar manual.
@@ -193,6 +212,7 @@ class _CocinaScreenState extends State<CocinaScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

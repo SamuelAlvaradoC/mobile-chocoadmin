@@ -42,6 +42,7 @@ import 'features/admin/screens/dashboard_screen.dart';
 import 'features/admin/screens/ventas_screen.dart';
 import 'features/admin/screens/domicilios_screen.dart';
 import 'features/admin/screens/productos_modulo_screen.dart';
+import 'shared/layouts/admin_bottom_nav.dart';
 
 // Cocina
 import 'features/cocina/screens/cocina_screen.dart';
@@ -166,10 +167,50 @@ class _AppRouterState extends State<_AppRouter> {
         ),
 
         // ── Admin ────────────────────────────────────────────
-        GoRoute(path: '/admin/dashboard', builder: (_, __) => const DashboardScreen()),
-        GoRoute(path: '/admin/ventas', builder: (_, __) => const VentasScreen()),
+        // Solo Dashboard/Productos/Ventas son branches reales del shell:
+        // Confirmar pedidos (/admin/domicilios) y Panel Cocina (/cocina) son
+        // pantallas COMPARTIDAS con los roles confirmador/cocina (que no
+        // tienen bottom nav) -- go_router exige una ruta unica por path, asi
+        // que no pueden ser branches del shell a la vez que rutas planas
+        // para esos otros roles. Se quedan planas (ver mas abajo) y el admin
+        // las alcanza con context.go (AdminBottomNav lo maneja solo).
+        //
+        // Verificado pantalla por pantalla (no de forma generica): Dashboard
+        // solo abre showDatePicker/showModalBottomSheet (Tiempo estimado,
+        // Horario) -- ninguno usa rootNavigator:true, todos resuelven al
+        // Navigator de este branch. El modulo Productos (Categorias/
+        // Productos/Toppings/Adiciones, 8 Navigator.push entre los 4 en
+        // total para crear/editar) igual: cada sub-pantalla vive dentro del
+        // IndexedStack de ProductosModuloScreen, que es la pantalla del
+        // branch -- ningun Navigator intermedio se interpone. Ventas (el
+        // mas cargado: crear/editar/detalle via Navigator.push, mas el
+        // bottom sheet de personalizar producto DENTRO de crear/editar) se
+        // comporta igual: al pushearse sobre el context de VentasScreen o
+        // de una fila/pantalla ya empujada sobre el branch, todo queda en el
+        // mismo Navigator del branch. Los showDialog/showDatePicker sueltos
+        // (confirmaciones, motivo de anulacion, visor de comprobante) usan
+        // el rootNavigator por defecto de Flutter, pero eso no afecta el
+        // back -- un dialog siempre es la ruta activa mas alta sin importar
+        // que Navigator lo aloje, y lo cierra el back antes que cualquier
+        // PopScope de nivel shell.
+        StatefulShellRoute.indexedStack(
+          builder: (context, state, navigationShell) => RootShellScaffold(
+            navigationShell: navigationShell,
+            bottomNavBuilder: (shell) => AdminBottomNav.shell(navigationShell: shell),
+          ),
+          branches: [
+            StatefulShellBranch(routes: [
+              GoRoute(path: '/admin/dashboard', builder: (_, __) => const DashboardScreen()),
+            ]),
+            StatefulShellBranch(routes: [
+              GoRoute(path: '/admin/productos', builder: (_, __) => const ProductosModuloScreen()),
+            ]),
+            StatefulShellBranch(routes: [
+              GoRoute(path: '/admin/ventas', builder: (_, __) => const VentasScreen()),
+            ]),
+          ],
+        ),
         GoRoute(path: '/admin/domicilios', builder: (_, __) => const DomiciliosScreen()),
-        GoRoute(path: '/admin/productos', builder: (_, __) => const ProductosModuloScreen()),
 
         // ── Cocina ───────────────────────────────────────────
         GoRoute(path: '/cocina', builder: (_, __) => const CocinaScreen()),

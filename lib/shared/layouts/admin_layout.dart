@@ -5,21 +5,17 @@ import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../features/auth/providers/auth_provider.dart';
-import 'admin_bottom_nav.dart';
 
-/// Chrome del rol Administrador. Antes tenía un Drawer/sidebar tipo web con
-/// todo el menú (incluyendo Confirmar pedidos y Panel Cocina, que ya se
-/// separaron a su propio AppBar simple para el rol confirmador/cocina); ahora
-/// solo lo usa el rol admin, y la navegación entre sus 5 secciones vive en
-/// AdminBottomNav en vez de un cajón lateral.
+/// AppBar compartido por Dashboard y Ventas (avatar/nombre + Tienda/Salir).
+/// El bottom nav ya no vive aquí -- lo provee RootShellScaffold a nivel del
+/// StatefulShellRoute de Admin, para que Dashboard/Productos/Ventas tengan
+/// cada uno su propio Navigator independiente.
 class AdminLayout extends StatelessWidget {
   final Widget body;
-  final String currentRoute;
 
   const AdminLayout({
     super.key,
     required this.body,
-    required this.currentRoute,
   });
 
   @override
@@ -97,7 +93,6 @@ class AdminLayout extends StatelessWidget {
           ),
         ),
       ),
-      bottomNavigationBar: AdminBottomNav(currentRoute: currentRoute),
       body: body,
     );
   }

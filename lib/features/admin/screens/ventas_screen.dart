@@ -404,7 +404,6 @@ class _VentasScreenState extends State<VentasScreen> {
     final filtradas = _ventasFiltradas;
 
     return AdminLayout(
-      currentRoute: '/admin/ventas',
       body: Column(
         children: [
           // ── Header ───────────────────────────────────────────────────────

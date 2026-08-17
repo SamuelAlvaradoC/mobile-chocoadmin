@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
-import '../../../shared/layouts/admin_bottom_nav.dart';
 import 'adiciones_screen.dart';
 import 'categorias_screen.dart';
 import 'productos_screen.dart';
@@ -39,7 +38,6 @@ class _ProductosModuloScreenState extends State<ProductosModuloScreen> {
       appBar: AppBar(
         title: const Text('Productos'),
       ),
-      bottomNavigationBar: const AdminBottomNav(currentRoute: '/admin/productos'),
       body: Column(
         children: [
           Container(

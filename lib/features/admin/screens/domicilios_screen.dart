@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -12,6 +13,7 @@ import '../../../core/services/auth_service.dart' show UserRole;
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../shared/layouts/admin_bottom_nav.dart';
 import '../../../shared/widgets/brand_icons.dart';
+import '../../../shared/widgets/double_back_to_exit.dart';
 
 class DomiciliosScreen extends StatefulWidget {
   const DomiciliosScreen({super.key});
@@ -20,7 +22,7 @@ class DomiciliosScreen extends StatefulWidget {
   State<DomiciliosScreen> createState() => _DomiciliosScreenState();
 }
 
-class _DomiciliosScreenState extends State<DomiciliosScreen> {
+class _DomiciliosScreenState extends State<DomiciliosScreen> with DoubleBackToExitMixin<DomiciliosScreen> {
   bool _loading = true;
   String? _error;
   List<Pedido> _pedidos = [];
@@ -264,7 +266,17 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
     // "Confirmar"), sí necesita el bottom nav para salir a otra sección — el
     // rol confirmador en cambio no tiene a dónde más navegar.
     final esAdmin = context.watch<AuthProvider>().user?.role == UserRole.admin;
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (esAdmin) {
+          context.go('/admin/dashboard');
+        } else {
+          handleDoubleBackToExit(context);
+        }
+      },
+      child: Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Confirmar pedidos'),
@@ -277,7 +289,7 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
           const SizedBox(width: 4),
         ],
       ),
-      bottomNavigationBar: esAdmin ? const AdminBottomNav(currentRoute: '/admin/domicilios') : null,
+      bottomNavigationBar: esAdmin ? const AdminBottomNav.flat(currentRoute: '/admin/domicilios') : null,
       body: _loading
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primary))
@@ -477,6 +489,7 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
                     ],
                   ],
                 ),
+      ),
     );
   }
 }
