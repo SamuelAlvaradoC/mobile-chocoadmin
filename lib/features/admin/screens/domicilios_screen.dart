@@ -25,6 +25,14 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
   String? _error;
   List<Pedido> _pedidos = [];
   int? _procesandoId;
+  // Bloqueo global mientras CUALQUIER confirmación/rechazo está en curso
+  // (quick-confirm, quick-reject o el modal de detalle) -- igual que React
+  // (Domicilios.jsx: un solo estado `procesando` compartido por confirmar()
+  // y rechazar(), que deshabilita los botones rápidos de TODAS las
+  // tarjetas). Antes cada tarjeta solo se bloqueaba a sí misma
+  // (_procesandoId por-tarjeta), así que se podían confirmar/rechazar dos
+  // pedidos distintos en simultáneo.
+  bool _bloqueado = false;
   final _busquedaCtrl = TextEditingController();
   String _busqueda = '';
 
@@ -118,7 +126,7 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
   // fuera de diálogos/modales, donde no hay riesgo de mezclar el pop de una
   // ruta con este setState de pantalla completa.
   Future<void> _confirmar(Pedido pedido) async {
-    setState(() => _procesandoId = pedido.id);
+    setState(() { _procesandoId = pedido.id; _bloqueado = true; });
     try {
       await _confirmarApi(pedido.id);
       await _despuesDeConfirmar();
@@ -133,7 +141,7 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
             const SnackBar(content: Text('Error al confirmar pedido')));
       }
     }
-    if (mounted) setState(() => _procesandoId = null);
+    if (mounted) setState(() { _procesandoId = null; _bloqueado = false; });
   }
 
   // React: https://wa.me/57${tel}?text=Hola,%20confirmamos%20tu%20pedido%20%23${idVenta}%20de%20ChocoFreseo
@@ -167,8 +175,22 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
       builder: (_) => _DetalleAdminModal(
         pedido: pedido,
         fmt: _fmt,
-        onConfirmar: () => _confirmarApi(pedido.id),
-        onRechazar: (motivo) => _anularApi(pedido.id, motivo),
+        onConfirmar: () async {
+          setState(() => _bloqueado = true);
+          try {
+            await _confirmarApi(pedido.id);
+          } finally {
+            if (mounted) setState(() => _bloqueado = false);
+          }
+        },
+        onRechazar: (motivo) async {
+          setState(() => _bloqueado = true);
+          try {
+            await _anularApi(pedido.id, motivo);
+          } finally {
+            if (mounted) setState(() => _bloqueado = false);
+          }
+        },
       ),
     );
     if (!mounted || resultado == null) return;
@@ -228,6 +250,7 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
                   : () async {
                       final motivo = motivoCtrl.text.trim();
                       setSt(() { procesando = true; error = null; });
+                      setState(() => _bloqueado = true);
                       try {
                         await _anularApi(pedido.id, motivo);
                         if (ctx.mounted) Navigator.pop(ctx, true);
@@ -235,6 +258,8 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
                         setSt(() { procesando = false; error = e.message; });
                       } catch (_) {
                         setSt(() { procesando = false; error = 'Error al rechazar pedido'; });
+                      } finally {
+                        if (mounted) setState(() => _bloqueado = false);
                       }
                     },
               child: procesando
@@ -467,10 +492,10 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
                                       onWhatsApp: p.clienteTelefono != null
                                           ? () => _launchUrl(_wppUrl(p))
                                           : null,
-                                      onRechazar: (p.estado == 'pendiente' && puedeConfirmar)
+                                      onRechazar: (p.estado == 'pendiente' && puedeConfirmar && !_bloqueado)
                                           ? () => _confirmarRechazo(p)
                                           : null,
-                                      onConfirmar: (p.estado == 'pendiente' && puedeConfirmar)
+                                      onConfirmar: (p.estado == 'pendiente' && puedeConfirmar && !_bloqueado)
                                           ? () => _confirmar(p)
                                           : null,
                                       onDetalle: () => _mostrarDetalle(p),
