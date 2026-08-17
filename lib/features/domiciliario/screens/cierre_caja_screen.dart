@@ -126,8 +126,22 @@ class _CierreCajaScreenState extends State<CierreCajaScreen> {
 
   // ── Totales ──────────────────────────────────────────────────────────────────
   double get _totalDia      => _ventas.fold(0, (a, v) => a + (v['total'] as double));
-  double get _totalEfectivo => _ventas.fold(0, (a, v) => a + (v['monto_efectivo'] as double));
-  double get _totalTransf   => _ventas.fold(0, (a, v) => a + (v['monto_transf'] as double));
+  // Igual que React (CierreCaja.jsx:57-66): filtra explícitamente por
+  // forma_pago antes de sumar -- una venta 'transferencia' no debe aportar a
+  // _totalEfectivo aunque el backend llegara a mandar un monto_efectivo
+  // distinto de 0 en esa fila, y viceversa.
+  double get _totalEfectivo => _ventas.fold(0.0, (a, v) {
+    final forma = v['forma_pago'] as String;
+    if (forma == 'efectivo') return a + (v['total'] as double);
+    if (forma == 'mixto') return a + (v['monto_efectivo'] as double);
+    return a;
+  });
+  double get _totalTransf => _ventas.fold(0.0, (a, v) {
+    final forma = v['forma_pago'] as String;
+    if (forma == 'transferencia') return a + (v['total'] as double);
+    if (forma == 'mixto') return a + (v['monto_transf'] as double);
+    return a;
+  });
   double get _totalDomicilios => _ventas.fold(0, (a, v) => a + (v['costo_domicilio'] as double));
   double get _totalEntregar  => _totalEfectivo - _totalDomicilios;
 
