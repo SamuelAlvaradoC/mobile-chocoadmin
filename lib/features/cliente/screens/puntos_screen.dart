@@ -38,7 +38,7 @@ class _PuntosScreenState extends State<PuntosScreen> {
           _puntos = (inner['puntos'] ?? 0) is int
               ? inner['puntos'] as int
               : int.tryParse(inner['puntos']?.toString() ?? '0') ?? 0;
-          _saldo = double.tryParse((inner['saldo'] ?? (_puntos * 12.5)).toString()) ?? (_puntos * 12.5);
+          _saldo = double.tryParse((inner['saldo_pesos'] ?? (_puntos * 12.5)).toString()) ?? (_puntos * 12.5);
           _loading = false;
         });
       }
