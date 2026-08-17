@@ -147,7 +147,6 @@ class _PedidosScreenState extends State<PedidosScreen> {
   @override
   Widget build(BuildContext context) {
     return DomiciliarioLayout(
-      currentRoute: '/domiciliario/pedidos',
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
           : RefreshIndicator(

@@ -10,14 +10,16 @@ import '../../features/auth/providers/auth_provider.dart';
 const _kLogoUrl =
     'https://res.cloudinary.com/dnoxlv5kn/image/upload/v1778822634/logo_sin_fondo_remove_uuu8tt.png';
 
+/// AppBar compartido por Pedidos y Caja del día. El bottom nav ya no vive
+/// aquí -- lo provee RootShellScaffold a nivel del StatefulShellRoute (ver
+/// DomiciliarioBottomNav más abajo), para que cada tab tenga su propio
+/// Navigator independiente.
 class DomiciliarioLayout extends StatelessWidget {
   final Widget body;
-  final String currentRoute;
 
   const DomiciliarioLayout({
     super.key,
     required this.body,
-    required this.currentRoute,
   });
 
   @override
@@ -62,36 +64,31 @@ class DomiciliarioLayout extends StatelessWidget {
           const SizedBox(width: 4),
         ],
       ),
-      bottomNavigationBar: _DomiciliarioBottomNav(currentRoute: currentRoute),
       body: body,
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Bottom nav — reemplaza el Drawer/hamburguesa (solo 2 destinos: Pedidos y
-// Caja del día, caben perfecto como bottom nav en vez de sidebar web).
+// Bottom nav — vive a nivel de shell (RootShellScaffold), no dentro de cada
+// pantalla. Recibe el StatefulNavigationShell del StatefulShellRoute en vez
+// de un currentRoute string.
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _DomiciliarioBottomNav extends StatelessWidget {
-  final String currentRoute;
-  const _DomiciliarioBottomNav({required this.currentRoute});
+class DomiciliarioBottomNav extends StatelessWidget {
+  final StatefulNavigationShell navigationShell;
+  const DomiciliarioBottomNav({super.key, required this.navigationShell});
 
   static const _items = [
-    _NavItem(icon: Icons.local_shipping_outlined, activeIcon: Icons.local_shipping_rounded, label: 'Pedidos', path: '/domiciliario/pedidos'),
-    _NavItem(icon: Icons.payments_outlined, activeIcon: Icons.payments_rounded, label: 'Caja del día', path: '/domiciliario/caja'),
+    _NavItem(icon: Icons.local_shipping_outlined, activeIcon: Icons.local_shipping_rounded, label: 'Pedidos'),
+    _NavItem(icon: Icons.payments_outlined, activeIcon: Icons.payments_rounded, label: 'Caja del día'),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final activeIndex = _items.indexWhere((i) => currentRoute.startsWith(i.path)).clamp(0, _items.length - 1);
-    // BottomNavigationBar nativo: trae el ripple/highlight táctil que el
-    // bottom nav custom anterior (GestureDetector) no daba.
     return BottomNavigationBar(
-      currentIndex: activeIndex,
-      onTap: (i) {
-        if (!currentRoute.startsWith(_items[i].path)) context.go(_items[i].path);
-      },
+      currentIndex: navigationShell.currentIndex,
+      onTap: (i) => navigationShell.goBranch(i, initialLocation: i == navigationShell.currentIndex),
       items: [
         for (final item in _items)
           BottomNavigationBarItem(
@@ -108,6 +105,5 @@ class _NavItem {
   final IconData icon;
   final IconData activeIcon;
   final String label;
-  final String path;
-  const _NavItem({required this.icon, required this.activeIcon, required this.label, required this.path});
+  const _NavItem({required this.icon, required this.activeIcon, required this.label});
 }

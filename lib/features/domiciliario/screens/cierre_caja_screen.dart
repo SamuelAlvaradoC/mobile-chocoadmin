@@ -157,7 +157,6 @@ class _CierreCajaScreenState extends State<CierreCajaScreen> {
     ];
 
     return DomiciliarioLayout(
-      currentRoute: '/domiciliario/caja',
       body: RefreshIndicator(
         color: AppColors.primary,
         onRefresh: () => _cargar(_fecha),

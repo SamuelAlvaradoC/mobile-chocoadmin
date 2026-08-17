@@ -32,6 +32,7 @@ import 'shared/layouts/root_shell_scaffold.dart';
 // Domiciliario
 import 'features/domiciliario/screens/pedidos_screen.dart';
 import 'features/domiciliario/screens/cierre_caja_screen.dart';
+import 'shared/layouts/domiciliario_layout.dart' show DomiciliarioBottomNav;
 
 // Cliente landing
 import 'features/cliente/screens/landing_screen.dart';
@@ -145,12 +146,24 @@ class _AppRouterState extends State<_AppRouter> {
         ),
 
         // ── Domiciliario ─────────────────────────────────────
-        GoRoute(
-            path: '/domiciliario/pedidos',
-            builder: (_, __) => const PedidosScreen()),
-        GoRoute(
-            path: '/domiciliario/caja',
-            builder: (_, __) => const CierreCajaScreen()),
+        // 2 branches (Pedidos y Caja), sin Navigator.push internos en
+        // ninguna de las 2 pantallas (confirmado por grep) -- el unico caso
+        // de atras que aplica aqui es "raiz de tab no-home -> home" y
+        // "raiz de home -> doble-back-para-salir".
+        StatefulShellRoute.indexedStack(
+          builder: (context, state, navigationShell) => RootShellScaffold(
+            navigationShell: navigationShell,
+            bottomNavBuilder: (shell) => DomiciliarioBottomNav(navigationShell: shell),
+          ),
+          branches: [
+            StatefulShellBranch(routes: [
+              GoRoute(path: '/domiciliario/pedidos', builder: (_, __) => const PedidosScreen()),
+            ]),
+            StatefulShellBranch(routes: [
+              GoRoute(path: '/domiciliario/caja', builder: (_, __) => const CierreCajaScreen()),
+            ]),
+          ],
+        ),
 
         // ── Admin ────────────────────────────────────────────
         GoRoute(path: '/admin/dashboard', builder: (_, __) => const DashboardScreen()),
