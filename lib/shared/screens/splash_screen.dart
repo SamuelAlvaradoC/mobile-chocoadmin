@@ -22,14 +22,6 @@ class SplashScreen extends StatelessWidget {
                     letterSpacing: 1,
                   ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'ChocAdmin',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.white70,
-                    letterSpacing: 2,
-                  ),
-            ),
             const SizedBox(height: 48),
             const SpinKitThreeBounce(
               color: Colors.white,

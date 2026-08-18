@@ -370,6 +370,18 @@ class _AppRouterState extends State<_AppRouter> {
     return BackExitController.attemptExit(context);
   }
 
+  // /catalogo es la raíz del tab home del shell de Cliente, así que sin
+  // esto el dispatcher aplicaría doble-back-para-salir directo -- pero
+  // Landing es conceptualmente "antes" de Catálogo, así que el back acá
+  // debe llevar ahí primero (y solo desde Landing sí aplica el
+  // doble-back-para-salir real, como cualquier otra raíz sin handler
+  // propio). flatRouteHandlers no exige que la ruta sea plana, solo que
+  // esté indexada por location -- funciona igual para la raíz de un branch.
+  Future<bool> _catalogoExitHandler(BuildContext context) async {
+    _router.go('/landing');
+    return false;
+  }
+
   String _homeForRole(UserRole? role) {
     switch (role) {
       case UserRole.domiciliario:
@@ -393,7 +405,7 @@ class _AppRouterState extends State<_AppRouter> {
     });
 
     return MaterialApp.router(
-      title: 'ChocAdmin',
+      title: 'ChocoFreseo',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       // No se usa `routerConfig:` porque MaterialApp.router prohíbe
@@ -417,6 +429,7 @@ class _AppRouterState extends State<_AppRouter> {
         flatRouteHandlers: {
           '/admin/domicilios': _staffFlatRouteExitHandler,
           '/cocina': _staffFlatRouteExitHandler,
+          '/catalogo': _catalogoExitHandler,
         },
       ),
       localizationsDelegates: const [
