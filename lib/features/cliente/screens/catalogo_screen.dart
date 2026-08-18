@@ -1102,7 +1102,14 @@ class _ProductoCard extends StatelessWidget {
                 children: [
                   Text(
                     producto.nombre,
-                    style: Theme.of(context).textTheme.titleSmall,
+                    // titleSmall trae color textSecondary (gris) por
+                    // defecto -- acá se sobreescribe a textPrimary/w800
+                    // para que el nombre destaque sobre la descripción,
+                    // igual que .producto-card-nombre en React (Catalogo.css).
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w800,
+                        ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
