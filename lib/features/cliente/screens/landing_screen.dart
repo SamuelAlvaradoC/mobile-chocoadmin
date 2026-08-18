@@ -21,14 +21,20 @@ class LandingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Orden pensado como embudo: Hero (enganche) -> Productos estrella
+    // (antojo, la sección más visual, apenas se llega) -> Cómo funciona
+    // (conviértelo en pedido) -> Conócenos (confianza/historia) -> Redes
+    // (seguimiento social, ya con la marca vendida) -> reseña (lo último
+    // que se le pide a alguien). Mismas 6 secciones, mismo contenido/fotos
+    // de siempre -- solo cambia el orden.
     return ClientLayout(
       child: Column(
         children: [
           _Hero(nosotrosKey: nosotrosKey),
-          const _VideoRedes(),
           const _ProductosEstrella(),
           const _ComoFunciona(),
           _Conocenos(key: nosotrosKey),
+          const _VideoRedes(),
           const _CtaFinal(),
         ],
       ),
@@ -711,7 +717,11 @@ class _VideoRedes extends StatelessWidget {
     final sw = MediaQuery.of(context).size.width;
 
     return Container(
-      color: Colors.white,
+      // Antes blanco -- con Conócenos también blanco justo arriba (nuevo
+      // orden), las dos se fundían en un solo bloque sin separación visual.
+      // Mismo gris clarito que ya usa Productos estrella más arriba, para
+      // mantener el zigzag blanco/gris/oscuro entre secciones.
+      color: const Color(0xFFF7F8FD),
       padding: const EdgeInsets.symmetric(vertical: 72, horizontal: 28),
       child: Column(
         children: [
