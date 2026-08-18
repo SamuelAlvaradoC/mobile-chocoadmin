@@ -377,12 +377,18 @@ class _AppRouterState extends State<_AppRouter> {
     return false;
   }
 
-  // /checkout tiene su propia flechita en el AppBar que vuelve a /catalogo
-  // (ver checkout_screen.dart) -- el back del sistema debe hacer lo mismo,
-  // no caer al doble-back-para-salir por defecto (que sacaría de la app a
-  // mitad de un pedido).
+  // /checkout tiene su propio flujo por pasos (Datos -> Dirección -> Pago,
+  // ver checkout_screen.dart) con una flechita de AppBar que retrocede un
+  // paso a la vez (o va a /catalogo si ya está en el primer paso). El back
+  // del sistema debe hacer EXACTAMENTE lo mismo -- no saltar siempre a
+  // /catalogo de un solo golpe (eso hacía perder los pasos ya completados)
+  // ni caer al doble-back-para-salir por defecto. CheckoutBackController es
+  // el puente hacia el _handleBack() real de la pantalla montada (ver
+  // double_back_to_exit.dart).
   Future<bool> _checkoutExitHandler(BuildContext context) async {
-    _router.go('/catalogo');
+    if (!CheckoutBackController.intentar()) {
+      _router.go('/catalogo'); // fallback improbable: /checkout sin pantalla montada
+    }
     return false;
   }
 

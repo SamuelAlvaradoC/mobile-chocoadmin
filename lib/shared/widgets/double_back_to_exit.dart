@@ -41,6 +41,39 @@ class BackExitController {
   static void resetParaTests() => _ultimoIntento = null;
 }
 
+/// Puente entre el back del sistema (que ShellAwareBackButtonDispatcher
+/// resuelve a nivel global, sin acceso al State de la pantalla) y el
+/// retroceso de PASO dentro de Checkout (Datos -> Dirección -> Pago), que
+/// solo CheckoutScreen conoce. Sin esto, /checkout (una ruta plana sin nada
+/// que popear -- llega con context.go(), no con push) hacía que el back del
+/// sistema saltara siempre a /catalogo de un solo golpe, ignorando el
+/// _handleBack() de paso-por-paso que la pantalla ya usa para su propia
+/// flechita del AppBar.
+class CheckoutBackController {
+  CheckoutBackController._();
+
+  static VoidCallback? _handleBack;
+
+  /// Llamado por CheckoutScreen en initState -- mientras esté montada, el
+  /// back del sistema en /checkout delega en este callback (que decide
+  /// internamente si retrocede un paso o sale a /catalogo).
+  static void registrar(VoidCallback handleBack) => _handleBack = handleBack;
+
+  /// Llamado por CheckoutScreen en dispose.
+  static void limpiar() => _handleBack = null;
+
+  /// Devuelve `true` si había una pantalla de Checkout montada que atendió
+  /// el back (siempre que la haya, ya que _handleBack de CheckoutScreen
+  /// maneja los 2 casos -- retroceder o ir a /catalogo). `false` solo puede
+  /// pasar si por alguna razón se llama sin que Checkout esté montado.
+  static bool intentar() {
+    final cb = _handleBack;
+    if (cb == null) return false;
+    cb();
+    return true;
+  }
+}
+
 /// BackButtonDispatcher a medida: intercepta el back del sistema ANTES de
 /// que llegue a go_router.
 ///

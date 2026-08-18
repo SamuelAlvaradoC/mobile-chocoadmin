@@ -19,6 +19,7 @@ import '../../../features/auth/providers/auth_provider.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/colombia_location_picker.dart';
+import '../../../shared/widgets/double_back_to_exit.dart' show CheckoutBackController;
 import '../providers/carrito_provider.dart';
 
 // Pago mixto (igual React handleEfectivoMixto/handleTransferMixto): al
@@ -107,6 +108,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   void initState() {
     super.initState();
     _puntosUsados = widget.initialPuntosUsados;
+    // /checkout es una ruta plana (sin nada que popear -- se llega con
+    // context.go(), no con push), así que el back del sistema no pasa por
+    // PopScope/_handleBack acá abajo -- lo resuelve el dispatcher global en
+    // main.dart, que no tiene forma de ver _paso. Este registro le da ese
+    // puente mientras la pantalla esté montada.
+    CheckoutBackController.registrar(_handleBack);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _cargarPerfil();
     });
@@ -224,6 +231,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   @override
   void dispose() {
+    CheckoutBackController.limpiar();
     _telefonoCtrl.dispose();
     _efectivoCtrl.dispose();
     _transferenciaCtrl.dispose();
