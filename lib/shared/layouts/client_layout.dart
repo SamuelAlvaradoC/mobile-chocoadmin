@@ -6,15 +6,16 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../widgets/brand_icons.dart';
-import 'client_bottom_nav.dart' show ClientVolverAlPanelAction;
+import 'client_bottom_nav.dart' show ClientVolverAlPanelAction, ClientLogoutAction;
 
 /// AppBar nativo de Landing -- antes era un navbar tipo web (links de
 /// escritorio + menú hamburguesa con drawer) heredado del port de React,
 /// inconsistente con el resto de la app (AppBar + bottom nav nativos, sin
 /// hamburguesa en ningún otro lado). Se reemplaza por lo mismo que usa
-/// Catálogo: logo + "ChocoFreseo", y el ícono de "volver a mi panel" si el
-/// usuario es staff -- el acceso rápido a Landing desde el resto de
-/// pantallas del cliente ya vive en el ícono de casa de Catálogo.
+/// Catálogo: logo + "ChocoFreseo", el ícono de "volver a mi panel" si el
+/// usuario es staff, y el de cerrar sesión -- Landing ya es un branch del
+/// bottom nav (pestaña "Inicio"), así que no necesita su propio acceso de
+/// vuelta al inicio.
 class ClientLayout extends StatelessWidget {
   final Widget child;
   const ClientLayout({super.key, required this.child});
@@ -42,7 +43,7 @@ class ClientLayout extends StatelessWidget {
             const Text('ChocoFreseo'),
           ],
         ),
-        actions: const [ClientVolverAlPanelAction()],
+        actions: const [ClientVolverAlPanelAction(), ClientLogoutAction()],
       ),
       body: SingleChildScrollView(
         child: Column(

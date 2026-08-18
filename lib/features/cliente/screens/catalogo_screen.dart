@@ -265,13 +265,11 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
             const Text('ChocoFreseo'),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.home_rounded),
-            tooltip: 'Ir al inicio',
-            onPressed: () => context.go('/landing'),
-          ),
-          const ClientVolverAlPanelAction(),
+        actions: const [
+          // El ícono de "ir al inicio" se quitó de aquí -- el bottom nav ya
+          // tiene la pestaña "Inicio", así que era redundante.
+          ClientVolverAlPanelAction(),
+          ClientLogoutAction(),
         ],
       ),
       body: SafeArea(

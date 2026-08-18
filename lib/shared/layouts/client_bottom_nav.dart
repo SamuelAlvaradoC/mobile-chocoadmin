@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/services/auth_service.dart' show UserRole;
 import '../../features/auth/providers/auth_provider.dart';
+import '../../features/cliente/providers/carrito_provider.dart';
 
 /// Bottom nav nativo para las 3 pantallas raíz del cliente (Catálogo,
 /// Landing/Inicio, Perfil) — cada una vive en su propio branch de un
@@ -88,6 +89,28 @@ class ClientVolverAlPanelAction extends StatelessWidget {
       tooltip: 'Volver a mi panel',
       icon: const Icon(Icons.dashboard_customize_rounded),
       onPressed: () => context.go(ruta),
+    );
+  }
+}
+
+/// Ícono de cerrar sesión para los headers de Landing y Catálogo -- antes
+/// solo Perfil ofrecía logout, pero un usuario logueado que nunca entra a
+/// Perfil no tenía forma rápida de cerrar sesión desde ahí. Mismo patrón que
+/// [ClientVolverAlPanelAction]: solo visible con sesión activa.
+class ClientLogoutAction extends StatelessWidget {
+  const ClientLogoutAction({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    if (auth.user == null) return const SizedBox.shrink();
+    return IconButton(
+      tooltip: 'Cerrar sesión',
+      icon: const Icon(Icons.logout_rounded),
+      onPressed: () async {
+        await auth.logout();
+        if (context.mounted) context.read<CarritoProvider>().limpiar();
+      },
     );
   }
 }

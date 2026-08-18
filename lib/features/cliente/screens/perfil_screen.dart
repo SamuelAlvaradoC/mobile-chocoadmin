@@ -9,7 +9,7 @@ import '../../../core/models/pedido.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../features/auth/providers/auth_provider.dart';
-import '../providers/carrito_provider.dart';
+import '../../../shared/layouts/client_bottom_nav.dart' show ClientLogoutAction;
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/colombia_location_picker.dart';
@@ -47,15 +47,7 @@ class _PerfilScreenState extends State<PerfilScreen>
       appBar: AppBar(
         title: const Text('Mi perfil'),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            onPressed: () async {
-              await auth.logout();
-              if (context.mounted) context.read<CarritoProvider>().limpiar();
-            },
-          ),
-        ],
+        actions: const [ClientLogoutAction()],
       ),
       body: Column(
         children: [
@@ -363,6 +355,7 @@ class _DatosTabState extends State<_DatosTab> {
             prefixIcon: Icons.email_outlined,
             keyboardType: TextInputType.emailAddress,
             readOnly: true,
+            visuallyDisabled: _editando,
           ),
           const SizedBox(height: AppSizes.sm),
           AppTextField(
@@ -378,6 +371,7 @@ class _DatosTabState extends State<_DatosTab> {
             label: 'Rol',
             prefixIcon: Icons.badge_outlined,
             readOnly: true,
+            visuallyDisabled: _editando,
           ),
           const SizedBox(height: AppSizes.md),
 
