@@ -314,17 +314,31 @@ class _ComoFunciona extends StatelessWidget {
             builder: (context, constraints) {
               // Mismo criterio que Productos estrella: ancho exacto para
               // que los 4 pasos queden en una grilla de 2x2 en vez de una
-              // columna de 4, sin importar el tamaño de pantalla.
+              // columna de 4, sin importar el tamaño de pantalla. Además,
+              // como el texto de cada paso tiene largos distintos, se
+              // agrupan de a 2 en un IntrinsicHeight para que ambas
+              // tarjetas de cada fila igualen su alto -- si no, quedaban
+              // "escalonadas" según cuál descripción era más larga.
               const spacing = 14.0;
               final cardWidth = (constraints.maxWidth - spacing) / 2;
-              return Wrap(
-                spacing: spacing, runSpacing: spacing,
-                alignment: WrapAlignment.center,
-                children: List.generate(
-                  _pasos.length,
-                  (i) => _PasoCard(paso: _pasos[i], index: i, width: cardWidth),
-                ),
-              );
+              final filas = <Widget>[];
+              for (var i = 0; i < _pasos.length; i += 2) {
+                if (i > 0) filas.add(const SizedBox(height: spacing));
+                filas.add(IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _PasoCard(paso: _pasos[i], index: i, width: cardWidth),
+                      const SizedBox(width: spacing),
+                      if (i + 1 < _pasos.length)
+                        _PasoCard(paso: _pasos[i + 1], index: i + 1, width: cardWidth)
+                      else
+                        SizedBox(width: cardWidth),
+                    ],
+                  ),
+                ));
+              }
+              return Column(children: filas);
             },
           ),
           const SizedBox(height: 48),
