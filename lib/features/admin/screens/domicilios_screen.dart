@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -105,6 +106,7 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
   Future<void> _despuesDeConfirmar() async {
     await _cargar();
     if (mounted) {
+      HapticFeedback.mediumImpact();
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Pedido confirmado y enviado a cocina'),
         backgroundColor: Color(0xFF16A34A),
@@ -115,6 +117,7 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
   Future<void> _despuesDeAnular() async {
     await _cargar();
     if (mounted) {
+      HapticFeedback.mediumImpact();
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Pedido rechazado'),
         backgroundColor: AppColors.error,

@@ -277,6 +277,7 @@ Future<void> _anularVentaRapidoDialog(
   if (anulada == true) {
     onRefresh();
     if (context.mounted) {
+      HapticFeedback.mediumImpact();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Venta anulada')),
       );

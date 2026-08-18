@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -83,6 +84,7 @@ class _CocinaScreenState extends State<CocinaScreen> {
     try {
       await ApiService.patch('/api/ventas/$id/estado', {'nombre_estado': 'listo'});
       if (mounted) {
+        HapticFeedback.mediumImpact();
         setState(() {
           _pedidos.removeWhere((p) => p.id == id);
           _confirmandoId = null;

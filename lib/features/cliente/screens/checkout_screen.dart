@@ -352,6 +352,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       carrito.limpiar();
 
       if (mounted) {
+        HapticFeedback.mediumImpact();
         context.go('/pedido-exitoso', extra: {
           'costoDomicilio': _costoDomicilio.round(),
           'distanciaKm': _distanciaKm,
