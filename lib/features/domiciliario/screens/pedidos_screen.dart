@@ -22,8 +22,6 @@ class _PedidosScreenState extends State<PedidosScreen> {
   List<Pedido> _despachados  = [];
   bool _secDespacharOpen = true;
   bool _secDespachadosOpen = true;
-  Pedido? _detalle;
-  Pedido? _facturando;
   String _fecha = DateFormat('yyyy-MM-dd').format(DateTime.now().toUtc().subtract(const Duration(hours: 5)));
 
   final _fmt = NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
@@ -122,26 +120,74 @@ class _PedidosScreenState extends State<PedidosScreen> {
     }
   }
 
-  void _marcarEntregado(Pedido p) async {
-    // Igual que React (ModalConfirmarEntrega): actualiza estado localmente sin recargar
-    if (_procesando) return;
-    setState(() => _procesando = true);
-    try {
-      await ApiService.patch('/api/ventas/${p.id}/estado', {'nombre_estado': 'entregado'});
-      if (mounted) {
-        setState(() {
-          _facturando = null;
-          _despachados = _despachados.map((d) =>
-              d.id == p.id ? d.copyWith(estado: 'entregado') : d).toList();
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e is ApiException ? e.message : 'Error al marcar como entregado')));
-      }
+  // Solo la llamada de red -- el diálogo espera esto antes de cerrarse.
+  // Mismo patrón de dos fases que domicilios_screen.dart (_confirmarApi):
+  // evita mezclar el cierre de una ruta con un setState de pantalla
+  // completa, que es lo que causaba el crash "_dependents.isEmpty".
+  Future<void> _marcarEntregadoApi(int id) async {
+    await ApiService.patch('/api/ventas/$id/estado', {'nombre_estado': 'entregado'});
+  }
+
+  // El detalle y el modal de confirmar entrega ahora son diálogos reales
+  // (antes eran widgets condicionales en un Stack, así que el back del
+  // sistema no los cerraba primero -- iba directo a la lógica de raíz de
+  // tab). Al ser una ruta real, el back los cierra normal, igual que
+  // cualquier otro modal de la app.
+  void _mostrarDetalle(Pedido p) {
+    showDialog(
+      context: context,
+      useRootNavigator: false,
+      barrierColor: Colors.transparent, // el propio widget pinta su fondo semitransparente
+      barrierDismissible: false,
+      builder: (dialogCtx) => _ModalDetalle(pedido: p, fmt: _fmt, onClose: () => Navigator.of(dialogCtx).pop()),
+    );
+  }
+
+  void _mostrarConfirmarEntrega(Pedido p) async {
+    bool procesando = false;
+    final exito = await showDialog<bool>(
+      context: context,
+      useRootNavigator: false,
+      barrierColor: Colors.transparent,
+      barrierDismissible: false,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (dialogCtx, setSt) => PopScope(
+          // Ahora que el modal es una ruta real, el back del sistema
+          // también puede cerrarlo -- sin este guard, evadiría el mismo
+          // bloqueo que ya tienen "Cancelar" y el tap en el fondo mientras
+          // la petición está en curso.
+          canPop: !procesando,
+          child: _ModalConfirmarEntrega(
+            pedido: p,
+            fmt: _fmt,
+            procesando: procesando,
+            onClose: () => Navigator.of(dialogCtx).pop(false),
+            onConfirmar: () async {
+              if (procesando) return;
+              setSt(() => procesando = true);
+              try {
+                await _marcarEntregadoApi(p.id);
+                if (dialogCtx.mounted) Navigator.of(dialogCtx).pop(true);
+              } catch (e) {
+                setSt(() => procesando = false);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(e is ApiException ? e.message : 'Error al marcar como entregado')));
+                }
+              }
+            },
+          ),
+        ),
+      ),
+    );
+    // El diálogo ya salió del árbol por completo antes de tocar el estado
+    // de la pantalla -- mismo motivo que arriba.
+    if (mounted && exito == true) {
+      setState(() {
+        _despachados = _despachados.map((d) =>
+            d.id == p.id ? d.copyWith(estado: 'entregado') : d).toList();
+      });
     }
-    if (mounted) setState(() => _procesando = false);
   }
 
   @override
@@ -152,9 +198,7 @@ class _PedidosScreenState extends State<PedidosScreen> {
           : RefreshIndicator(
               color: AppColors.primary,
               onRefresh: _cargar,
-              child: Stack(
-                children: [
-                  ListView(
+              child: ListView(
                     padding: const EdgeInsets.all(20),
                     children: [
                       // ── Barra de fecha (igual React) ─────────────────────
@@ -212,7 +256,7 @@ class _PedidosScreenState extends State<PedidosScreen> {
                                 pedido: p, tipo: 'despachar', fmt: _fmt,
                                 procesando: _procesando,
                                 onCoger: () => _coger(p),
-                                onVerDetalle: () => setState(() => _detalle = p),
+                                onVerDetalle: () => _mostrarDetalle(p),
                               )).toList()),
                       ),
                       const SizedBox(height: 16),
@@ -228,26 +272,13 @@ class _PedidosScreenState extends State<PedidosScreen> {
                                 pedido: p, tipo: 'despachado', fmt: _fmt,
                                 procesando: _procesando,
                                 onDevolver: () => _devolver(p),
-                                onFacturar: () => setState(() => _facturando = p),
-                                onVerDetalle: () => setState(() => _detalle = p),
+                                onFacturar: () => _mostrarConfirmarEntrega(p),
+                                onVerDetalle: () => _mostrarDetalle(p),
                               )).toList()),
                       ),
                       const SizedBox(height: 80),
                     ],
                   ),
-
-                  // Modales
-                  if (_detalle != null)
-                    _ModalDetalle(pedido: _detalle!, fmt: _fmt, onClose: () => setState(() => _detalle = null)),
-                  if (_facturando != null)
-                    _ModalConfirmarEntrega(
-                      pedido: _facturando!, fmt: _fmt,
-                      procesando: _procesando,
-                      onClose: () => setState(() => _facturando = null),
-                      onConfirmar: () => _marcarEntregado(_facturando!),
-                    ),
-                ],
-              ),
             ),
     );
   }
