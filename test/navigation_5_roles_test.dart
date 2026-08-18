@@ -6,15 +6,16 @@
 // prueba manual en el celular.
 //
 // Pantallas triviales (Text), mismos paths y misma config que main.dart:
-// Cliente (/catalogo home, /perfil -- Puntos vive dentro de Perfil, no es
-// branch propio), Domiciliario (/domiciliario/pedidos home,
+// Cliente (/landing home, /catalogo, /perfil -- Puntos vive dentro de
+// Perfil, no es branch propio), Domiciliario (/domiciliario/pedidos home,
 // /domiciliario/caja), Admin (/admin/dashboard home, /admin/productos,
 // /admin/ventas), y las rutas planas rol-conscientes (/cocina,
 // /admin/domicilios) con el mismo patrón de _staffFlatRouteExitHandler de
 // main.dart (admin -> vuelve al dashboard, cualquier otro rol ->
-// doble-back-para-salir). /catalogo también tiene su propio
-// flatRouteHandler (_catalogoExitHandler real): back en su raíz va a
-// /landing en vez de aplicar doble-back-para-salir directo.
+// doble-back-para-salir). /login, /register y /forgot-password también son
+// planas, con el mismo patrón de _authScreenExitHandler real: back siempre
+// va a /catalogo (no hay "de dónde vine" real porque se llega con
+// context.go(), no con push).
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -52,9 +53,9 @@ Widget _bottomNavDeIndices(StatefulNavigationShell shell, List<String> labels) {
     return BackExitController.attemptExit(context);
   }
 
-  // Copia real de _catalogoExitHandler en main.dart.
-  Future<bool> catalogoExitHandler(BuildContext context) async {
-    router.go('/landing');
+  // Copia real de _authScreenExitHandler en main.dart.
+  Future<bool> authScreenExitHandler(BuildContext context) async {
+    router.go('/catalogo');
     return false;
   }
 
@@ -63,13 +64,17 @@ Widget _bottomNavDeIndices(StatefulNavigationShell shell, List<String> labels) {
     routes: [
       // ── Cliente ──────────────────────────────────────────────
       // Puntos vive dentro de Perfil como pestaña, no como branch propio.
+      // Landing es el home del shell (índice 0 para el back-button, aunque
+      // el bottom nav real lo muestra en el medio) -- Catálogo y Perfil son
+      // no-home y vuelven a Landing.
       StatefulShellRoute.indexedStack(
         builder: (c, s, shell) => RootShellScaffold(
           navigationShell: shell,
-          bottomNavBuilder: (shell) => _bottomNavDeIndices(shell, const ['Catálogo', 'Perfil']),
+          bottomNavBuilder: (shell) => _bottomNavDeIndices(shell, const ['Catálogo', 'Landing', 'Perfil']),
         ),
         branches: [
           StatefulShellBranch(routes: [GoRoute(path: '/catalogo', builder: (_, __) => const Text('Home Catálogo'))]),
+          StatefulShellBranch(routes: [GoRoute(path: '/landing', builder: (_, __) => const Text('Home Landing'))]),
           StatefulShellBranch(routes: [GoRoute(path: '/perfil', builder: (_, __) => const Text('Home Perfil'))]),
         ],
       ),
@@ -103,7 +108,7 @@ Widget _bottomNavDeIndices(StatefulNavigationShell shell, List<String> labels) {
       // encuentre dónde mostrar el SnackBar de doble-back.
       GoRoute(path: '/admin/domicilios', builder: (_, __) => const Scaffold(body: Text('Confirmador (plano)'))),
       GoRoute(path: '/cocina', builder: (_, __) => const Scaffold(body: Text('Cocina (plano)'))),
-      GoRoute(path: '/landing', builder: (_, __) => const Scaffold(body: Text('Landing (plano)'))),
+      GoRoute(path: '/login', builder: (_, __) => const Scaffold(body: Text('Login (plano)'))),
     ],
   );
 
@@ -115,7 +120,8 @@ Widget _bottomNavDeIndices(StatefulNavigationShell shell, List<String> labels) {
       router,
       // Copiado literal del mapa real en main.dart.
       nonHomeToHome: const {
-        '/perfil': '/catalogo',
+        '/catalogo': '/landing',
+        '/perfil': '/landing',
         '/domiciliario/caja': '/domiciliario/pedidos',
         '/admin/productos': '/admin/dashboard',
         '/admin/ventas': '/admin/dashboard',
@@ -123,7 +129,10 @@ Widget _bottomNavDeIndices(StatefulNavigationShell shell, List<String> labels) {
       flatRouteHandlers: {
         '/admin/domicilios': staffFlatHandler,
         '/cocina': staffFlatHandler,
-        '/catalogo': catalogoExitHandler,
+        // main.dart registra /login, /register y /forgot-password con el
+        // mismo handler -- alcanza con probar uno acá, los otros 2 son la
+        // misma función registrada 2 veces más.
+        '/login': authScreenExitHandler,
       },
     ),
   );
@@ -134,8 +143,8 @@ Widget _bottomNavDeIndices(StatefulNavigationShell shell, List<String> labels) {
 void main() {
   setUp(_resetDebounce);
 
-  group('Cliente (2 branches, Puntos vive dentro de Perfil)', () {
-    testWidgets('back en la raíz de Catálogo (home) va a Landing, no aplica doble-back-para-salir directo', (tester) async {
+  group('Cliente (3 branches, Landing es home, Puntos vive dentro de Perfil)', () {
+    testWidgets('back en la raíz de Catálogo (no-home) lleva a Landing (home)', (tester) async {
       final app = _buildApp(initialLocation: '/catalogo');
       await tester.pumpWidget(app.widget);
       await tester.pumpAndSettle();
@@ -144,13 +153,12 @@ void main() {
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
 
-      expect(find.text('Landing (plano)'), findsOneWidget,
-          reason: 'Catálogo es la raíz del tab home, pero Landing va "antes" -- el back debe llevar ahí primero');
-      expect(find.text('Presiona atrás de nuevo para salir'), findsNothing,
-          reason: 'no debe saltar directo al doble-back-para-salir, eso le corresponde a Landing');
+      expect(find.text('Home Landing'), findsOneWidget,
+          reason: 'Landing es ahora un branch más (home del shell), no una ruta plana aparte');
+      expect(find.text('Presiona atrás de nuevo para salir'), findsNothing);
     });
 
-    testWidgets('back en la raíz de Perfil (no-home) lleva a Catálogo (home)', (tester) async {
+    testWidgets('back en la raíz de Perfil (no-home) lleva a Landing (home)', (tester) async {
       final app = _buildApp(initialLocation: '/perfil');
       await tester.pumpWidget(app.widget);
       await tester.pumpAndSettle();
@@ -158,10 +166,10 @@ void main() {
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
 
-      expect(find.text('Home Catálogo'), findsOneWidget);
+      expect(find.text('Home Landing'), findsOneWidget);
     });
 
-    testWidgets('back en Landing (ya no hay a dónde volver) muestra el snackbar de doble-back', (tester) async {
+    testWidgets('back en la raíz de Landing (home) muestra el snackbar de doble-back', (tester) async {
       final app = _buildApp(initialLocation: '/landing');
       await tester.pumpWidget(app.widget);
       await tester.pumpAndSettle();
@@ -170,6 +178,35 @@ void main() {
       await tester.pump();
 
       expect(find.text('Presiona atrás de nuevo para salir'), findsOneWidget);
+    });
+
+    testWidgets('tocar Catálogo↔Perfil directamente SÍ navega normal (el dispatcher no debe interferir)', (tester) async {
+      final app = _buildApp(initialLocation: '/catalogo');
+      await tester.pumpWidget(app.widget);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Perfil'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Home Perfil'), findsOneWidget);
+      expect(find.text('Home Landing'), findsNothing,
+          reason: 'cambiar de tab directamente no debe rebotar a Landing');
+    });
+  });
+
+  group('Login/Register/ForgotPassword (planas, mismo destino fijo)', () {
+    testWidgets('back en Login lleva a Catálogo, no aplica doble-back-para-salir', (tester) async {
+      final app = _buildApp(initialLocation: '/login');
+      await tester.pumpWidget(app.widget);
+      await tester.pumpAndSettle();
+      expect(find.text('Login (plano)'), findsOneWidget);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Home Catálogo'), findsOneWidget,
+          reason: 'sin push real no hay "de dónde vine" -- el destino fijo es /catalogo, no salir de la app');
+      expect(find.text('Presiona atrás de nuevo para salir'), findsNothing);
     });
   });
 

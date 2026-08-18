@@ -5,15 +5,16 @@ import 'package:provider/provider.dart';
 import '../../core/services/auth_service.dart' show UserRole;
 import '../../features/auth/providers/auth_provider.dart';
 
-/// Bottom nav nativo para las 2 pantallas raíz del cliente (Catálogo,
-/// Perfil) — cada una vive en su propio branch de un StatefulShellRoute
-/// (Navigator independiente por tab, así el historial de "atrás" de cada
-/// sección es propio, no uno solo compartido). Puntos vive dentro de Perfil
-/// como una pestaña más, no como branch propio. Misma lista de destinos que
-/// antes ofrecía el navbar web según el estado de auth:
-/// - Sin sesión: Catálogo + Iniciar sesión (Iniciar sesión no es un branch
-///   del shell, es una ruta plana — sale del shell por completo).
-/// - Con sesión: Catálogo + Perfil.
+/// Bottom nav nativo para las 3 pantallas raíz del cliente (Catálogo,
+/// Landing/Inicio, Perfil) — cada una vive en su propio branch de un
+/// StatefulShellRoute (Navigator independiente por tab, así el historial de
+/// "atrás" de cada sección es propio, no uno solo compartido). Puntos vive
+/// dentro de Perfil como una pestaña más, no como branch propio. Misma
+/// lista de destinos que antes ofrecía el navbar web según el estado de
+/// auth:
+/// - Sin sesión: Catálogo + Inicio + Iniciar sesión (Iniciar sesión no es
+///   un branch del shell, es una ruta plana — sale del shell por completo).
+/// - Con sesión: Catálogo + Inicio + Perfil.
 class ClientBottomNav extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
   const ClientBottomNav({super.key, required this.navigationShell});
@@ -24,17 +25,15 @@ class ClientBottomNav extends StatelessWidget {
 
     final items = <_NavItem>[
       const _NavItem(icon: Icons.storefront_rounded, label: 'Catálogo', branchIndex: 0),
+      const _NavItem(icon: Icons.home_rounded, label: 'Inicio', branchIndex: 1),
       if (user != null)
-        const _NavItem(icon: Icons.person_rounded, label: 'Perfil', branchIndex: 1)
+        const _NavItem(icon: Icons.person_rounded, label: 'Perfil', branchIndex: 2)
       else
         const _NavItem(icon: Icons.login_rounded, label: 'Ingresar', externalRoute: '/login'),
     ];
 
-    // Sin sesión, el único branch alcanzable es Catálogo (0) — el resto ya
-    // redirige a /catalogo (ver _redirect en main.dart).
-    final activeIndex = user != null
-        ? items.indexWhere((i) => i.branchIndex == navigationShell.currentIndex).clamp(0, items.length - 1)
-        : 0;
+    final foundIndex = items.indexWhere((i) => i.branchIndex == navigationShell.currentIndex);
+    final activeIndex = foundIndex == -1 ? 0 : foundIndex;
 
     return BottomNavigationBar(
       currentIndex: activeIndex,

@@ -127,7 +127,6 @@ class _AppRouterState extends State<_AppRouter> {
             builder: (_, __) => const ForgotPasswordScreen()),
 
         // ── Cliente ─────────────────────────────────────────
-        GoRoute(path: '/landing', builder: (_, __) => const LandingScreen()),
         GoRoute(
           path: '/checkout',
           builder: (_, state) {
@@ -143,12 +142,15 @@ class _AppRouterState extends State<_AppRouter> {
                   distanciaKm: (extra?['distanciaKm'] as num?)?.toDouble() ?? 0);
             }),
 
-        // Shell del rol Cliente: Catálogo/Perfil, cada uno con su propio
-        // Navigator (historial de "atrás" independiente por tab). Puntos
-        // vive dentro de Perfil como una pestaña más (no como branch propio
-        // -- antes lo era, se revirtió). Checkout y PedidoExitoso quedan
-        // fuera a propósito (no tendría sentido que "atrás" devuelva a
-        // mitad de un pedido ya hecho).
+        // Shell del rol Cliente: Catálogo/Landing/Perfil, cada uno con su
+        // propio Navigator (historial de "atrás" independiente por tab).
+        // Landing (home del shell) volvió a tener bottom nav propio --
+        // antes de esta sesión era una ruta plana con su propio navbar tipo
+        // web (hamburguesa), ahora es un branch más como el resto de la
+        // app. Puntos vive dentro de Perfil como una pestaña más (no como
+        // branch propio -- antes lo era, se revirtió). Checkout y
+        // PedidoExitoso quedan fuera a propósito (no tendría sentido que
+        // "atrás" devuelva a mitad de un pedido ya hecho).
         //
         // El back en la raíz de cada branch (ir al tab home, o doble-back-
         // para-salir si ya es home) lo maneja ShellAwareBackButtonDispatcher
@@ -156,9 +158,6 @@ class _AppRouterState extends State<_AppRouter> {
         // MaterialApp.router. No usa PopScope ni onExit -- ver el comentario
         // completo en double_back_to_exit.dart y root_shell_scaffold.dart
         // sobre por qué ninguno de los dos funciona en la raíz de un branch.
-        // El back en la raíz de Catálogo (home) va a /landing en vez de
-        // aplicar doble-back-para-salir directo -- ver flatRouteHandlers
-        // más abajo (_catalogoExitHandler).
         StatefulShellRoute.indexedStack(
           builder: (context, state, navigationShell) => RootShellScaffold(
             navigationShell: navigationShell,
@@ -169,6 +168,12 @@ class _AppRouterState extends State<_AppRouter> {
               GoRoute(
                 path: '/catalogo',
                 builder: (_, __) => const CatalogoScreen(),
+              ),
+            ]),
+            StatefulShellBranch(routes: [
+              GoRoute(
+                path: '/landing',
+                builder: (_, __) => const LandingScreen(),
               ),
             ]),
             StatefulShellBranch(routes: [
@@ -368,15 +373,15 @@ class _AppRouterState extends State<_AppRouter> {
     return BackExitController.attemptExit(context);
   }
 
-  // /catalogo es la raíz del tab home del shell de Cliente, así que sin
-  // esto el dispatcher aplicaría doble-back-para-salir directo -- pero
-  // Landing es conceptualmente "antes" de Catálogo, así que el back acá
-  // debe llevar ahí primero (y solo desde Landing sí aplica el
-  // doble-back-para-salir real, como cualquier otra raíz sin handler
-  // propio). flatRouteHandlers no exige que la ruta sea plana, solo que
-  // esté indexada por location -- funciona igual para la raíz de un branch.
-  Future<bool> _catalogoExitHandler(BuildContext context) async {
-    _router.go('/landing');
+  // Login/Register/ForgotPassword se alcanzan con context.go() desde
+  // varios lados (no con push), así que go_router no tiene un "de dónde
+  // vine" al que volver -- el back debe llevar a algún destino fijo y
+  // predecible en vez de caer al doble-back-para-salir por defecto
+  // (que sacaría de la app en medio de un login). /catalogo es el destino
+  // más común desde donde se abren estas 3 pantallas (el diálogo de
+  // "inicia sesión para comprar", el ítem "Ingresar" del bottom nav).
+  Future<bool> _authScreenExitHandler(BuildContext context) async {
+    _router.go('/catalogo');
     return false;
   }
 
@@ -418,7 +423,8 @@ class _AppRouterState extends State<_AppRouter> {
       backButtonDispatcher: ShellAwareBackButtonDispatcher(
         _router,
         nonHomeToHome: const {
-          '/perfil': '/catalogo',
+          '/catalogo': '/landing',
+          '/perfil': '/landing',
           '/domiciliario/caja': '/domiciliario/pedidos',
           '/admin/productos': '/admin/dashboard',
           '/admin/ventas': '/admin/dashboard',
@@ -426,7 +432,9 @@ class _AppRouterState extends State<_AppRouter> {
         flatRouteHandlers: {
           '/admin/domicilios': _staffFlatRouteExitHandler,
           '/cocina': _staffFlatRouteExitHandler,
-          '/catalogo': _catalogoExitHandler,
+          '/login': _authScreenExitHandler,
+          '/register': _authScreenExitHandler,
+          '/forgot-password': _authScreenExitHandler,
         },
       ),
       localizationsDelegates: const [
