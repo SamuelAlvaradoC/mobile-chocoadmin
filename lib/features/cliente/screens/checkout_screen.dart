@@ -358,9 +358,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         });
       }
     } on ApiException catch (e) {
-      setState(() => _errorEnvio = e.message);
+      if (mounted) setState(() => _errorEnvio = e.message);
     } catch (e) {
-      setState(() => _errorEnvio = 'Error al enviar el pedido');
+      if (mounted) setState(() => _errorEnvio = 'Error al enviar el pedido');
     }
 
     if (mounted) { setState(() => _enviando = false); }
