@@ -183,7 +183,12 @@ class _Footer extends StatelessWidget {
                                 text: '315-991-46-24',
                                 onTap: () => _launch('https://wa.me/573159914624'),
                               ),
-                              const _FooterContactItem(icon: Icons.email_outlined,  text: 'chocofreseo@gmail.com'),
+                              // ​ (espacio de ancho cero) después del
+                              // @ -- el correo no tiene espacios, así que
+                              // sin un punto de corte explícito el texto no
+                              // podía partirse en 2 líneas y se salía del
+                              // ancho de la columna (la "m" quedaba cortada).
+                              const _FooterContactItem(icon: Icons.email_outlined, text: 'chocofreseo@​gmail.com'),
                             ],
                           ),
                         ),
