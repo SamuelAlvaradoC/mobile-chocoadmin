@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -305,12 +306,14 @@ class _AdicionesScreenState extends State<AdicionesScreen> {
                                               if (img.isNotEmpty) ...[
                                                 ClipRRect(
                                                   borderRadius: BorderRadius.circular(8),
-                                                  child: Image.network(
-                                                    img,
+                                                  child: CachedNetworkImage(
+                                                    imageUrl: img,
                                                     width: 48,
                                                     height: 48,
                                                     fit: BoxFit.cover,
-                                                    errorBuilder: (_, __, ___) =>
+                                                    placeholder: (_, __) => Container(
+                                                        width: 48, height: 48, color: const Color(0xFFF0F0F0)),
+                                                    errorWidget: (_, __, ___) =>
                                                         const SizedBox(width: 48, height: 48),
                                                   ),
                                                 ),
@@ -751,11 +754,12 @@ class _AdicionDetalleDialog extends StatelessWidget {
                     Center(
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(10),
-                        child: Image.network(
-                          img,
+                        child: CachedNetworkImage(
+                          imageUrl: img,
                           height: 120,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                          placeholder: (_, __) => Container(height: 120, color: const Color(0xFFF0F0F0)),
+                          errorWidget: (_, __, ___) => const SizedBox.shrink(),
                         ),
                       ),
                     ),
@@ -1008,11 +1012,12 @@ class _ImageUploadWidgetState extends State<_ImageUploadWidget> {
                     child: CircularProgressIndicator(
                         color: AppColors.primary, strokeWidth: 2))
                 : (widget.imageUrl != null && widget.imageUrl!.isNotEmpty)
-                    ? Image.network(
-                        widget.imageUrl!,
+                    ? CachedNetworkImage(
+                        imageUrl: widget.imageUrl!,
                         fit: BoxFit.cover,
                         width: double.infinity,
-                        errorBuilder: (_, __, ___) => _placeholder(),
+                        placeholder: (_, __) => Container(color: const Color(0xFFF0F0F0)),
+                        errorWidget: (_, __, ___) => _placeholder(),
                       )
                     : _placeholder(),
           ),
