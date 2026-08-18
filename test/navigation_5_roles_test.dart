@@ -41,13 +41,26 @@ Widget _bottomNavDeIndices(StatefulNavigationShell shell, List<String> labels) {
 }) {
   late final GoRouter router;
 
+  // Copia real de _ultimaRutaAdminShell + su tracking en _redirect
+  // (main.dart): admin vuelve al branch del shell admin que tenía abierto
+  // antes (Dashboard/Productos/Ventas), no siempre al Dashboard.
+  const ramasAdminShell = {'/admin/dashboard', '/admin/productos', '/admin/ventas'};
+  var ultimaRutaAdminShell = '/admin/dashboard';
+  String? redirect(BuildContext context, GoRouterState state) {
+    if (ramasAdminShell.contains(state.matchedLocation)) {
+      ultimaRutaAdminShell = state.matchedLocation;
+    }
+    return null;
+  }
+
   // Mismo patrón que _staffFlatRouteExitHandler en main.dart: admin vuelve
-  // al dashboard sin salir; cualquier otro rol (cocina/confirmador) aplica
-  // doble-back-para-salir. `rol` queda fijo para toda la vida de este router
-  // de prueba (cada test construye el suyo con el rol que necesita).
+  // al último branch del shell admin visitado; cualquier otro rol
+  // (cocina/confirmador) aplica doble-back-para-salir. `rol` queda fijo
+  // para toda la vida de este router de prueba (cada test construye el
+  // suyo con el rol que necesita).
   Future<bool> staffFlatHandler(BuildContext context) async {
     if (rol == _RolStaff.admin) {
-      router.go('/admin/dashboard');
+      router.go(ultimaRutaAdminShell);
       return false;
     }
     return BackExitController.attemptExit(context);
@@ -59,8 +72,15 @@ Widget _bottomNavDeIndices(StatefulNavigationShell shell, List<String> labels) {
     return false;
   }
 
+  // Copia real de _checkoutExitHandler en main.dart.
+  Future<bool> checkoutExitHandler(BuildContext context) async {
+    router.go('/catalogo');
+    return false;
+  }
+
   router = GoRouter(
     initialLocation: initialLocation,
+    redirect: redirect,
     routes: [
       // ── Cliente ──────────────────────────────────────────────
       // Puntos vive dentro de Perfil como pestaña, no como branch propio.
@@ -109,6 +129,7 @@ Widget _bottomNavDeIndices(StatefulNavigationShell shell, List<String> labels) {
       GoRoute(path: '/admin/domicilios', builder: (_, __) => const Scaffold(body: Text('Confirmador (plano)'))),
       GoRoute(path: '/cocina', builder: (_, __) => const Scaffold(body: Text('Cocina (plano)'))),
       GoRoute(path: '/login', builder: (_, __) => const Scaffold(body: Text('Login (plano)'))),
+      GoRoute(path: '/checkout', builder: (_, __) => const Scaffold(body: Text('Checkout (plano)'))),
     ],
   );
 
@@ -133,6 +154,7 @@ Widget _bottomNavDeIndices(StatefulNavigationShell shell, List<String> labels) {
         // mismo handler -- alcanza con probar uno acá, los otros 2 son la
         // misma función registrada 2 veces más.
         '/login': authScreenExitHandler,
+        '/checkout': checkoutExitHandler,
       },
     ),
   );
@@ -283,6 +305,43 @@ void main() {
       expect(find.text('Home Ventas'), findsOneWidget,
           reason: 'cambiar de tab directamente no debe rebotar a Dashboard como pasaba con el bug de onExit');
       expect(find.text('Home Dashboard'), findsNothing);
+    });
+
+    testWidgets('admin en Ventas -> Confirmar pedidos -> back vuelve a Ventas, no siempre al Dashboard', (tester) async {
+      // Reproduce el caso reportado: "soy el admin, paso a Ventas, de Ventas
+      // a Confirmar, debería devolver a Ventas" -- back "estilo navegador"
+      // en vez de un destino fijo.
+      final app = _buildApp(initialLocation: '/admin/ventas', rol: _RolStaff.admin);
+      await tester.pumpWidget(app.widget);
+      await tester.pumpAndSettle();
+      expect(find.text('Home Ventas'), findsOneWidget);
+
+      app.router.go('/admin/domicilios'); // "Confirmar pedidos" desde Ventas
+      await tester.pumpAndSettle();
+      expect(find.text('Confirmador (plano)'), findsOneWidget);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Home Ventas'), findsOneWidget,
+          reason: 'debe recordar que Ventas fue el último branch admin visitado, no caer siempre a Dashboard');
+      expect(find.text('Home Dashboard'), findsNothing);
+    });
+  });
+
+  group('Checkout (ruta plana, mismo destino fijo que su flechita de AppBar)', () {
+    testWidgets('back en Checkout lleva a Catálogo, no aplica doble-back-para-salir', (tester) async {
+      final app = _buildApp(initialLocation: '/checkout');
+      await tester.pumpWidget(app.widget);
+      await tester.pumpAndSettle();
+      expect(find.text('Checkout (plano)'), findsOneWidget);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Home Catálogo'), findsOneWidget,
+          reason: 'debe coincidir con la flechita del AppBar de checkout_screen.dart, no salir de la app a mitad de un pedido');
+      expect(find.text('Presiona atrás de nuevo para salir'), findsNothing);
     });
   });
 
