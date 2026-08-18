@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'core/constants/app_theme.dart';
+import 'core/routing/auth_redirect.dart';
 import 'core/services/api_service.dart';
 import 'core/services/auth_service.dart';
 import 'features/auth/providers/auth_provider.dart';
@@ -328,6 +329,11 @@ class _AppRouterState extends State<_AppRouter> {
     '/admin/ventas',
   };
 
+  // La lógica real vive en core/routing/auth_redirect.dart (computeAuthRedirect)
+  // -- extraída a una función top-level pura para poder importarla directo
+  // en tests, en vez de que un test tenga que copiar/adivinar este cuerpo
+  // (ver el comentario extenso ahí sobre el bug real que motivó esto: login
+  // fallido se tragaba el error y terminaba en /catalogo sin avisar nada).
   String? _redirect(BuildContext context, GoRouterState state) {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final location = state.matchedLocation;
@@ -336,47 +342,11 @@ class _AppRouterState extends State<_AppRouter> {
       _ultimaRutaAdminShell = location;
     }
 
-    if (auth.status == AuthStatus.initial ||
-        auth.status == AuthStatus.loading) {
-      return location == '/splash' ? null : '/splash';
-    }
-
-    // Rutas que no requieren autenticación
-    const authRoutes   = ['/login', '/register', '/forgot-password'];
-    const publicRoutes = ['/landing', '/catalogo'];
-
-    if (auth.status == AuthStatus.unauthenticated ||
-        auth.status == AuthStatus.error) {
-      if (authRoutes.contains(location) || publicRoutes.contains(location)) {
-        return null; // permitir sin login
-      }
-      return '/catalogo'; // resto de rutas → catálogo público
-    }
-
-    // Autenticado: redirigir fuera de auth/splash al home del rol
-    if (location == '/splash' || authRoutes.contains(location)) {
-      return _homeForRole(auth.user?.role);
-    }
-
-    // Guardar acceso cruzado de roles
-    if (auth.user?.role == UserRole.domiciliario &&
-        (location.startsWith('/admin'))) {
-      return '/domiciliario/pedidos';
-    }
-    if (auth.user?.role == UserRole.admin &&
-        (location.startsWith('/domiciliario'))) {
-      return '/admin/dashboard';
-    }
-    if (auth.user?.role == UserRole.confirmadorDomicilio &&
-        (location.startsWith('/domiciliario'))) {
-      return '/admin/domicilios';
-    }
-    if (auth.user?.role == UserRole.cocina &&
-        !location.startsWith('/cocina')) {
-      return '/cocina';
-    }
-
-    return null;
+    return computeAuthRedirect(
+      status: auth.status,
+      location: location,
+      role: auth.user?.role,
+    );
   }
 
   // Handler compartido para las rutas planas /admin/domicilios y /cocina
@@ -414,21 +384,6 @@ class _AppRouterState extends State<_AppRouter> {
   Future<bool> _checkoutExitHandler(BuildContext context) async {
     _router.go('/catalogo');
     return false;
-  }
-
-  String _homeForRole(UserRole? role) {
-    switch (role) {
-      case UserRole.domiciliario:
-        return '/domiciliario/pedidos';
-      case UserRole.admin:
-        return '/admin/dashboard';
-      case UserRole.confirmadorDomicilio:
-        return '/admin/domicilios';
-      case UserRole.cocina:
-        return '/cocina';
-      default:
-        return '/catalogo'; // clientes y no autenticados → catálogo
-    }
   }
 
   @override
