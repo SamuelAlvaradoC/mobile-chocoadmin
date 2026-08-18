@@ -7,6 +7,18 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/api_service.dart';
 
+// Si se llegó aquí empujado desde Login (context.push), volver hace pop y
+// cae de nuevo sobre esa misma pantalla -- back "estilo web". Si se llegó
+// directo (sin nada que popear, ej. deep link), .go('/login') es el
+// fallback -- evita apilar un Login nuevo encima de otro ya existente.
+void _volverALogin(BuildContext context) {
+  if (context.canPop()) {
+    context.pop();
+  } else {
+    context.go('/login');
+  }
+}
+
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
 
@@ -188,7 +200,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     children: [
       if (!_exito)
         GestureDetector(
-          onTap: () => context.go('/login'),
+          onTap: () => _volverALogin(context),
           child: Padding(
             padding: const EdgeInsets.only(bottom: 20),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -263,7 +275,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       )),
       const SizedBox(height: 20),
       Center(child: GestureDetector(
-        onTap: () => context.go('/login'),
+        onTap: () => _volverALogin(context),
         child: Text('← Volver al inicio de sesión',
             style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.primary)),
       )),

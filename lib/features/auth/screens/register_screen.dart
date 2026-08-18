@@ -261,7 +261,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       children: [
         const TextSpan(text: '¿Ya tienes cuenta? '),
         WidgetSpan(child: GestureDetector(
-          onTap: () => context.go('/login'),
+          // push (no go): el back del sistema debe volver a Register, no
+          // saltar siempre a /catalogo -- mismo criterio que Login<->Register
+          // <->ForgotPassword en login_screen.dart.
+          onTap: () => context.push('/login'),
           child: Text('Inicia sesión',
               style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.primary)),
         )),

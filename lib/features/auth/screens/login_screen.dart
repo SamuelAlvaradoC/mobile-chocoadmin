@@ -216,7 +216,10 @@ class _LoginScreenState extends State<LoginScreen> {
     Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
       _lbl('Contraseña'),
       GestureDetector(
-        onTap: () => context.go('/forgot-password'),
+        // push (no go): así el back del sistema regresa a Login, no a un
+        // destino fijo -- "atrás" como en una web, deshace la navegación en
+        // vez de saltar siempre a /catalogo.
+        onTap: () => context.push('/forgot-password'),
         child: Text('¿Olvidaste tu contraseña?',
             style: GoogleFonts.nunito(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
       ),
@@ -252,7 +255,7 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         const TextSpan(text: '¿No tienes cuenta? '),
         WidgetSpan(child: GestureDetector(
-          onTap: () => context.go('/register'),
+          onTap: () => context.push('/register'),
           child: Text('Regístrate gratis',
               style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.primary)),
         )),

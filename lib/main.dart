@@ -393,14 +393,25 @@ class _AppRouterState extends State<_AppRouter> {
     return BackExitController.attemptExit(context);
   }
 
-  // Login/Register/ForgotPassword se alcanzan con context.go() desde
-  // varios lados (no con push), así que go_router no tiene un "de dónde
-  // vine" al que volver -- el back debe llevar a algún destino fijo y
-  // predecible en vez de caer al doble-back-para-salir por defecto
-  // (que sacaría de la app en medio de un login). /catalogo es el destino
-  // más común desde donde se abren estas 3 pantallas (el diálogo de
-  // "inicia sesión para comprar", el ítem "Ingresar" del bottom nav).
+  // Login/Register/ForgotPassword se ALCANZAN (entrada inicial) con
+  // context.go() desde varios lados -- el diálogo de "inicia sesión para
+  // comprar", el ítem "Ingresar" del bottom nav -- así que en ese punto
+  // go_router no tiene un "de dónde vine" al que volver. Este handler solo
+  // se consulta cuando de verdad no hay nada que popear (router.canPop()
+  // false): si el usuario llegó cruzando ENTRE estas 3 pantallas (Login <->
+  // Register <-> ForgotPassword usan context.push() entre ellas, ver esos
+  // 3 archivos), el back normal ya resuelve solo, sin pasar por acá.
+  // /catalogo es el destino más común desde donde se abren estas 3.
   Future<bool> _authScreenExitHandler(BuildContext context) async {
+    _router.go('/catalogo');
+    return false;
+  }
+
+  // /checkout tiene su propia flechita en el AppBar que vuelve a /catalogo
+  // (ver checkout_screen.dart) -- el back del sistema debe hacer lo mismo,
+  // no caer al doble-back-para-salir por defecto (que sacaría de la app a
+  // mitad de un pedido).
+  Future<bool> _checkoutExitHandler(BuildContext context) async {
     _router.go('/catalogo');
     return false;
   }
@@ -455,6 +466,7 @@ class _AppRouterState extends State<_AppRouter> {
           '/login': _authScreenExitHandler,
           '/register': _authScreenExitHandler,
           '/forgot-password': _authScreenExitHandler,
+          '/checkout': _checkoutExitHandler,
         },
       ),
       localizationsDelegates: const [
