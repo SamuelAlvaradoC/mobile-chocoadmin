@@ -53,6 +53,14 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('es_CO', null);
   GoogleFonts.config.allowRuntimeFetching = true;
+  // App de pedidos, sin ningún layout pensado para landscape -- fijada en
+  // portrait a nivel de Flutter (además del screenOrientation en
+  // AndroidManifest.xml, que evita el flash de orientación incorrecta
+  // mientras el engine todavía está arrancando).
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
   // Status bar transparente con íconos oscuros: el AppBar es blanco
   // (AppColors.surface) en toda la app, así que se funde con el contenido
   // en vez de mostrar la barra gris/blanca por defecto del sistema.
