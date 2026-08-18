@@ -107,6 +107,14 @@ class _AppRouterState extends State<_AppRouter> {
   late final GoRouter _router;
   bool _manejandoSesionExpirada = false;
 
+  // Recuerda el último branch del shell admin visitado (Dashboard/Productos/
+  // Ventas), para que el back desde una ruta plana (Cocina, Confirmador de
+  // domicilios) regrese ahí en vez de siempre al Dashboard -- back "estilo
+  // navegador", no un destino fijo. Se actualiza como side-effect en
+  // _redirect (se ejecuta en cada navegación) porque es el único punto
+  // central por el que pasa toda ruta antes de construirse.
+  String _ultimaRutaAdminShell = '/admin/dashboard';
+
   @override
   void initState() {
     super.initState();
@@ -314,9 +322,19 @@ class _AppRouterState extends State<_AppRouter> {
     };
   }
 
+  static const _ramasAdminShell = {
+    '/admin/dashboard',
+    '/admin/productos',
+    '/admin/ventas',
+  };
+
   String? _redirect(BuildContext context, GoRouterState state) {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final location = state.matchedLocation;
+
+    if (_ramasAdminShell.contains(location)) {
+      _ultimaRutaAdminShell = location;
+    }
 
     if (auth.status == AuthStatus.initial ||
         auth.status == AuthStatus.loading) {
@@ -362,12 +380,14 @@ class _AppRouterState extends State<_AppRouter> {
   }
 
   // Handler compartido para las rutas planas /admin/domicilios y /cocina
-  // (ver comentario en las rutas): admin vuelve al Dashboard sin salir;
-  // confirmador/cocina aplican doble-back-para-salir.
+  // (ver comentario en las rutas): admin vuelve al branch del shell admin
+  // que tenía abierto antes (Dashboard/Productos/Ventas -- ver
+  // _ultimaRutaAdminShell), no siempre al Dashboard; confirmador/cocina
+  // aplican doble-back-para-salir.
   Future<bool> _staffFlatRouteExitHandler(BuildContext context) async {
     final role = context.read<AuthProvider>().user?.role;
     if (role == UserRole.admin) {
-      _router.go('/admin/dashboard');
+      _router.go(_ultimaRutaAdminShell);
       return false;
     }
     return BackExitController.attemptExit(context);
