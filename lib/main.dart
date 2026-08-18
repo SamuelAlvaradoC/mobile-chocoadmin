@@ -26,7 +26,6 @@ import 'features/cliente/screens/catalogo_screen.dart';
 import 'features/cliente/screens/checkout_screen.dart';
 import 'features/cliente/screens/pedido_exitoso_screen.dart';
 import 'features/cliente/screens/perfil_screen.dart';
-import 'features/cliente/screens/puntos_screen.dart';
 import 'shared/layouts/client_bottom_nav.dart';
 import 'shared/layouts/root_shell_scaffold.dart';
 import 'shared/widgets/double_back_to_exit.dart';
@@ -144,10 +143,12 @@ class _AppRouterState extends State<_AppRouter> {
                   distanciaKm: (extra?['distanciaKm'] as num?)?.toDouble() ?? 0);
             }),
 
-        // Shell del rol Cliente: Catálogo/Puntos/Perfil, cada uno con su
-        // propio Navigator (historial de "atrás" independiente por tab).
-        // Checkout y PedidoExitoso quedan fuera a propósito (no tendría
-        // sentido que "atrás" devuelva a mitad de un pedido ya hecho).
+        // Shell del rol Cliente: Catálogo/Perfil, cada uno con su propio
+        // Navigator (historial de "atrás" independiente por tab). Puntos
+        // vive dentro de Perfil como una pestaña más (no como branch propio
+        // -- antes lo era, se revirtió). Checkout y PedidoExitoso quedan
+        // fuera a propósito (no tendría sentido que "atrás" devuelva a
+        // mitad de un pedido ya hecho).
         //
         // El back en la raíz de cada branch (ir al tab home, o doble-back-
         // para-salir si ya es home) lo maneja ShellAwareBackButtonDispatcher
@@ -155,6 +156,9 @@ class _AppRouterState extends State<_AppRouter> {
         // MaterialApp.router. No usa PopScope ni onExit -- ver el comentario
         // completo en double_back_to_exit.dart y root_shell_scaffold.dart
         // sobre por qué ninguno de los dos funciona en la raíz de un branch.
+        // El back en la raíz de Catálogo (home) va a /landing en vez de
+        // aplicar doble-back-para-salir directo -- ver flatRouteHandlers
+        // más abajo (_catalogoExitHandler).
         StatefulShellRoute.indexedStack(
           builder: (context, state, navigationShell) => RootShellScaffold(
             navigationShell: navigationShell,
@@ -165,12 +169,6 @@ class _AppRouterState extends State<_AppRouter> {
               GoRoute(
                 path: '/catalogo',
                 builder: (_, __) => const CatalogoScreen(),
-              ),
-            ]),
-            StatefulShellBranch(routes: [
-              GoRoute(
-                path: '/puntos',
-                builder: (_, __) => const PuntosScreen(),
               ),
             ]),
             StatefulShellBranch(routes: [
@@ -420,7 +418,6 @@ class _AppRouterState extends State<_AppRouter> {
       backButtonDispatcher: ShellAwareBackButtonDispatcher(
         _router,
         nonHomeToHome: const {
-          '/puntos': '/catalogo',
           '/perfil': '/catalogo',
           '/domiciliario/caja': '/domiciliario/pedidos',
           '/admin/productos': '/admin/dashboard',

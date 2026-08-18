@@ -6,12 +6,15 @@
 // prueba manual en el celular.
 //
 // Pantallas triviales (Text), mismos paths y misma config que main.dart:
-// Cliente (/catalogo home, /puntos, /perfil), Domiciliario
-// (/domiciliario/pedidos home, /domiciliario/caja), Admin (/admin/dashboard
-// home, /admin/productos, /admin/ventas), y las 2 rutas planas
-// rol-conscientes (/cocina, /admin/domicilios) con el mismo patrón de
-// _staffFlatRouteExitHandler de main.dart (admin -> vuelve al dashboard,
-// cualquier otro rol -> doble-back-para-salir).
+// Cliente (/catalogo home, /perfil -- Puntos vive dentro de Perfil, no es
+// branch propio), Domiciliario (/domiciliario/pedidos home,
+// /domiciliario/caja), Admin (/admin/dashboard home, /admin/productos,
+// /admin/ventas), y las rutas planas rol-conscientes (/cocina,
+// /admin/domicilios) con el mismo patrón de _staffFlatRouteExitHandler de
+// main.dart (admin -> vuelve al dashboard, cualquier otro rol ->
+// doble-back-para-salir). /catalogo también tiene su propio
+// flatRouteHandler (_catalogoExitHandler real): back en su raíz va a
+// /landing en vez de aplicar doble-back-para-salir directo.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -49,18 +52,24 @@ Widget _bottomNavDeIndices(StatefulNavigationShell shell, List<String> labels) {
     return BackExitController.attemptExit(context);
   }
 
+  // Copia real de _catalogoExitHandler en main.dart.
+  Future<bool> catalogoExitHandler(BuildContext context) async {
+    router.go('/landing');
+    return false;
+  }
+
   router = GoRouter(
     initialLocation: initialLocation,
     routes: [
       // ── Cliente ──────────────────────────────────────────────
+      // Puntos vive dentro de Perfil como pestaña, no como branch propio.
       StatefulShellRoute.indexedStack(
         builder: (c, s, shell) => RootShellScaffold(
           navigationShell: shell,
-          bottomNavBuilder: (shell) => _bottomNavDeIndices(shell, const ['Catálogo', 'Puntos', 'Perfil']),
+          bottomNavBuilder: (shell) => _bottomNavDeIndices(shell, const ['Catálogo', 'Perfil']),
         ),
         branches: [
           StatefulShellBranch(routes: [GoRoute(path: '/catalogo', builder: (_, __) => const Text('Home Catálogo'))]),
-          StatefulShellBranch(routes: [GoRoute(path: '/puntos', builder: (_, __) => const Text('Home Puntos'))]),
           StatefulShellBranch(routes: [GoRoute(path: '/perfil', builder: (_, __) => const Text('Home Perfil'))]),
         ],
       ),
@@ -94,6 +103,7 @@ Widget _bottomNavDeIndices(StatefulNavigationShell shell, List<String> labels) {
       // encuentre dónde mostrar el SnackBar de doble-back.
       GoRoute(path: '/admin/domicilios', builder: (_, __) => const Scaffold(body: Text('Confirmador (plano)'))),
       GoRoute(path: '/cocina', builder: (_, __) => const Scaffold(body: Text('Cocina (plano)'))),
+      GoRoute(path: '/landing', builder: (_, __) => const Scaffold(body: Text('Landing (plano)'))),
     ],
   );
 
@@ -105,7 +115,6 @@ Widget _bottomNavDeIndices(StatefulNavigationShell shell, List<String> labels) {
       router,
       // Copiado literal del mapa real en main.dart.
       nonHomeToHome: const {
-        '/puntos': '/catalogo',
         '/perfil': '/catalogo',
         '/domiciliario/caja': '/domiciliario/pedidos',
         '/admin/productos': '/admin/dashboard',
@@ -114,6 +123,7 @@ Widget _bottomNavDeIndices(StatefulNavigationShell shell, List<String> labels) {
       flatRouteHandlers: {
         '/admin/domicilios': staffFlatHandler,
         '/cocina': staffFlatHandler,
+        '/catalogo': catalogoExitHandler,
       },
     ),
   );
@@ -123,6 +133,45 @@ Widget _bottomNavDeIndices(StatefulNavigationShell shell, List<String> labels) {
 
 void main() {
   setUp(_resetDebounce);
+
+  group('Cliente (2 branches, Puntos vive dentro de Perfil)', () {
+    testWidgets('back en la raíz de Catálogo (home) va a Landing, no aplica doble-back-para-salir directo', (tester) async {
+      final app = _buildApp(initialLocation: '/catalogo');
+      await tester.pumpWidget(app.widget);
+      await tester.pumpAndSettle();
+      expect(find.text('Home Catálogo'), findsOneWidget);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Landing (plano)'), findsOneWidget,
+          reason: 'Catálogo es la raíz del tab home, pero Landing va "antes" -- el back debe llevar ahí primero');
+      expect(find.text('Presiona atrás de nuevo para salir'), findsNothing,
+          reason: 'no debe saltar directo al doble-back-para-salir, eso le corresponde a Landing');
+    });
+
+    testWidgets('back en la raíz de Perfil (no-home) lleva a Catálogo (home)', (tester) async {
+      final app = _buildApp(initialLocation: '/perfil');
+      await tester.pumpWidget(app.widget);
+      await tester.pumpAndSettle();
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Home Catálogo'), findsOneWidget);
+    });
+
+    testWidgets('back en Landing (ya no hay a dónde volver) muestra el snackbar de doble-back', (tester) async {
+      final app = _buildApp(initialLocation: '/landing');
+      await tester.pumpWidget(app.widget);
+      await tester.pumpAndSettle();
+
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+
+      expect(find.text('Presiona atrás de nuevo para salir'), findsOneWidget);
+    });
+  });
 
   group('Domiciliario (2 branches)', () {
     testWidgets('back en la raíz de Caja (no-home) lleva a Pedidos (home)', (tester) async {

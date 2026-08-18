@@ -5,14 +5,15 @@ import 'package:provider/provider.dart';
 import '../../core/services/auth_service.dart' show UserRole;
 import '../../features/auth/providers/auth_provider.dart';
 
-/// Bottom nav nativo para las 3 pantallas raíz del cliente (Catálogo, Puntos,
+/// Bottom nav nativo para las 2 pantallas raíz del cliente (Catálogo,
 /// Perfil) — cada una vive en su propio branch de un StatefulShellRoute
 /// (Navigator independiente por tab, así el historial de "atrás" de cada
-/// sección es propio, no uno solo compartido). Misma lista de destinos que
+/// sección es propio, no uno solo compartido). Puntos vive dentro de Perfil
+/// como una pestaña más, no como branch propio. Misma lista de destinos que
 /// antes ofrecía el navbar web según el estado de auth:
 /// - Sin sesión: Catálogo + Iniciar sesión (Iniciar sesión no es un branch
 ///   del shell, es una ruta plana — sale del shell por completo).
-/// - Con sesión: Catálogo + Puntos + Perfil.
+/// - Con sesión: Catálogo + Perfil.
 class ClientBottomNav extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
   const ClientBottomNav({super.key, required this.navigationShell});
@@ -23,10 +24,9 @@ class ClientBottomNav extends StatelessWidget {
 
     final items = <_NavItem>[
       const _NavItem(icon: Icons.storefront_rounded, label: 'Catálogo', branchIndex: 0),
-      if (user != null) ...[
-        const _NavItem(icon: Icons.stars_rounded, label: 'Puntos', branchIndex: 1),
-        const _NavItem(icon: Icons.person_rounded, label: 'Perfil', branchIndex: 2),
-      ] else
+      if (user != null)
+        const _NavItem(icon: Icons.person_rounded, label: 'Perfil', branchIndex: 1)
+      else
         const _NavItem(icon: Icons.login_rounded, label: 'Ingresar', externalRoute: '/login'),
     ];
 

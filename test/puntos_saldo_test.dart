@@ -2,16 +2,43 @@
 // envía": confirma que ahora lee saldo_pesos (el campo real), y que sigue
 // teniendo un comportamiento claro (fallback documentado, no un crash ni un
 // silencio) cuando ese campo no viene en la respuesta.
+//
+// Puntos ahora vive dentro de Perfil como pestaña (ya no es su propia
+// pantalla/branch), así que estos tests montan PerfilScreen y tocan el pill
+// "Puntos" antes de verificar -- mismo patrón que pull_to_refresh_test.dart
+// usa para Historial/Direcciones.
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:chocoadmin/core/services/api_service.dart';
-import 'package:chocoadmin/features/cliente/screens/puntos_screen.dart';
+import 'package:chocoadmin/features/auth/providers/auth_provider.dart';
+import 'package:chocoadmin/features/cliente/providers/carrito_provider.dart';
+import 'package:chocoadmin/features/cliente/screens/perfil_screen.dart';
+
+Widget _harness() => MaterialApp(
+      home: MultiProvider(providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => CarritoProvider()),
+      ], child: const PerfilScreen()),
+    );
+
+Future<void> _irATabPuntos(WidgetTester tester) async {
+  await tester.pumpWidget(_harness());
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 50));
+  // El pill "Puntos" es el último de 5 en un selector horizontal
+  // desplazable -- puede quedar fuera del viewport visible.
+  await tester.ensureVisible(find.text('Puntos'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Puntos'));
+  await tester.pumpAndSettle();
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -40,9 +67,7 @@ void main() {
       return http.Response('No mockeado', 404);
     });
 
-    await tester.pumpWidget(const MaterialApp(home: PuntosScreen()));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
+    await _irATabPuntos(tester);
 
     expect(find.text('100'), findsOneWidget); // puntos disponibles
     expect(find.textContaining('987.654'), findsOneWidget,
@@ -65,9 +90,7 @@ void main() {
       return http.Response('No mockeado', 404);
     });
 
-    await tester.pumpWidget(const MaterialApp(home: PuntosScreen()));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
+    await _irATabPuntos(tester);
 
     // No debe crashear ni quedar en loading infinito -- usa el fallback
     // documentado (_puntos * 12.5 = 40 * 12.5 = 500) para no dejar la
