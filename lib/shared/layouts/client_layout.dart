@@ -77,104 +77,119 @@ class _Footer extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 48, 24, 32),
-            child: Wrap(
-              spacing: 32,
-              runSpacing: 32,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Marca
-                SizedBox(
-                  width: 260,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: CachedNetworkImage(
-                              imageUrl: 'https://res.cloudinary.com/dnoxlv5kn/image/upload/v1778822634/logo_sin_fondo_remove_uuu8tt.png',
-                              width: 36,
-                              height: 36,
-                              fit: BoxFit.contain,
-                              placeholder: (_, __) => Container(
-                                width: 36, height: 36,
-                                decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
-                                alignment: Alignment.center,
-                                child: Text('CF', style: GoogleFonts.nunito(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12)),
-                              ),
-                              errorWidget: (_, __, ___) => Container(
-                                width: 36, height: 36,
-                                decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
-                                alignment: Alignment.center,
-                                child: Text('CF', style: GoogleFonts.nunito(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12)),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Text('ChocoFreseo',
-                              style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white)),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Postres con estética juvenil y sabores únicos. Puro Freseo desde marzo 2024.',
-                        style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white.withValues(alpha: 0.5), height: 1.7),
-                      ),
-                      const SizedBox(height: 20),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          _SocialBtn(
-                            icon: const LogoInstagram(size: 18, color: Colors.white),
-                            gradient: const LinearGradient(
-                              begin: Alignment.topLeft, end: Alignment.bottomRight,
-                              colors: [Color(0xFF833AB4), Color(0xFFFD1D1D), Color(0xFFF77737)],
-                            ),
-                            onTap: () => _launch('https://instagram.com/chocofreseo'),
-                          ),
-                          _SocialBtn(icon: const LogoTikTok(size: 18, color: Colors.white), color: const Color(0xFF000000), onTap: () => _launch('https://tiktok.com/@chocofreseo')),
-                          _SocialBtn(icon: const LogoTikTok(size: 18, color: Colors.white), color: const Color(0xFF000000), onTap: () => _launch('https://tiktok.com/@sorprendetupaladar')),
-                          _SocialBtn(icon: const LogoFacebook(size: 18, color: Colors.white), color: const Color(0xFF1877F2), onTap: () => _launch('https://www.facebook.com/share/1NiKgTtfUb/')),
-                          _SocialBtn(icon: const LogoWhatsApp(size: 18, color: Colors.white), color: const Color(0xFF25D366), onTap: () => _launch('https://wa.me/573159914624')),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Navegación
-                _FooterCol(
-                  titulo: 'Navegación',
-                  children: const [
-                    _FooterLink(label: 'Inicio',         path: '/landing'),
-                    _FooterLink(label: 'Catálogo',       path: '/catalogo'),
-                    _FooterLink(label: 'Iniciar sesión', path: '/login'),
-                    _FooterLink(label: 'Registrarse',    path: '/register'),
-                  ],
-                ),
-
-                // Nuestras sedes
-                _FooterCol(
-                  titulo: 'Nuestras sedes',
-                  children: const [
-                    _FooterContactItem(icon: Icons.location_on_outlined, text: 'La Milagrosa\nCarrera 29 #42-49, Medellín'),
-                    _FooterContactItem(icon: Icons.location_on_outlined, text: 'Aranjuez\nCalle 90 #50D-35, Medellín'),
-                  ],
-                ),
-
-                // Horario y contacto
-                _FooterCol(
-                  titulo: 'Horario y contacto',
+                // Marca -- en su propia fila (antes competía por espacio en
+                // el mismo Wrap que las otras 3 columnas, y al ser la más
+                // ancha las empujaba a apilarse una debajo de la otra).
+                Row(
                   children: [
-                    const _FooterHorario(dia: 'Todos los días', hora: '1:00 PM — 8:00 PM'),
-                    _FooterContactItem(
-                      iconWidget: const LogoWhatsApp(size: 14, color: Color(0xFF25D366)),
-                      text: '315-991-46-24',
-                      onTap: () => _launch('https://wa.me/573159914624'),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: CachedNetworkImage(
+                        imageUrl: 'https://res.cloudinary.com/dnoxlv5kn/image/upload/v1778822634/logo_sin_fondo_remove_uuu8tt.png',
+                        width: 36,
+                        height: 36,
+                        fit: BoxFit.contain,
+                        placeholder: (_, __) => Container(
+                          width: 36, height: 36,
+                          decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
+                          alignment: Alignment.center,
+                          child: Text('CF', style: GoogleFonts.nunito(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12)),
+                        ),
+                        errorWidget: (_, __, ___) => Container(
+                          width: 36, height: 36,
+                          decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
+                          alignment: Alignment.center,
+                          child: Text('CF', style: GoogleFonts.nunito(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12)),
+                        ),
+                      ),
                     ),
-                    const _FooterContactItem(icon: Icons.email_outlined,  text: 'chocofreseo@gmail.com'),
+                    const SizedBox(width: 10),
+                    Text('ChocoFreseo',
+                        style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white)),
                   ],
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Postres con estética juvenil y sabores únicos. Puro Freseo desde marzo 2024.',
+                  style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white.withValues(alpha: 0.5), height: 1.7),
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _SocialBtn(
+                      icon: const LogoInstagram(size: 18, color: Colors.white),
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft, end: Alignment.bottomRight,
+                        colors: [Color(0xFF833AB4), Color(0xFFFD1D1D), Color(0xFFF77737)],
+                      ),
+                      onTap: () => _launch('https://instagram.com/chocofreseo'),
+                    ),
+                    _SocialBtn(icon: const LogoTikTok(size: 18, color: Colors.white), color: const Color(0xFF000000), onTap: () => _launch('https://tiktok.com/@chocofreseo')),
+                    _SocialBtn(icon: const LogoTikTok(size: 18, color: Colors.white), color: const Color(0xFF000000), onTap: () => _launch('https://tiktok.com/@sorprendetupaladar')),
+                    _SocialBtn(icon: const LogoFacebook(size: 18, color: Colors.white), color: const Color(0xFF1877F2), onTap: () => _launch('https://www.facebook.com/share/1NiKgTtfUb/')),
+                    _SocialBtn(icon: const LogoWhatsApp(size: 18, color: Colors.white), color: const Color(0xFF25D366), onTap: () => _launch('https://wa.me/573159914624')),
+                  ],
+                ),
+
+                const SizedBox(height: 36),
+
+                // Navegación / Sedes / Horario -- grilla de 2 columnas con
+                // ancho calculado en vez de columnas de 160 fijas (que en
+                // la mayoría de celulares no alcanzaban a poner 2 por fila
+                // y terminaban una debajo de la otra).
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    const spacing = 24.0;
+                    final colWidth = (constraints.maxWidth - spacing) / 2;
+                    return Wrap(
+                      spacing: spacing,
+                      runSpacing: 32,
+                      children: [
+                        SizedBox(
+                          width: colWidth,
+                          child: _FooterCol(
+                            titulo: 'Navegación',
+                            children: const [
+                              _FooterLink(label: 'Inicio',         path: '/landing'),
+                              _FooterLink(label: 'Catálogo',       path: '/catalogo'),
+                              _FooterLink(label: 'Iniciar sesión', path: '/login'),
+                              _FooterLink(label: 'Registrarse',    path: '/register'),
+                            ],
+                          ),
+                        ),
+                        SizedBox(
+                          width: colWidth,
+                          child: _FooterCol(
+                            titulo: 'Nuestras sedes',
+                            children: const [
+                              _FooterContactItem(icon: Icons.location_on_outlined, text: 'La Milagrosa\nCarrera 29 #42-49, Medellín'),
+                              _FooterContactItem(icon: Icons.location_on_outlined, text: 'Aranjuez\nCalle 90 #50D-35, Medellín'),
+                            ],
+                          ),
+                        ),
+                        SizedBox(
+                          width: colWidth,
+                          child: _FooterCol(
+                            titulo: 'Horario y contacto',
+                            children: [
+                              const _FooterHorario(dia: 'Todos los días', hora: '1:00 PM — 8:00 PM'),
+                              _FooterContactItem(
+                                iconWidget: const LogoWhatsApp(size: 14, color: Color(0xFF25D366)),
+                                text: '315-991-46-24',
+                                onTap: () => _launch('https://wa.me/573159914624'),
+                              ),
+                              const _FooterContactItem(icon: Icons.email_outlined,  text: 'chocofreseo@gmail.com'),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ],
             ),
@@ -236,17 +251,16 @@ class _FooterCol extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 160,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(titulo,
-              style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5)),
-          const SizedBox(height: 12),
-          ...children,
-        ],
-      ),
+    // El ancho ya lo controla el SizedBox del LayoutBuilder que envuelve
+    // cada columna (client_layout.dart) -- acá solo el contenido.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(titulo,
+            style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5)),
+        const SizedBox(height: 12),
+        ...children,
+      ],
     );
   }
 }

@@ -21,20 +21,14 @@ class LandingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Orden pensado como embudo: Hero (enganche) -> Productos estrella
-    // (antojo, la sección más visual, apenas se llega) -> Cómo funciona
-    // (conviértelo en pedido) -> Conócenos (confianza/historia) -> Redes
-    // (seguimiento social, ya con la marca vendida) -> reseña (lo último
-    // que se le pide a alguien). Mismas 6 secciones, mismo contenido/fotos
-    // de siempre -- solo cambia el orden.
     return ClientLayout(
       child: Column(
         children: [
           _Hero(nosotrosKey: nosotrosKey),
+          const _VideoRedes(),
           const _ProductosEstrella(),
           const _ComoFunciona(),
           _Conocenos(key: nosotrosKey),
-          const _VideoRedes(),
           const _CtaFinal(),
         ],
       ),
@@ -316,10 +310,22 @@ class _ComoFunciona extends StatelessWidget {
               style: GoogleFonts.nunito(fontSize: 14, color: Colors.white.withValues(alpha: 0.5)),
               textAlign: TextAlign.center),
           const SizedBox(height: 48),
-          Wrap(
-            spacing: 16, runSpacing: 24,
-            alignment: WrapAlignment.center,
-            children: List.generate(_pasos.length, (i) => _PasoCard(paso: _pasos[i], index: i)),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              // Mismo criterio que Productos estrella: ancho exacto para
+              // que los 4 pasos queden en una grilla de 2x2 en vez de una
+              // columna de 4, sin importar el tamaño de pantalla.
+              const spacing = 14.0;
+              final cardWidth = (constraints.maxWidth - spacing) / 2;
+              return Wrap(
+                spacing: spacing, runSpacing: spacing,
+                alignment: WrapAlignment.center,
+                children: List.generate(
+                  _pasos.length,
+                  (i) => _PasoCard(paso: _pasos[i], index: i, width: cardWidth),
+                ),
+              );
+            },
           ),
           const SizedBox(height: 48),
           GestureDetector(
@@ -356,41 +362,40 @@ class _Paso {
 class _PasoCard extends StatelessWidget {
   final _Paso paso;
   final int index;
-  const _PasoCard({required this.paso, required this.index});
+  final double width;
+  const _PasoCard({required this.paso, required this.index, required this.width});
 
   @override
   Widget build(BuildContext context) {
-    final sw = MediaQuery.of(context).size.width;
-    final cardWidth = sw < 480 ? (sw - 56.0).clamp(150.0, 220.0) : 220.0;
     final bg = index % 2 == 0
         ? Colors.white.withValues(alpha: 0.04)
         : AppColors.primary.withValues(alpha: 0.08);
     return Container(
-      width: cardWidth,
-      padding: const EdgeInsets.all(20),
+      width: width,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 52, height: 52,
+            width: 44, height: 44,
             decoration: BoxDecoration(
               color: AppColors.primary.withValues(alpha: 0.2),
               border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
               borderRadius: BorderRadius.circular(12),
             ),
             alignment: Alignment.center,
-            child: Icon(paso.icon, color: AppColors.primary, size: 24),
+            child: Icon(paso.icon, color: AppColors.primary, size: 21),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           Text('PASO ${paso.num}',
-              style: GoogleFonts.nunito(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.primary, letterSpacing: 2)),
-          const SizedBox(height: 8),
+              style: GoogleFonts.nunito(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.primary, letterSpacing: 1.5)),
+          const SizedBox(height: 6),
           Text(paso.titulo,
-              style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
-          const SizedBox(height: 8),
+              style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white)),
+          const SizedBox(height: 6),
           Text(paso.desc,
-              style: GoogleFonts.nunito(fontSize: 13, color: Colors.white.withValues(alpha: 0.5), height: 1.6)),
+              style: GoogleFonts.nunito(fontSize: 12, color: Colors.white.withValues(alpha: 0.5), height: 1.5)),
         ],
       ),
     );
@@ -488,13 +493,26 @@ class _ProductosEstrellaState extends State<_ProductosEstrella> {
           if (_loading)
             const CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2.5)
           else
-            Wrap(
-              spacing: 16, runSpacing: 16,
-              alignment: WrapAlignment.center,
-              children: _estrella.map((e) => _ProductoEstellaCard(
-                nombre: e.nombre,
-                imageUrl: _getImg(e),
-              )).toList(),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                // Antes el ancho de cada card salía de un clamp fijo (150-200)
+                // que en la mayoría de celulares terminaba siendo más ancho
+                // que la mitad del espacio disponible -- por eso cada
+                // producto quedaba solo en su fila en vez de ir de a 2. Acá
+                // se calcula el ancho exacto para que 2 quepan siempre,
+                // sin importar el tamaño de pantalla.
+                const spacing = 14.0;
+                final cardWidth = (constraints.maxWidth - spacing) / 2;
+                return Wrap(
+                  spacing: spacing, runSpacing: spacing,
+                  alignment: WrapAlignment.center,
+                  children: _estrella.map((e) => _ProductoEstellaCard(
+                    nombre: e.nombre,
+                    imageUrl: _getImg(e),
+                    width: cardWidth,
+                  )).toList(),
+                );
+              },
             ),
           const SizedBox(height: 36),
           GestureDetector(
@@ -523,16 +541,19 @@ class _ProductosEstrellaState extends State<_ProductosEstrella> {
 class _ProductoEstellaCard extends StatelessWidget {
   final String nombre;
   final String? imageUrl;
-  const _ProductoEstellaCard({required this.nombre, this.imageUrl});
+  final double width;
+  const _ProductoEstellaCard({required this.nombre, this.imageUrl, required this.width});
 
   @override
   Widget build(BuildContext context) {
-    final sw = MediaQuery.of(context).size.width;
-    final cardWidth = sw < 480 ? (sw - 56.0).clamp(150.0, 200.0) : 200.0;
+    // Misma proporción 200:160 de siempre (1.25), pero escalada al ancho
+    // real de la card en vez de una altura fija de 160 -- si no, con cards
+    // angostas (2 por fila) la imagen quedaría recortada/desproporcionada.
+    final cardHeight = width / 1.25;
     final imgUrl = imageUrl ?? '';
 
     final fallback = Container(
-      width: cardWidth, height: 160,
+      width: width, height: cardHeight,
       color: const Color(0xFF2a2a2a),
       alignment: Alignment.center,
       child: Text(nombre.toUpperCase(),
@@ -546,15 +567,15 @@ class _ProductoEstellaCard extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
       child: SizedBox(
-        width: cardWidth,
-        height: 160,
+        width: width,
+        height: cardHeight,
         child: Stack(
           children: [
             imgUrl.isNotEmpty
                 ? CachedNetworkImage(
                     imageUrl: imgUrl,
-                    width: cardWidth, height: 160, fit: BoxFit.cover,
-                    placeholder: (_, __) => Container(width: cardWidth, height: 160, color: const Color(0xFF2a2a2a)),
+                    width: width, height: cardHeight, fit: BoxFit.cover,
+                    placeholder: (_, __) => Container(width: width, height: cardHeight, color: const Color(0xFF2a2a2a)),
                     errorWidget: (_, __, ___) => fallback,
                   )
                 : fallback,
@@ -717,11 +738,7 @@ class _VideoRedes extends StatelessWidget {
     final sw = MediaQuery.of(context).size.width;
 
     return Container(
-      // Antes blanco -- con Conócenos también blanco justo arriba (nuevo
-      // orden), las dos se fundían en un solo bloque sin separación visual.
-      // Mismo gris clarito que ya usa Productos estrella más arriba, para
-      // mantener el zigzag blanco/gris/oscuro entre secciones.
-      color: const Color(0xFFF7F8FD),
+      color: Colors.white,
       padding: const EdgeInsets.symmetric(vertical: 72, horizontal: 28),
       child: Column(
         children: [
