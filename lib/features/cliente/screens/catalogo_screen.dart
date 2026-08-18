@@ -247,8 +247,32 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('ChocoFreseo'),
-        actions: const [ClientVolverAlPanelAction()],
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: CachedNetworkImage(
+                imageUrl: 'https://res.cloudinary.com/dnoxlv5kn/image/upload/v1778822634/logo_sin_fondo_remove_uuu8tt.png',
+                width: 28,
+                height: 28,
+                fit: BoxFit.contain,
+                placeholder: (_, __) => const SizedBox(width: 28, height: 28),
+                errorWidget: (_, __, ___) => const SizedBox(width: 28, height: 28),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Text('ChocoFreseo'),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.home_rounded),
+            tooltip: 'Ir al inicio',
+            onPressed: () => context.go('/landing'),
+          ),
+          const ClientVolverAlPanelAction(),
+        ],
       ),
       body: SafeArea(
         child: Column(
