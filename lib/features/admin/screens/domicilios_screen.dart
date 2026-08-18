@@ -1269,8 +1269,8 @@ class _DetalleAdminModalState extends State<_DetalleAdminModal> {
                                         pedido.comprobante)!,
                                     fit: BoxFit.contain,
                                     placeholder: (_, __) => const Center(
-                                        child:
-                                            CircularProgressIndicator()),
+                                        child: CircularProgressIndicator(
+                                            color: Colors.white)),
                                     errorWidget: (_, __, ___) => const Icon(
                                         Icons.broken_image,
                                         color: Colors.white,
@@ -1309,7 +1309,8 @@ class _DetalleAdminModalState extends State<_DetalleAdminModal> {
                               height: 200,
                               color: AppColors.surfaceVariant,
                               child: const Center(
-                                  child: CircularProgressIndicator()),
+                                  child: CircularProgressIndicator(
+                                      color: AppColors.primary)),
                             ),
                             errorWidget: (_, __, ___) => Container(
                               height: 100,
