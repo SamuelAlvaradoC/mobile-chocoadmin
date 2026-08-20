@@ -393,14 +393,20 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                 ),
                 const SizedBox(height: 10),
                 SizedBox(
-                  height: 210,
+                  // Misma proporción ancho/alto que la grilla normal
+                  // (childAspectRatio: 0.62) para que _ProductoCard no
+                  // desborde -- 210 se quedaba corto por ~27px con la
+                  // descripción de 3 líneas.
+                  height: 150 / 0.62,
                   child: ListView.separated(
+                    key: const Key('mas_pedidos_list'),
                     scrollDirection: Axis.horizontal,
                     itemCount: catalogo.masPedidos.length,
                     separatorBuilder: (_, __) => const SizedBox(width: 12),
                     itemBuilder: (_, i) {
                       final p = catalogo.masPedidos[i];
                       return SizedBox(
+                        key: ValueKey('mas_pedido_card_${p.id}'),
                         width: 150,
                         child: _ProductoCard(
                           producto: p,

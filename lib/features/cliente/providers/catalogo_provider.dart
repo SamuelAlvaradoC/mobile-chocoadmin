@@ -42,6 +42,13 @@ class CatalogoProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
 
+    // Dispara en paralelo con el resto (no encadenado después): si se
+    // encadenara después del Future.wait de abajo, en un escenario de red
+    // lenta este request arrancaría recién cuando el otro ya hizo timeout,
+    // duplicando el tiempo total y dejando un timer pendiente más allá de
+    // lo que un caller que espera cargarTodo() asume que ya terminó todo.
+    _cargarMasPedidos();
+
     try {
       final results = await Future.wait([
         ApiService.get('/api/catalogo/categorias', auth: false),
@@ -62,9 +69,6 @@ class CatalogoProvider extends ChangeNotifier {
 
     _loading = false;
     notifyListeners();
-
-    // Independiente del resto: si falla, el catálogo normal sigue funcionando.
-    _cargarMasPedidos();
   }
 
   Future<void> _cargarMasPedidos() async {
