@@ -376,6 +376,46 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
             ]),
           ),
 
+        // ── Sección "Más Pedidos" ─────────────────────────────
+        if (catalogo.masPedidos.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSizes.screenPadding, 14, AppSizes.screenPadding, 4,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '🔥 Más Pedidos',
+                  style: GoogleFonts.nunito(
+                    fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 210,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: catalogo.masPedidos.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    itemBuilder: (_, i) {
+                      final p = catalogo.masPedidos[i];
+                      return SizedBox(
+                        width: 150,
+                        child: _ProductoCard(
+                          producto: p,
+                          fmt: fmt,
+                          destacado: true,
+                          onAgregar: () => _agregarProducto(p),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+
         // ── Chips de categorías ──────────────────────────────
         if (catalogo.categorias.isNotEmpty)
           SizedBox(
@@ -1050,11 +1090,13 @@ class _ProductoCard extends StatelessWidget {
   final Producto producto;
   final NumberFormat fmt;
   final VoidCallback onAgregar;
+  final bool destacado;
 
   const _ProductoCard({
     required this.producto,
     required this.fmt,
     required this.onAgregar,
+    this.destacado = false,
   });
 
   @override
@@ -1089,6 +1131,7 @@ class _ProductoCard extends StatelessWidget {
                       : _placeholder(),
                 ),
                 _BadgeProducto(producto: producto),
+                if (destacado) const _BadgeMasPedido(),
               ],
             ),
           ),
@@ -1177,6 +1220,41 @@ class _ProductoCard extends StatelessWidget {
           child: Icon(Icons.cake_rounded, size: 40, color: AppColors.textHint),
         ),
       );
+}
+
+// Insignia "MÁS PEDIDO" — igual que React BadgeMasPedido (Catalogo.jsx),
+// esquina superior izquierda para no chocar con _BadgeProducto (derecha).
+class _BadgeMasPedido extends StatelessWidget {
+  const _BadgeMasPedido();
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: 8,
+      left: 8,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: const [BoxShadow(color: Color(0x80CA0B0B), blurRadius: 8, offset: Offset(0, 2))],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.star_rounded, size: 12, color: Colors.white),
+            const SizedBox(width: 3),
+            Text(
+              'MÁS PEDIDO',
+              style: GoogleFonts.nunito(
+                fontSize: 8.5, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.2,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // Badge dinámico de beneficios — igual que React BadgeProducto (Catalogo.jsx).

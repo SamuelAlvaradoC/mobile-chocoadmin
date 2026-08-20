@@ -10,6 +10,7 @@ class CatalogoProvider extends ChangeNotifier {
   List<Producto> _productos = [];
   List<Topping> _toppings = [];
   List<Adicion> _adiciones = [];
+  List<Producto> _masPedidos = [];
 
   int? _categoriaSeleccionada; // null = todas
   bool _loading = false;
@@ -19,6 +20,7 @@ class CatalogoProvider extends ChangeNotifier {
   List<Producto> get productos => _productos;
   List<Topping> get toppings => _toppings;
   List<Adicion> get adiciones => _adiciones;
+  List<Producto> get masPedidos => _masPedidos;
   int? get categoriaSeleccionada => _categoriaSeleccionada;
   bool get loading => _loading;
   String? get error => _error;
@@ -60,6 +62,19 @@ class CatalogoProvider extends ChangeNotifier {
 
     _loading = false;
     notifyListeners();
+
+    // Independiente del resto: si falla, el catálogo normal sigue funcionando.
+    _cargarMasPedidos();
+  }
+
+  Future<void> _cargarMasPedidos() async {
+    try {
+      final res = await ApiService.get('/api/catalogo/mas-pedidos', auth: false);
+      _masPedidos = _parseList(res, Producto.fromJson);
+      notifyListeners();
+    } catch (_) {
+      // Silencioso: la sección simplemente no aparece.
+    }
   }
 
   void seleccionarCategoria(int? id) {
