@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -318,11 +320,24 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
   }
 
   Widget _buildContent(CatalogoProvider catalogo, NumberFormat fmt) {
-    final filtrados = _busqueda.isEmpty
+    final filtradosBase = _busqueda.isEmpty
         ? catalogo.productosFiltrados
         : catalogo.productosFiltrados
             .where((p) => p.nombre.toLowerCase().contains(_busqueda.toLowerCase()))
             .toList();
+
+    // Ranking de "más pedidos": id -> posición (0 = el más pedido). Mismo
+    // criterio que React (Catalogo.jsx): los destacados van primero, en su
+    // orden de ranking, dentro de cualquier subconjunto visible -- "Todos",
+    // una categoría puntual, o resultado de búsqueda -- el resto conserva
+    // el orden que ya traía.
+    final rankMasPedidos = <int, int>{
+      for (var i = 0; i < catalogo.masPedidos.length; i++) catalogo.masPedidos[i].id: i,
+    };
+    final destacados = filtradosBase.where((p) => rankMasPedidos.containsKey(p.id)).toList()
+      ..sort((a, b) => rankMasPedidos[a.id]!.compareTo(rankMasPedidos[b.id]!));
+    final resto = filtradosBase.where((p) => !rankMasPedidos.containsKey(p.id)).toList();
+    final filtrados = rankMasPedidos.isEmpty ? filtradosBase : [...destacados, ...resto];
 
     return Column(
       children: [
@@ -374,52 +389,6 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                 ),
               ),
             ]),
-          ),
-
-        // ── Sección "Más Pedidos" ─────────────────────────────
-        if (catalogo.masPedidos.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSizes.screenPadding, 14, AppSizes.screenPadding, 4,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '🔥 Más Pedidos',
-                  style: GoogleFonts.nunito(
-                    fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  // Misma proporción ancho/alto que la grilla normal
-                  // (childAspectRatio: 0.62) para que _ProductoCard no
-                  // desborde -- 210 se quedaba corto por ~27px con la
-                  // descripción de 3 líneas.
-                  height: 150 / 0.62,
-                  child: ListView.separated(
-                    key: const Key('mas_pedidos_list'),
-                    scrollDirection: Axis.horizontal,
-                    itemCount: catalogo.masPedidos.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 12),
-                    itemBuilder: (_, i) {
-                      final p = catalogo.masPedidos[i];
-                      return SizedBox(
-                        key: ValueKey('mas_pedido_card_${p.id}'),
-                        width: 150,
-                        child: _ProductoCard(
-                          producto: p,
-                          fmt: fmt,
-                          destacado: true,
-                          onAgregar: () => _agregarProducto(p),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
           ),
 
         // ── Chips de categorías ──────────────────────────────
@@ -515,8 +484,10 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                     ),
                     itemCount: filtrados.length,
                     itemBuilder: (_, i) => _ProductoCard(
+                      key: ValueKey('producto_card_${filtrados[i].id}'),
                       producto: filtrados[i],
                       fmt: fmt,
+                      destacado: rankMasPedidos.containsKey(filtrados[i].id),
                       onAgregar: () => _agregarProducto(filtrados[i]),
                     ),
                   ),
@@ -1099,6 +1070,7 @@ class _ProductoCard extends StatelessWidget {
   final bool destacado;
 
   const _ProductoCard({
+    super.key,
     required this.producto,
     required this.fmt,
     required this.onAgregar,
@@ -1120,6 +1092,12 @@ class _ProductoCard extends StatelessWidget {
           AspectRatio(
             aspectRatio: 1.15,
             child: Stack(
+              // Stack recorta por defecto (clipBehavior: Clip.hardEdge) --
+              // hace falta desactivarlo para que la estrella pueda
+              // sobresalir de verdad con su offset negativo (mismo motivo
+              // que en React: ahí .producto-card tiene overflow:hidden y
+              // hubo que sacar la estrella de ese contenedor).
+              clipBehavior: Clip.none,
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(
@@ -1228,39 +1206,108 @@ class _ProductoCard extends StatelessWidget {
       );
 }
 
-// Insignia "MÁS PEDIDO" — igual que React BadgeMasPedido (Catalogo.jsx),
-// esquina superior izquierda para no chocar con _BadgeProducto (derecha).
+// Insignia "MAS PEDIDO" — réplica exacta del diseño ya aprobado en React
+// (BadgeMasPedido, Catalogo.jsx): estrella de 5 puntas real (misma
+// matemática que ESTRELLA_PATH), relleno crema, texto rojo en dos líneas,
+// rotada, sobresaliendo de la esquina superior izquierda de la imagen
+// como una calcomanía. Esquina opuesta a _BadgeProducto (derecha), sin
+// chocar con ella.
 class _BadgeMasPedido extends StatelessWidget {
   const _BadgeMasPedido();
 
+  static const double _tamano = 62;
+  static const double _rotacionGrados = -11;
+
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      top: 8,
-      left: 8,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-        decoration: BoxDecoration(
-          color: AppColors.primary,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: const [BoxShadow(color: Color(0x80CA0B0B), blurRadius: 8, offset: Offset(0, 2))],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.star_rounded, size: 12, color: Colors.white),
-            const SizedBox(width: 3),
-            Text(
-              'MÁS PEDIDO',
-              style: GoogleFonts.nunito(
-                fontSize: 8.5, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.2,
-              ),
-            ),
-          ],
-        ),
+    return const Positioned(
+      key: Key('badge_mas_pedido'),
+      top: -13,
+      left: -13,
+      child: SizedBox(
+        width: _tamano,
+        height: _tamano,
+        child: _EstrellaRotada(),
       ),
     );
   }
+}
+
+class _EstrellaRotada extends StatelessWidget {
+  const _EstrellaRotada();
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.rotate(
+      angle: _BadgeMasPedido._rotacionGrados * math.pi / 180,
+      child: CustomPaint(
+        size: const Size(_BadgeMasPedido._tamano, _BadgeMasPedido._tamano),
+        painter: const _EstrellaMasPedidoPainter(),
+      ),
+    );
+  }
+}
+
+// Estrella de 5 puntas generada por fórmula (mismos 10 puntos que
+// ESTRELLA_PATH en React: radio interno = 0.5 del externo, más "gordo"
+// que el pentagrama clásico ~0.38, para que "MAS"/"PEDIDO" en dos líneas
+// quepan legibles sin dejar de leerse como estrella).
+class _EstrellaMasPedidoPainter extends CustomPainter {
+  const _EstrellaMasPedidoPainter();
+
+  static Path _construirEstrella(Size size) {
+    final path = Path();
+    final cx = size.width / 2, cy = size.height / 2;
+    final radioExterno = size.width * 0.48, radioInterno = size.width * 0.24;
+    for (var i = 0; i < 10; i++) {
+      final anguloGrados = -90 + i * 36.0;
+      final angulo = anguloGrados * math.pi / 180;
+      final r = i.isEven ? radioExterno : radioInterno;
+      final x = cx + r * math.cos(angulo);
+      final y = cy + r * math.sin(angulo);
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    path.close();
+    return path;
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = _construirEstrella(size);
+
+    canvas.drawShadow(path, Colors.black.withValues(alpha: 0.35), 3, false);
+
+    canvas.drawPath(path, Paint()..color = const Color(0xFFFBF2E0));
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = const Color(0xFFEADFC2)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = size.width * 0.02
+        ..strokeJoin = StrokeJoin.round,
+    );
+
+    _dibujarLinea(canvas, size, 'MAS', 0.44, size.width * 0.155);
+    _dibujarLinea(canvas, size, 'PEDIDO', 0.63, size.width * 0.135);
+  }
+
+  void _dibujarLinea(Canvas canvas, Size size, String texto, double centroYFraccion, double fontSize) {
+    final tp = TextPainter(
+      text: TextSpan(
+        text: texto,
+        style: GoogleFonts.nunito(fontSize: fontSize, fontWeight: FontWeight.w900, color: const Color(0xFFCA0B0B)),
+      ),
+      textDirection: ui.TextDirection.ltr,
+    )..layout();
+    tp.paint(canvas, Offset(size.width / 2 - tp.width / 2, size.height * centroYFraccion - tp.height / 2));
+  }
+
+  @override
+  bool shouldRepaint(covariant _EstrellaMasPedidoPainter oldDelegate) => false;
 }
 
 // Badge dinámico de beneficios — igual que React BadgeProducto (Catalogo.jsx).
