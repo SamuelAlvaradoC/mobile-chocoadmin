@@ -909,7 +909,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         AppTextField(
           controller: _observacionesCtrl,
           label: 'Observaciones (opcional)',
-          hint: '¿Alguna nota para tu pedido?',
+          hint: 'Ej: devuelta de \$50.000 (opcional)',
           prefixIcon: Icons.notes_outlined,
           maxLines: 3,
           textCapitalization: TextCapitalization.sentences,
