@@ -6,8 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/cloudinary_service.dart';
-
-const _porPagina = 5;
+import '../../../shared/widgets/paginacion.dart';
 
 class ToppingsScreen extends StatefulWidget {
   const ToppingsScreen({super.key});
@@ -22,6 +21,7 @@ class _ToppingsScreenState extends State<ToppingsScreen> {
   List<Map<String, dynamic>> _items = [];
   final _busquedaCtrl = TextEditingController();
   int _pagina = 1;
+  Object _porPagina = 10;
 
   @override
   void initState() {
@@ -131,11 +131,15 @@ class _ToppingsScreenState extends State<ToppingsScreen> {
   @override
   Widget build(BuildContext context) {
     final filtrados = _filtrados;
-    final totalPaginas =
-        filtrados.isEmpty ? 1 : ((filtrados.length + _porPagina - 1) ~/ _porPagina);
+    final mostrandoTodos = _porPagina == todosPorPagina;
+    final porPagina = mostrandoTodos ? filtrados.length : _porPagina as int;
+    final totalPaginas = mostrandoTodos || filtrados.isEmpty
+        ? 1
+        : ((filtrados.length + porPagina - 1) ~/ porPagina);
     final paginaActual = _pagina.clamp(1, totalPaginas);
-    final paginados =
-        filtrados.skip((paginaActual - 1) * _porPagina).take(_porPagina).toList();
+    final paginados = mostrandoTodos
+        ? filtrados
+        : filtrados.skip((paginaActual - 1) * porPagina).take(porPagina).toList();
 
     return Column(
         children: [
@@ -377,13 +381,17 @@ class _ToppingsScreenState extends State<ToppingsScreen> {
                                   ),
                                 ),
                               ),
-                              if (totalPaginas > 1)
-                                _PaginationBar(
-                                  pagina: paginaActual,
-                                  totalPaginas: totalPaginas,
-                                  onCambiar: (p) =>
-                                      setState(() => _pagina = p),
-                                ),
+                              Paginacion(
+                                pagina: paginaActual,
+                                totalPaginas: totalPaginas,
+                                onCambiarPagina: (p) =>
+                                    setState(() => _pagina = p),
+                                porPagina: _porPagina,
+                                onCambiarPorPagina: (v) => setState(() {
+                                  _porPagina = v;
+                                  _pagina = 1;
+                                }),
+                              ),
                             ],
                           ),
           ),
@@ -963,86 +971,6 @@ class _ImageUploadWidgetState extends State<_ImageUploadWidget> {
       );
 }
 
-// ─── Pagination Bar ───────────────────────────────────────────────────────────
-
-class _PaginationBar extends StatelessWidget {
-  final int pagina;
-  final int totalPaginas;
-  final void Function(int) onCambiar;
-  const _PaginationBar(
-      {required this.pagina,
-      required this.totalPaginas,
-      required this.onCambiar});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _PageBtn(
-              label: '‹',
-              enabled: pagina > 1,
-              onTap: () => onCambiar(pagina - 1)),
-          for (int n = 1; n <= totalPaginas; n++)
-            _PageBtn(
-                label: '$n',
-                active: pagina == n,
-                onTap: () => onCambiar(n)),
-          _PageBtn(
-              label: '›',
-              enabled: pagina < totalPaginas,
-              onTap: () => onCambiar(pagina + 1)),
-        ],
-      ),
-    );
-  }
-}
-
-class _PageBtn extends StatelessWidget {
-  final String label;
-  final bool active;
-  final bool enabled;
-  final VoidCallback onTap;
-  const _PageBtn(
-      {required this.label,
-      this.active = false,
-      this.enabled = true,
-      required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: enabled ? onTap : null,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 3),
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: active ? AppColors.primary : Colors.transparent,
-          border: Border.all(
-              color: active ? AppColors.primary : const Color(0xFFE0E0E0)),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: GoogleFonts.nunito(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: active
-                ? Colors.white
-                : enabled
-                    ? const Color(0xFF666666)
-                    : const Color(0xFFBBBBBB),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
 
