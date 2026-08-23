@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/api_service.dart';
+import '../../../shared/widgets/paginacion.dart';
 
 class CategoriasScreen extends StatefulWidget {
   const CategoriasScreen({super.key});
@@ -17,6 +18,7 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
   List<Map<String, dynamic>> _categorias = [];
   final _busquedaCtrl = TextEditingController();
   int _pagina = 1;
+  Object _porPagina = 10;
 
   @override
   void initState() {
@@ -129,10 +131,15 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
   @override
   Widget build(BuildContext context) {
     final filtradas = _filtradas;
-    const porPagina = 5;
-    final totalPaginas = filtradas.isEmpty ? 1 : ((filtradas.length + porPagina - 1) ~/ porPagina);
+    final mostrandoTodos = _porPagina == todosPorPagina;
+    final porPagina = mostrandoTodos ? filtradas.length : _porPagina as int;
+    final totalPaginas = mostrandoTodos || filtradas.isEmpty
+        ? 1
+        : ((filtradas.length + porPagina - 1) ~/ porPagina);
     final paginaActual = _pagina.clamp(1, totalPaginas);
-    final paginadas = filtradas.skip((paginaActual - 1) * porPagina).take(porPagina).toList();
+    final paginadas = mostrandoTodos
+        ? filtradas
+        : filtradas.skip((paginaActual - 1) * porPagina).take(porPagina).toList();
 
     return Column(
         children: [
@@ -369,12 +376,16 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
                                   ),
                                 ),
                               ),
-                              if (totalPaginas > 1)
-                                _PaginacionRow(
-                                  pagina: paginaActual,
-                                  totalPaginas: totalPaginas,
-                                  onCambiar: (n) => setState(() => _pagina = n),
-                                ),
+                              Paginacion(
+                                pagina: paginaActual,
+                                totalPaginas: totalPaginas,
+                                onCambiarPagina: (n) => setState(() => _pagina = n),
+                                porPagina: _porPagina,
+                                onCambiarPorPagina: (v) => setState(() {
+                                  _porPagina = v;
+                                  _pagina = 1;
+                                }),
+                              ),
                             ],
                           ),
           ),
@@ -902,67 +913,3 @@ Widget _errMsg(String msg) => Padding(
   child: Text(msg, style: GoogleFonts.nunito(fontSize: 11, color: AppColors.error, fontWeight: FontWeight.w600)),
 );
 
-// ─── Pagination ───────────────────────────────────────────────────────────────
-
-class _PaginacionRow extends StatelessWidget {
-  final int pagina;
-  final int totalPaginas;
-  final ValueChanged<int> onCambiar;
-  const _PaginacionRow({required this.pagina, required this.totalPaginas, required this.onCambiar});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _PagBtn(label: '‹', activo: false, enabled: pagina > 1, onTap: () => onCambiar(pagina - 1)),
-          ...List.generate(totalPaginas, (i) => i + 1).map(
-            (n) => _PagBtn(label: '$n', activo: n == pagina, onTap: () => onCambiar(n)),
-          ),
-          _PagBtn(label: '›', activo: false, enabled: pagina < totalPaginas, onTap: () => onCambiar(pagina + 1)),
-        ],
-      ),
-    );
-  }
-}
-
-class _PagBtn extends StatelessWidget {
-  final String label;
-  final bool activo;
-  final bool enabled;
-  final VoidCallback onTap;
-  const _PagBtn({required this.label, required this.activo, required this.onTap, this.enabled = true});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2),
-      child: GestureDetector(
-        onTap: enabled ? onTap : null,
-        child: Container(
-          width: 32,
-          height: 32,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: activo ? AppColors.primary : const Color(0xFFF5F5F5),
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: activo ? AppColors.primary : const Color(0xFFE0E0E0)),
-          ),
-          child: Text(
-            label,
-            style: GoogleFonts.nunito(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: activo
-                  ? Colors.white
-                  : (enabled ? const Color(0xFF444444) : const Color(0xFFBBBBBB)),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
