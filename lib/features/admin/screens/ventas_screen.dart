@@ -21,6 +21,7 @@ import '../../../features/cliente/widgets/toppings_modal.dart';
 import '../../../shared/layouts/admin_layout.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/colombia_location_picker.dart';
+import '../../../shared/widgets/paginacion.dart';
 
 // Pago mixto (igual React handleEfMixto/handleEfectivoMixto): al escribir en
 // un campo se recorta al rango [0,total] y el otro campo se autocompleta con
@@ -301,6 +302,8 @@ class _VentasScreenState extends State<VentasScreen> {
   String? _filtroMetodoPago;
   String? _filtroFecha;
   final _busquedaCtrl = TextEditingController();
+  int _pagina = 1;
+  Object _porPagina = 10;
 
   final _fmt =
       NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
@@ -403,6 +406,15 @@ class _VentasScreenState extends State<VentasScreen> {
   @override
   Widget build(BuildContext context) {
     final filtradas = _ventasFiltradas;
+    final mostrandoTodos = _porPagina == todosPorPagina;
+    final porPagina = mostrandoTodos ? filtradas.length : _porPagina as int;
+    final totalPaginas = mostrandoTodos || filtradas.isEmpty
+        ? 1
+        : ((filtradas.length + porPagina - 1) ~/ porPagina);
+    final paginaActual = _pagina.clamp(1, totalPaginas);
+    final paginadas = mostrandoTodos
+        ? filtradas
+        : filtradas.skip((paginaActual - 1) * porPagina).take(porPagina).toList();
 
     return AdminLayout(
       body: Column(
@@ -478,7 +490,7 @@ class _VentasScreenState extends State<VentasScreen> {
                 // Buscador pill
                 TextField(
                   controller: _busquedaCtrl,
-                  onChanged: (_) => setState(() {}),
+                  onChanged: (_) => setState(() => _pagina = 1),
                   decoration: InputDecoration(
                     hintText: 'Buscar por cliente, #venta...',
                     hintStyle: const TextStyle(
@@ -525,7 +537,7 @@ class _VentasScreenState extends State<VentasScreen> {
                   ],
                   // El estado se filtra 100% en el cliente (ver _ventasFiltradas):
                   // no hace falta recargar del servidor al cambiarlo.
-                  onChanged: (v) => setState(() => _filtroEstado = v),
+                  onChanged: (v) => setState(() { _filtroEstado = v; _pagina = 1; }),
                 ),
                 const SizedBox(height: 8),
 
@@ -546,7 +558,7 @@ class _VentasScreenState extends State<VentasScreen> {
                   ],
                   // El backend ignora este query param (ver comentario en
                   // _cargar); el filtro real se aplica en _ventasFiltradas.
-                  onChanged: (v) => setState(() => _filtroMetodoPago = v),
+                  onChanged: (v) => setState(() { _filtroMetodoPago = v; _pagina = 1; }),
                 ),
                 const SizedBox(height: 8),
 
@@ -564,7 +576,7 @@ class _VentasScreenState extends State<VentasScreen> {
                         locale: const Locale('es', 'CO'),
                       );
                       if (picked != null) {
-                        setState(() => _filtroFecha = DateFormat('yyyy-MM-dd').format(picked));
+                        setState(() { _filtroFecha = DateFormat('yyyy-MM-dd').format(picked); _pagina = 1; });
                         _cargar();
                       }
                     },
@@ -597,7 +609,7 @@ class _VentasScreenState extends State<VentasScreen> {
                         if (_filtroFecha != null) ...[
                           const SizedBox(width: 4),
                           GestureDetector(
-                            onTap: () { setState(() => _filtroFecha = null); _cargar(); },
+                            onTap: () { setState(() { _filtroFecha = null; _pagina = 1; }); _cargar(); },
                             child: const Icon(Icons.close_rounded, size: 13, color: AppColors.primary),
                           ),
                         ],
@@ -613,6 +625,7 @@ class _VentasScreenState extends State<VentasScreen> {
                           _filtroMetodoPago = null;
                           _filtroFecha      = null;
                           _busquedaCtrl.clear();
+                          _pagina = 1;
                         });
                         _cargar();
                       },
@@ -667,25 +680,42 @@ class _VentasScreenState extends State<VentasScreen> {
                                 style: TextStyle(
                                     color: AppColors.textSecondary)),
                           )
-                        : RefreshIndicator(
-                            color: AppColors.primary,
-                            onRefresh: _cargar,
-                            child: ListView.separated(
-                              padding: const EdgeInsets.all(
-                                  AppSizes.screenPadding),
-                              itemCount: filtradas.length,
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 8),
-                              itemBuilder: (context, i) {
-                                final v = filtradas[i];
-                                return _VentaRow(
-                                  venta: v,
-                                  fmt: _fmt,
-                                  fmtFecha: _fmtFecha,
+                        : Column(
+                            children: [
+                              Expanded(
+                                child: RefreshIndicator(
+                                  color: AppColors.primary,
                                   onRefresh: _cargar,
-                                );
-                              },
-                            ),
+                                  child: ListView.separated(
+                                    padding: const EdgeInsets.all(
+                                        AppSizes.screenPadding),
+                                    itemCount: paginadas.length,
+                                    separatorBuilder: (_, __) =>
+                                        const SizedBox(height: 8),
+                                    itemBuilder: (context, i) {
+                                      final v = paginadas[i];
+                                      return _VentaRow(
+                                        venta: v,
+                                        fmt: _fmt,
+                                        fmtFecha: _fmtFecha,
+                                        onRefresh: _cargar,
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                              Paginacion(
+                                pagina: paginaActual,
+                                totalPaginas: totalPaginas,
+                                onCambiarPagina: (n) =>
+                                    setState(() => _pagina = n),
+                                porPagina: _porPagina,
+                                onCambiarPorPagina: (v) => setState(() {
+                                  _porPagina = v;
+                                  _pagina = 1;
+                                }),
+                              ),
+                            ],
                           ),
           ),
         ],
