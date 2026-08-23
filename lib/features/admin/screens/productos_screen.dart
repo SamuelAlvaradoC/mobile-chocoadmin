@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/cloudinary_service.dart';
+import '../../../shared/widgets/paginacion.dart';
 
 class ProductosScreen extends StatefulWidget {
   const ProductosScreen({super.key});
@@ -22,6 +23,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
   List<Map<String, dynamic>> _categorias = [];
   final _busquedaCtrl = TextEditingController();
   int _pagina = 1;
+  Object _porPagina = 10;
 
   @override
   void initState() {
@@ -143,10 +145,15 @@ class _ProductosScreenState extends State<ProductosScreen> {
   @override
   Widget build(BuildContext context) {
     final filtrados = _filtrados;
-    const porPagina = 5;
-    final totalPaginas = filtrados.isEmpty ? 1 : ((filtrados.length + porPagina - 1) ~/ porPagina);
+    final mostrandoTodos = _porPagina == todosPorPagina;
+    final porPagina = mostrandoTodos ? filtrados.length : _porPagina as int;
+    final totalPaginas = mostrandoTodos || filtrados.isEmpty
+        ? 1
+        : ((filtrados.length + porPagina - 1) ~/ porPagina);
     final paginaActual = _pagina.clamp(1, totalPaginas);
-    final paginados = filtrados.skip((paginaActual - 1) * porPagina).take(porPagina).toList();
+    final paginados = mostrandoTodos
+        ? filtrados
+        : filtrados.skip((paginaActual - 1) * porPagina).take(porPagina).toList();
 
     // Filter count text (matches React)
     String countText = '${filtrados.length} producto${filtrados.length != 1 ? 's' : ''}';
@@ -368,12 +375,16 @@ class _ProductosScreenState extends State<ProductosScreen> {
                         ),
                       ),
                     ),
-                    if (totalPaginas > 1)
-                      _PaginacionRow(
-                        pagina: paginaActual,
-                        totalPaginas: totalPaginas,
-                        onCambiar: (n) => setState(() => _pagina = n),
-                      ),
+                    Paginacion(
+                      pagina: paginaActual,
+                      totalPaginas: totalPaginas,
+                      onCambiarPagina: (n) => setState(() => _pagina = n),
+                      porPagina: _porPagina,
+                      onCambiarPorPagina: (v) => setState(() {
+                        _porPagina = v;
+                        _pagina = 1;
+                      }),
+                    ),
                   ],
                 ),
         ),
@@ -1124,64 +1135,3 @@ InputDecoration _inputDec(String hint, {String? prefix, String? error}) => Input
       borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
 );
 
-// ─── Pagination ───────────────────────────────────────────────────────────────
-
-class _PaginacionRow extends StatelessWidget {
-  final int pagina;
-  final int totalPaginas;
-  final ValueChanged<int> onCambiar;
-  const _PaginacionRow({required this.pagina, required this.totalPaginas, required this.onCambiar});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _PagBtn(label: '‹', activo: false, enabled: pagina > 1, onTap: () => onCambiar(pagina - 1)),
-          ...List.generate(totalPaginas, (i) => i + 1).map(
-            (n) => _PagBtn(label: '$n', activo: n == pagina, onTap: () => onCambiar(n)),
-          ),
-          _PagBtn(label: '›', activo: false, enabled: pagina < totalPaginas, onTap: () => onCambiar(pagina + 1)),
-        ],
-      ),
-    );
-  }
-}
-
-class _PagBtn extends StatelessWidget {
-  final String label;
-  final bool activo;
-  final bool enabled;
-  final VoidCallback onTap;
-  const _PagBtn({required this.label, required this.activo, required this.onTap, this.enabled = true});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2),
-      child: GestureDetector(
-        onTap: enabled ? onTap : null,
-        child: Container(
-          width: 32, height: 32,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: activo ? AppColors.primary : const Color(0xFFF5F5F5),
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: activo ? AppColors.primary : const Color(0xFFE0E0E0)),
-          ),
-          child: Text(
-            label,
-            style: GoogleFonts.nunito(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: activo ? Colors.white : (enabled ? const Color(0xFF444444) : const Color(0xFFBBBBBB)),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
