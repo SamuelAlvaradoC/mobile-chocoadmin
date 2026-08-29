@@ -480,7 +480,19 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                       crossAxisCount: 2,
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
-                      childAspectRatio: 0.62,
+                      // 0.545 en vez de 0.62 -- alto real necesario para que
+                      // nombre (2 líneas) + descripción (4 líneas, ver
+                      // maxLines en _ProductoCard) + el SizedBox(6) de
+                      // separación antes del precio/botón quepan sin
+                      // desbordarse (probado en dispositivo real: un valor
+                      // menor generaba "A RenderFlex overflowed by X pixels"
+                      // en productos con descripción larga). El bloque de
+                      // texto sigue siendo Expanded (no Flexible) a
+                      // propósito: así el precio/botón queda alineado en la
+                      // misma fila en toda la grilla -- el costo es un hueco
+                      // debajo de descripciones cortas, trade-off normal en
+                      // grillas de tarjetas (Rappi, UberEats, etc).
+                      childAspectRatio: 0.545,
                     ),
                     itemCount: filtrados.length,
                     itemBuilder: (_, i) => _ProductoCard(
@@ -1120,11 +1132,22 @@ class _ProductoCard extends StatelessWidget {
             ),
           ),
 
-          // Nombre + descripción — absorbe el espacio variable
+          // Nombre + descripción — absorbe el espacio variable.
+          // clipBehavior: Clip.hardEdge es la red de seguridad: si en algún
+          // dispositivo el cálculo de arriba (childAspectRatio del grid)
+          // queda corto por unos pocos px, esto recorta limpio en vez de
+          // desbordarse y mostrar el aviso de debug "A RenderFlex
+          // overflowed by X pixels" (lo que se vio como "bottom overflowed"
+          // en el celular real). Column (el widget de conveniencia) no
+          // expone clipBehavior en esta versión de Flutter -- Flex sí, y
+          // Column es literalmente Flex con direction: Axis.vertical fijo,
+          // así que se usa Flex directo acá para poder pasarlo.
           Expanded(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
-              child: Column(
+              child: Flex(
+                direction: Axis.vertical,
+                clipBehavior: Clip.hardEdge,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -1145,8 +1168,14 @@ class _ProductoCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       producto.descripcion ?? '',
+                      // 4 líneas: la mayoría de descripciones reales del
+                      // catálogo (revisadas en la BD) tiene 40-90 caracteres
+                      // (2-3 líneas a este tamaño de letra); unas pocas
+                      // llegan a 100-145 caracteres (p.ej. "Krispi Bowl") y
+                      // esas siguen truncando con "...", que es el
+                      // comportamiento esperado/normal.
                       style: Theme.of(context).textTheme.bodySmall,
-                      maxLines: 3,
+                      maxLines: 4,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
@@ -1154,6 +1183,11 @@ class _ProductoCard extends StatelessWidget {
               ),
             ),
           ),
+          // Separación fija entre el bloque de texto y el precio/botón --
+          // garantiza que la última línea de la descripción nunca quede
+          // pegada o rozando el botón "+ Agregar", incluso en el caso justo
+          // donde el clipBehavior de arriba tuvo que recortar un poco.
+          const SizedBox(height: 6),
 
           // Precio + botón — SIEMPRE al fondo, tamaño fijo
           Padding(
