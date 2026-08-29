@@ -172,23 +172,29 @@ class _ProductosScreenState extends State<ProductosScreen> {
         // Header
         Container(
           color: Colors.white,
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
           child: Row(children: [
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Productos', style: GoogleFonts.nunito(fontSize: 20, fontWeight: FontWeight.w800, color: const Color(0xFF1a1a1a))),
+              Text('Productos', style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.w800, color: const Color(0xFF1a1a1a))),
               Text('${_productos.length} productos registrados',
-                  style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF888888))),
+                  style: GoogleFonts.nunito(fontSize: 11, color: const Color(0xFF888888))),
             ])),
             GestureDetector(
               onTap: _abrirCrear,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(Icons.add_rounded, color: Colors.white, size: 16),
-                  const SizedBox(width: 4),
-                  Text('+ Añadir producto', style: GoogleFonts.nunito(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
-                ]),
+              behavior: HitTestBehavior.opaque,
+              child: SizedBox(
+                height: 44,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(Icons.add_rounded, color: Colors.white, size: 14),
+                      const SizedBox(width: 4),
+                      Text('+ Añadir producto', style: GoogleFonts.nunito(color: Colors.white, fontSize: 12, height: 1.0, fontWeight: FontWeight.w700)),
+                    ]),
+                  ),
+                ),
               ),
             ),
           ]),
@@ -196,18 +202,18 @@ class _ProductosScreenState extends State<ProductosScreen> {
         // Buscador + filtro categoría
         Container(
           color: Colors.white,
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
           child: Column(children: [
             TextField(
               controller: _busquedaCtrl,
               onChanged: (_) => setState(() => _pagina = 1),
-              style: GoogleFonts.nunito(fontSize: 13),
+              style: GoogleFonts.nunito(fontSize: 12, height: 1.0),
               decoration: InputDecoration(
                 hintText: 'Buscar producto...',
-                hintStyle: GoogleFonts.nunito(fontSize: 13, color: const Color(0xFFAAAAAA)),
-                prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Color(0xFF888888)),
+                hintStyle: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFFAAAAAA)),
+                prefixIcon: const Icon(Icons.search_rounded, size: 16, color: Color(0xFF888888)),
                 isDense: true,
-                contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                contentPadding: const EdgeInsets.symmetric(vertical: 6),
                 filled: true, fillColor: const Color(0xFFF7F8FD),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(50), borderSide: BorderSide.none),
                 enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(50), borderSide: const BorderSide(color: Color(0xFFE8E8E8))),
@@ -215,24 +221,25 @@ class _ProductosScreenState extends State<ProductosScreen> {
               ),
             ),
             if (_categorias.isNotEmpty) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               DropdownButtonFormField<dynamic>(
                 value: _filtroCategoria,
                 isExpanded: true,
-                style: GoogleFonts.nunito(fontSize: 13, color: const Color(0xFF1a1a1a)),
+                isDense: true,
+                style: GoogleFonts.nunito(fontSize: 12, height: 1.0, color: const Color(0xFF1a1a1a)),
                 decoration: InputDecoration(
                   isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   filled: true, fillColor: const Color(0xFFF7F8FD),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFE0E0E0))),
                   enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFE0E0E0))),
                   focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
                 ),
                 items: [
-                  DropdownMenuItem<dynamic>(value: null, child: Text('Todas las categorías', style: GoogleFonts.nunito(fontSize: 13))),
+                  DropdownMenuItem<dynamic>(value: null, child: Text('Todas las categorías', style: GoogleFonts.nunito(fontSize: 12))),
                   ..._categorias.map((c) => DropdownMenuItem<dynamic>(
                     value: c['id_categoria'] ?? c['id'],
-                    child: Text(c['nombre'] ?? '', style: GoogleFonts.nunito(fontSize: 13)),
+                    child: Text(c['nombre'] ?? '', style: GoogleFonts.nunito(fontSize: 12)),
                   )),
                 ],
                 onChanged: (v) => setState(() { _filtroCategoria = v; _pagina = 1; }),
@@ -652,8 +659,8 @@ class _ProductoFormScreenState extends State<_ProductoFormScreen> {
                     ignoring: _esBowl,
                     child: _ToggleRow(
                       activo: _permiteSalsas,
-                      labelActivo: 'Con salsas',
-                      labelInactivo: 'Sin salsas',
+                      labelActivo: 'Con untables',
+                      labelInactivo: 'Sin untables',
                       onTap: () => setState(() => _permiteSalsas = !_permiteSalsas),
                     ),
                   ),
@@ -842,7 +849,7 @@ class _ProductoDetalleDialog extends StatelessWidget {
               const SizedBox(height: 8),
               Row(children: [
                 Expanded(child: _DetalleRow(
-                  label: 'Salsas',
+                  label: 'Untables',
                   value: salsas ? '✓ Sí' : '✗ No',
                   valueColor: salsas ? const Color(0xFF1a1a1a) : const Color(0xFF999999),
                   valueBg: const Color(0xFFF5F5F5),

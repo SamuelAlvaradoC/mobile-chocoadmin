@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_config.dart';
@@ -282,7 +284,7 @@ class _ComoFunciona extends StatelessWidget {
   const _ComoFunciona();
 
   static const _pasos = [
-    _Paso(num: '01', icon: Icons.shopping_bag_outlined,  titulo: 'Elige tu antojo',    desc: 'Explora el catálogo, personaliza con toppings, salsas y adiciones'),
+    _Paso(num: '01', icon: Icons.shopping_bag_outlined,  titulo: 'Elige tu antojo',    desc: 'Explora el catálogo, personaliza con toppings, untables y adiciones'),
     _Paso(num: '02', icon: Icons.location_on_outlined,   titulo: 'Marca tu ubicación', desc: 'Pon el pin en el mapa y calculamos el domicilio automáticamente'),
     _Paso(num: '03', icon: Icons.credit_card,            titulo: 'Elige cómo pagar',   desc: 'Efectivo, transferencia o mixto. Sin complicaciones'),
     _Paso(num: '04', icon: Icons.delivery_dining,        titulo: 'Recíbelo con freseo',    desc: 'Tu pedido llega directo a tu puerta, fresquito y delicioso'),
@@ -756,72 +758,19 @@ class _VideoRedes extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 72, horizontal: 28),
       child: Column(
         children: [
-          Text('Míranos en acción',
+          Text('Aprende a pedir en 1 minuto',
               style: GoogleFonts.nunito(
                 fontSize: sw < 390 ? 26.0 : 32.0,
                 fontWeight: FontWeight.w900, color: const Color(0xFF1a1a1a), height: 1.2,
               ),
               textAlign: TextAlign.center),
           const SizedBox(height: 8),
-          Text('Síguenos en TikTok, Instagram y Facebook para ver nuestras creaciones',
+          Text('Mira este video rápido y descubre lo fácil que es hacer tu pedido en ChocoFreseo. Mientras tanto, síguenos en nuestras redes:',
               style: GoogleFonts.nunito(fontSize: 14, color: const Color(0xFF666666), height: 1.6),
               textAlign: TextAlign.center),
           const SizedBox(height: 36),
 
-          // Video placeholder — igual React: decorativo, sin acción al tocar
-          Container(
-              width: double.infinity,
-              constraints: const BoxConstraints(maxWidth: 560),
-              height: 260,
-              decoration: BoxDecoration(
-                color: const Color(0xFF1a1a1a),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Stack(
-                children: [
-                  Center(
-                    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 40),
-                      ),
-                      const SizedBox(height: 14),
-                      Text('Video próximamente',
-                          style: GoogleFonts.nunito(
-                            fontSize: 16, fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          )),
-                      const SizedBox(height: 4),
-                      Text('@chocofreseo en TikTok',
-                          style: GoogleFonts.nunito(
-                            fontSize: 13,
-                            color: Colors.white.withValues(alpha: 0.6),
-                          )),
-                    ]),
-                  ),
-                  Positioned(
-                    top: 16, right: 16,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        const LogoTikTok(size: 11, color: Colors.white),
-                        const SizedBox(width: 5),
-                        Text('TikTok',
-                            style: GoogleFonts.nunito(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
-                      ]),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          const _VideoPlayer(),
           const SizedBox(height: 36),
 
           // Botones redes sociales
@@ -855,6 +804,73 @@ class _VideoRedes extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+// Reproductor del video tutorial "Aprende a pedir en 1 minuto" -- con
+// controles nativos (Chewie), sin autoplay, igual criterio que el <video>
+// de React (Landing.jsx). El controller solo se crea una vez el video
+// termina de inicializar (initState es async), por eso el spinner
+// mientras tanto.
+class _VideoPlayer extends StatefulWidget {
+  const _VideoPlayer();
+
+  @override
+  State<_VideoPlayer> createState() => _VideoPlayerState();
+}
+
+class _VideoPlayerState extends State<_VideoPlayer> {
+  static const _url =
+      'https://res.cloudinary.com/diqeuyoqo/video/upload/v1787968751/ChocoFreseo_video_landing_v2_fark9e.mp4';
+
+  late final VideoPlayerController _videoController;
+  ChewieController? _chewieController;
+
+  @override
+  void initState() {
+    super.initState();
+    _videoController = VideoPlayerController.networkUrl(Uri.parse(_url));
+    _videoController.initialize().then((_) {
+      if (!mounted) return;
+      setState(() {
+        _chewieController = ChewieController(
+          videoPlayerController: _videoController,
+          autoPlay: false,
+          looping: false,
+          aspectRatio: _videoController.value.aspectRatio,
+          materialProgressColors: ChewieProgressColors(
+            playedColor: AppColors.primary,
+            handleColor: AppColors.primary,
+          ),
+        );
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _chewieController?.dispose();
+    _videoController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(maxWidth: 560),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1a1a1a),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      clipBehavior: Clip.hardEdge,
+      child: AspectRatio(
+        aspectRatio: 16 / 9,
+        child: _chewieController != null
+            ? Chewie(controller: _chewieController!)
+            : const Center(child: CircularProgressIndicator(color: Colors.white)),
       ),
     );
   }

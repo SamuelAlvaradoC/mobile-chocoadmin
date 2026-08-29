@@ -409,7 +409,7 @@ class _ToppingsModalState extends State<ToppingsModal> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _header('Elige tus salsas 🍫', onClose: () => Navigator.pop(context)),
+        _header('Elige tus untables 🍫', onClose: () => Navigator.pop(context)),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 6),
           child: Row(
@@ -423,7 +423,7 @@ class _ToppingsModalState extends State<ToppingsModal> {
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
           child: Text(
-            'Las primeras $_kMaxSalsasGratis son gratis · Adicionales: ${_fmt.format(_kPrecioSalsaExtra)} c/u',
+            'Los primeros $_kMaxSalsasGratis son gratis · Adicionales: ${_fmt.format(_kPrecioSalsaExtra)} c/u',
             style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF888888)),
           ),
         ),
@@ -515,9 +515,9 @@ class _ToppingsModalState extends State<ToppingsModal> {
                   ),
                   child: Text(
                     _salsasSel.isEmpty
-                        ? 'Elige hasta $_kMaxSalsasGratis salsas gratis'
+                        ? 'Elige hasta $_kMaxSalsasGratis untables gratis'
                         : salsasCobradas == 0
-                            ? '$salsasGratis salsa${salsasGratis > 1 ? 's' : ''} incluida${salsasGratis > 1 ? 's' : ''} ✓'
+                            ? '$salsasGratis untable${salsasGratis > 1 ? 's' : ''} incluido${salsasGratis > 1 ? 's' : ''} ✓'
                             : '$salsasGratis gratis + $salsasCobradas extra = +${_fmt.format(salsasCobradas * _kPrecioSalsaExtra)}',
                     style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w600,
                         color: _salsasSel.length >= _kMaxSalsasGratis ? const Color(0xFF92400E) : const Color(0xFF166534)),
@@ -844,7 +844,7 @@ class _ToppingsModalState extends State<ToppingsModal> {
           if (_salsasExtra > 0) ...[
             const SizedBox(height: 2),
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Text('Salsas extra', style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFFEA580C))),
+              Text('Untables extra', style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFFEA580C))),
               Text('+${_fmt.format(_salsasExtra)}', style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFFEA580C))),
             ]),
           ],

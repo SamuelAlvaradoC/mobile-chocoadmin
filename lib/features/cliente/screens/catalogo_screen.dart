@@ -1367,7 +1367,7 @@ class _BadgeProducto extends StatelessWidget {
       if (tieneCobertura) 'Elige cobertura',
       if (tieneChocolate) 'Elige chocolate',
       if (tieneToppings) labelTop,
-      if (tieneSalsas) '2 salsas gratis',
+      if (tieneSalsas) '2 untables gratis',
     ];
 
     return Positioned(
