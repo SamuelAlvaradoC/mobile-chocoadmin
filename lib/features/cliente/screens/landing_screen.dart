@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
@@ -844,9 +845,47 @@ class _VideoPlayerState extends State<_VideoPlayer> {
             playedColor: AppColors.primary,
             handleColor: AppColors.primary,
           ),
+          // Sin esto, Chewie fuerza landscape-only al entrar a fullscreen
+          // (default: si el video es más ancho que alto, solo permite
+          // landscapeLeft/Right -- ver chewie_player.dart:onEnterFullScreen).
+          // Con las 4 orientaciones permitidas, el fullscreen respeta como
+          // esté sostenido el celular en ese momento.
+          deviceOrientationsOnEnterFullScreen: const [
+            DeviceOrientation.landscapeLeft,
+            DeviceOrientation.landscapeRight,
+            DeviceOrientation.portraitUp,
+            DeviceOrientation.portraitDown,
+          ],
+          // El default de Chewie es DeviceOrientation.values (las 4), lo
+          // cual dejaría el celular rotable libremente en el resto de la
+          // app al salir del fullscreen -- pero main.dart bloquea toda la
+          // app a solo portrait, así que hay que volver a eso explícito.
+          deviceOrientationsAfterFullScreen: const [
+            DeviceOrientation.portraitUp,
+            DeviceOrientation.portraitDown,
+          ],
         );
+        // Chewie oculta la barra de sistema con SystemUiMode.manual +
+        // overlays vacíos al entrar a fullscreen -- en celulares con
+        // navegación por gestos, Android le agrega su propio aviso "Para
+        // salir de la pantalla completa, arrastra desde la parte superior y
+        // presiona Atrás", más largo que el de navegación por botones.
+        // immersiveSticky (barras reaparecen momentáneamente con un swipe y
+        // se ocultan solas) usa el flujo que Android trata como estándar, en
+        // vez del que dispara ese aviso largo -- se aplica después de que
+        // Chewie termina su propio cambio (postFrameCallback) para que no
+        // nos lo sobreescriba.
+        _chewieController!.addListener(_onChewieChange);
       });
     });
+  }
+
+  void _onChewieChange() {
+    if (_chewieController?.isFullScreen == true) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      });
+    }
   }
 
   @override
