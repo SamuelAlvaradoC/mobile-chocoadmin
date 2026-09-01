@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -36,12 +38,14 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
   bool _bloqueado = false;
   final _busquedaCtrl = TextEditingController();
   String _busqueda = '';
+  Timer? _timer;
 
   final _fmt =
       NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
 
   @override
   void dispose() {
+    _timer?.cancel();
     _busquedaCtrl.dispose();
     super.dispose();
   }
@@ -59,13 +63,17 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
   void initState() {
     super.initState();
     _cargar();
+    _timer = Timer.periodic(
+        const Duration(seconds: 8), (_) => _cargar(silencioso: true));
   }
 
-  Future<void> _cargar() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+  Future<void> _cargar({bool silencioso = false}) async {
+    if (!silencioso) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
     try {
       final data = await ApiService.get('/api/ventas',
           queryParams: {'estado': 'pendiente'});
@@ -80,8 +88,15 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
           .toList()
         ..sort((a, b) => a.id.compareTo(b.id));
     } on ApiException catch (e) {
+      // El refresco automático silencioso no debe tapar la lista visible con
+      // una pantalla de error por un fallo de red pasajero -- se ignora,
+      // igual que hace React (Domicilios.jsx: .catch(() => {})). Solo la
+      // carga inicial o el botón "Actualizar pedidos" (silencioso: false)
+      // muestran el error.
+      if (silencioso) return;
       _error = e.message;
     } catch (e) {
+      if (silencioso) return;
       _error = 'Error al cargar domicilios: ${e.toString()}';
     }
     if (!mounted) return;

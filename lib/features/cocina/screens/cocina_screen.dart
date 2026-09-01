@@ -34,7 +34,7 @@ class _CocinaScreenState extends State<CocinaScreen> {
   void initState() {
     super.initState();
     _cargar();
-    _timer = Timer.periodic(const Duration(seconds: 30), (_) => _cargar());
+    _timer = Timer.periodic(const Duration(seconds: 8), (_) => _cargar());
   }
 
   @override
