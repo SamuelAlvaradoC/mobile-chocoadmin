@@ -8,6 +8,7 @@ import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/pedido.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/utils/validar_sin_html.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../shared/layouts/client_bottom_nav.dart' show ClientLogoutAction;
 import '../../../shared/widgets/app_button.dart';
@@ -274,6 +275,10 @@ class _DatosTabState extends State<_DatosTab> {
     final nombre = _nombreCtrl.text.trim();
     if (nombre.length < 2) {
       setState(() => _error = 'El nombre debe tener al menos 2 caracteres');
+      return;
+    }
+    if (contieneEtiquetaHtml(nombre)) {
+      setState(() => _error = mensajeHtml);
       return;
     }
     final telefono = _telefonoCtrl.text.trim();

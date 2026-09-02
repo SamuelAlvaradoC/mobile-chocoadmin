@@ -15,6 +15,7 @@ import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/pedido.dart';
 import '../../../core/models/producto.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/utils/validar_sin_html.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../features/cliente/providers/catalogo_provider.dart';
 import '../../../features/cliente/widgets/toppings_modal.dart';
@@ -245,6 +246,10 @@ Future<void> _anularVentaRapidoDialog(
                 backgroundColor: AppColors.error, foregroundColor: Colors.white),
             onPressed: (motivoCtrl.text.trim().length < 5 || procesando) ? null : () async {
               final motivo = motivoCtrl.text.trim();
+              if (contieneEtiquetaHtml(motivo)) {
+                setDlg(() => dlgError = mensajeHtml);
+                return;
+              }
               setDlg(() { procesando = true; dlgError = null; });
               try {
                 await ApiService.patch(
@@ -422,7 +427,7 @@ class _VentasScreenState extends State<VentasScreen> {
           // ── Header ───────────────────────────────────────────────────────
           Container(
             color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
             child: Row(
               children: [
                 Expanded(
@@ -432,7 +437,7 @@ class _VentasScreenState extends State<VentasScreen> {
                       const Text(
                         'Ventas',
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 18,
                           fontWeight: FontWeight.w800,
                           color: Color(0xFF1a1a1a),
                         ),
@@ -440,7 +445,7 @@ class _VentasScreenState extends State<VentasScreen> {
                       Text(
                         '${_ventas.length} registro${_ventas.length != 1 ? 's' : ''} en total',
                         style: const TextStyle(
-                          fontSize: 12,
+                          fontSize: 11,
                           color: Color(0xFF888888),
                         ),
                       ),
@@ -451,28 +456,35 @@ class _VentasScreenState extends State<VentasScreen> {
                 if (context.watch<AuthProvider>().tienePermiso('gestionar_ventas'))
                   GestureDetector(
                     onTap: _abrirCrearVenta,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 9),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.add_rounded,
-                              color: Colors.white, size: 16),
-                          SizedBox(width: 4),
-                          Text(
-                            'Nueva venta',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                            ),
+                    behavior: HitTestBehavior.opaque,
+                    child: SizedBox(
+                      height: 44,
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                        ],
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.add_rounded,
+                                  color: Colors.white, size: 14),
+                              SizedBox(width: 4),
+                              Text(
+                                'Nueva venta',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  height: 1.0,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -484,22 +496,23 @@ class _VentasScreenState extends State<VentasScreen> {
           Container(
             color: Colors.white,
             padding:
-                const EdgeInsets.fromLTRB(20, 0, 20, 14),
+                const EdgeInsets.fromLTRB(20, 0, 20, 8),
             child: Column(
               children: [
                 // Buscador pill
                 TextField(
                   controller: _busquedaCtrl,
                   onChanged: (_) => setState(() => _pagina = 1),
+                  style: const TextStyle(fontSize: 12, height: 1.0),
                   decoration: InputDecoration(
                     hintText: 'Buscar por cliente, #venta...',
                     hintStyle: const TextStyle(
-                        fontSize: 13, color: Color(0xFFAAAAAA)),
+                        fontSize: 12, color: Color(0xFFAAAAAA)),
                     prefixIcon: const Icon(Icons.search_rounded,
-                        size: 18, color: Color(0xFF888888)),
+                        size: 16, color: Color(0xFF888888)),
                     isDense: true,
                     contentPadding:
-                        const EdgeInsets.symmetric(vertical: 10),
+                        const EdgeInsets.symmetric(vertical: 6),
                     filled: true,
                     fillColor: const Color(0xFFF7F8FD),
                     border: OutlineInputBorder(
@@ -518,49 +531,51 @@ class _VentasScreenState extends State<VentasScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 6),
 
                 // Dropdown estado
                 DropdownButtonFormField<String?>(
                   value: _filtroEstado,
                   isDense: true,
+                  style: const TextStyle(fontSize: 12, height: 1.0, color: Color(0xFF1a1a1a)),
                   decoration: const InputDecoration(
                     isDense: true,
                     border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(8))),
                     enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(8)), borderSide: BorderSide(color: Color(0xFFE8E8E8))),
                     focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(8)), borderSide: BorderSide(color: AppColors.primary, width: 1.5)),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   ),
                   items: [
-                    const DropdownMenuItem<String?>(value: null, child: Text('Todos los estados', style: TextStyle(fontSize: 13))),
-                    ..._estados.map((e) => DropdownMenuItem<String?>(value: e, child: Text(_labelEstado(e), style: const TextStyle(fontSize: 13)))),
+                    const DropdownMenuItem<String?>(value: null, child: Text('Todos los estados', style: TextStyle(fontSize: 12))),
+                    ..._estados.map((e) => DropdownMenuItem<String?>(value: e, child: Text(_labelEstado(e), style: const TextStyle(fontSize: 12)))),
                   ],
                   // El estado se filtra 100% en el cliente (ver _ventasFiltradas):
                   // no hace falta recargar del servidor al cambiarlo.
                   onChanged: (v) => setState(() { _filtroEstado = v; _pagina = 1; }),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
 
                 // Dropdown método de pago
                 DropdownButtonFormField<String?>(
                   value: _filtroMetodoPago,
                   isDense: true,
+                  style: const TextStyle(fontSize: 12, height: 1.0, color: Color(0xFF1a1a1a)),
                   decoration: const InputDecoration(
                     isDense: true,
                     border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(8))),
                     enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(8)), borderSide: BorderSide(color: Color(0xFFE8E8E8))),
                     focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(8)), borderSide: BorderSide(color: AppColors.primary, width: 1.5)),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   ),
                   items: [
-                    const DropdownMenuItem<String?>(value: null, child: Text('Todos los métodos', style: TextStyle(fontSize: 13))),
-                    ..._metodosPago.map((m) => DropdownMenuItem<String?>(value: m, child: Text(_labelMetodo(m), style: const TextStyle(fontSize: 13)))),
+                    const DropdownMenuItem<String?>(value: null, child: Text('Todos los métodos', style: TextStyle(fontSize: 12))),
+                    ..._metodosPago.map((m) => DropdownMenuItem<String?>(value: m, child: Text(_labelMetodo(m), style: const TextStyle(fontSize: 12)))),
                   ],
                   // El backend ignora este query param (ver comentario en
                   // _cargar); el filtro real se aplica en _ventasFiltradas.
                   onChanged: (v) => setState(() { _filtroMetodoPago = v; _pagina = 1; }),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
 
                 // Selector de fecha + limpiar filtros
                 Row(children: [
@@ -1486,6 +1501,10 @@ class _EditarVentaScreenState extends State<_EditarVentaScreen> {
     }
     if (!_mixtoOk) {
       setState(() => _error = 'Los montos mixto deben sumar \$${_total.round()} exacto');
+      return;
+    }
+    if (contieneEtiquetaHtml(_nombreCtrl.text)) {
+      setState(() => _error = mensajeHtml);
       return;
     }
     setState(() { _guardando = true; _error = null; });

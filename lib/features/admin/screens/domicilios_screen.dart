@@ -12,6 +12,7 @@ import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/pedido.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/auth_service.dart' show UserRole;
+import '../../../core/utils/validar_sin_html.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../shared/layouts/admin_bottom_nav.dart';
 import '../../../shared/widgets/brand_icons.dart';
@@ -267,6 +268,10 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
                   ? null
                   : () async {
                       final motivo = motivoCtrl.text.trim();
+                      if (contieneEtiquetaHtml(motivo)) {
+                        setSt(() => error = mensajeHtml);
+                        return;
+                      }
                       setSt(() { procesando = true; error = null; });
                       setState(() => _bloqueado = true);
                       try {
@@ -440,10 +445,12 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
                         child: TextField(
                           controller: _busquedaCtrl,
                           onChanged: (v) => setState(() => _busqueda = v),
+                          style: const TextStyle(fontSize: 12, height: 1.0),
                           decoration: InputDecoration(
                             hintText: 'Buscar por cliente o número...',
+                            hintStyle: const TextStyle(fontSize: 12),
                             prefixIcon: const Icon(Icons.search_rounded,
-                                size: 18, color: AppColors.textSecondary),
+                                size: 16, color: AppColors.textSecondary),
                             suffixIcon: _busqueda.isNotEmpty
                                 ? IconButton(
                                     icon: const Icon(Icons.close_rounded,
@@ -456,7 +463,7 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
                                 : null,
                             isDense: true,
                             contentPadding:
-                                const EdgeInsets.symmetric(vertical: 10),
+                                const EdgeInsets.symmetric(vertical: 6),
                             filled: true,
                             fillColor: Colors.white,
                             border: OutlineInputBorder(
@@ -913,6 +920,10 @@ class _DetalleAdminModalState extends State<_DetalleAdminModal> {
                       ? null
                       : () async {
                           final motivo = _motivoCtrl.text.trim();
+                          if (contieneEtiquetaHtml(motivo)) {
+                            setState(() => _error = mensajeHtml);
+                            return;
+                          }
                           setState(() { _procesando = true; _error = null; });
                           try {
                             await widget.onRechazar(motivo);

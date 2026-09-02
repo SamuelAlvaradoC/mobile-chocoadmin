@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/validar_sin_html.dart';
 import '../providers/auth_provider.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -46,6 +47,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
     if (nombre.length < 2) {
       setState(() => _nombreError = 'El nombre debe tener al menos 2 caracteres');
+      return false;
+    }
+    if (contieneEtiquetaHtml(nombre)) {
+      setState(() => _nombreError = mensajeHtml);
       return false;
     }
     setState(() => _nombreError = null);

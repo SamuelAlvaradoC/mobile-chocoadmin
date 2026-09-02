@@ -15,6 +15,7 @@ import '../../../core/constants/app_config.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/models/carrito_item.dart';
+import '../../../core/utils/validar_sin_html.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/app_button.dart';
@@ -264,6 +265,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if ((_metodoPago == 'transferencia' || _metodoPago == 'mixto') &&
         (_comprobanteUrl == null || _comprobanteUrl!.isEmpty)) {
       setState(() => _errorEnvio = 'Debes subir el comprobante de pago para continuar');
+      return;
+    }
+
+    if (contieneEtiquetaHtml(_observacionesCtrl.text)) {
+      setState(() => _errorEnvio = mensajeHtml);
       return;
     }
 
