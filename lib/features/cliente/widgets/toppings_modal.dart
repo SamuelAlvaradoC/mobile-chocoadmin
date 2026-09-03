@@ -545,8 +545,10 @@ class _ToppingsModalState extends State<ToppingsModal> {
             children: [
               Expanded(
                 child: Text(
+                  // "Los primeros 1 son gratis" no tiene sentido en singular
+                  // -- mismo criterio que labelTop en catalogo_screen.dart.
                   _maxGratis > 0
-                      ? 'Los primeros $_maxGratis son gratis · Extra: ${_fmt.format(_kPrecioTopExtra)} c/u'
+                      ? '$_maxGratis topping${_maxGratis == 1 ? '' : 's'} gratis · Extra: ${_fmt.format(_kPrecioTopExtra)} c/u'
                       : 'Sin toppings gratis · Precio: ${_fmt.format(_kPrecioTopExtra)} c/u',
                   style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF666666)),
                 ),
