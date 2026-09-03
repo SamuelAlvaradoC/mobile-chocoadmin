@@ -446,7 +446,7 @@ class _ProductoFormScreenState extends State<_ProductoFormScreen> {
     _tamano          = _normTamano(p?['tamano'] ?? '');
     _permiteToppings  = p?['permite_toppings'] == true || p?['permite_toppings'] == 1;
     final mt = p?['max_toppings'];
-    _maxToppings     = (mt == 2 || mt == '2') ? 2 : (mt == 3 || mt == '3') ? 3 : 1;
+    _maxToppings     = (mt == 2 || mt == '2') ? 2 : 1;
     _permiteChocolate = p?['permite_chocolate'] == true || p?['permite_chocolate'] == 1;
     _permiteSalsas   = p?['permite_salsas'] == true || p?['permite_salsas'] == 1;
     _esBowl          = p?['es_bowl'] == true || p?['es_bowl'] == 1;
@@ -616,7 +616,7 @@ class _ProductoFormScreenState extends State<_ProductoFormScreen> {
                   Text('¿Cuántos toppings van incluidos gratis?',
                       style: GoogleFonts.nunito(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF555555))),
                   const SizedBox(height: 8),
-                  Row(children: [1, 2, 3].map((n) => Padding(
+                  Row(children: [1, 2].map((n) => Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: GestureDetector(
                       onTap: () => setState(() => _maxToppings = n),
