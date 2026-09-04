@@ -2,23 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 /// Bottom nav nativo del rol Administrador. 5 destinos: Dashboard, Productos,
-/// Ventas, Confirmar pedidos y Panel Cocina.
+/// Pedidos, Confirmar pedidos y Panel Cocina.
 ///
 /// Solo los primeros 3 son branches reales de un StatefulShellRoute (cada
-/// uno con su propio Navigator). Confirmar pedidos y Panel Cocina son
+/// uno con su propio Navigator). Ventas (historial de entregados, uso
+/// ocasional) se alcanza aparte, con un botón dedicado en AdminLayout, para
+/// no crecer este nav a 6 items. Confirmar pedidos y Panel Cocina son
 /// pantallas COMPARTIDAS con los roles confirmador/cocina (que no tienen
 /// bottom nav) — go_router exige una ruta única por path, así que no pueden
 /// ser branches del shell de admin a la vez que rutas planas para esos
-/// otros roles. Se quedan como rutas planas para todos, y el admin las
-/// alcanza con context.go (sale del shell), igual que cualquier navegación
-/// a una ruta fuera de un shell.
+/// otros roles. Ventas, Confirmar pedidos y Panel Cocina se quedan como
+/// rutas planas, y el admin las alcanza con context.go (sale del shell),
+/// igual que cualquier navegación a una ruta fuera de un shell.
 ///
 /// Por eso este widget tiene dos modos:
-/// - Dentro del shell (Dashboard/Productos/Ventas): se le pasa
+/// - Dentro del shell (Dashboard/Productos/Pedidos): se le pasa
 ///   [navigationShell] y los taps sobre esos 3 usan goBranch().
-/// - Fuera del shell (parado en /cocina o /admin/domicilios como admin): se
-///   le pasa [currentRoute] y TODOS los taps usan context.go(), incluyendo
-///   Dashboard/Productos/Ventas (que re-entran al shell desde cero).
+/// - Fuera del shell (parado en /admin/ventas, /cocina o /admin/domicilios
+///   como admin): se le pasa [currentRoute] y TODOS los taps usan
+///   context.go(), incluyendo Dashboard/Productos/Pedidos (que re-entran al
+///   shell desde cero).
 class AdminBottomNav extends StatelessWidget {
   final StatefulNavigationShell? navigationShell;
   final String? currentRoute;
@@ -32,7 +35,7 @@ class AdminBottomNav extends StatelessWidget {
   static const _items = [
     _NavItem(icon: Icons.dashboard_rounded, label: 'Dashboard', path: '/admin/dashboard', branchIndex: 0),
     _NavItem(icon: Icons.shopping_bag_rounded, label: 'Productos', path: '/admin/productos', branchIndex: 1),
-    _NavItem(icon: Icons.receipt_long_rounded, label: 'Ventas', path: '/admin/ventas', branchIndex: 2),
+    _NavItem(icon: Icons.receipt_long_rounded, label: 'Pedidos', path: '/admin/pedidos', branchIndex: 2),
     _NavItem(icon: Icons.check_circle_rounded, label: 'Confirmar', path: '/admin/domicilios', branchIndex: null),
     _NavItem(icon: Icons.restaurant_menu_rounded, label: 'Cocina', path: '/cocina', branchIndex: null),
   ];

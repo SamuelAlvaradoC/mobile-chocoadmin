@@ -41,6 +41,7 @@ import 'features/cliente/screens/landing_screen.dart';
 
 // Admin
 import 'features/admin/screens/dashboard_screen.dart';
+import 'features/admin/screens/pedidos_screen.dart' show AdminPedidosScreen;
 import 'features/admin/screens/ventas_screen.dart';
 import 'features/admin/screens/domicilios_screen.dart';
 import 'features/admin/screens/productos_modulo_screen.dart';
@@ -109,11 +110,11 @@ class _AppRouterState extends State<_AppRouter> {
   bool _manejandoSesionExpirada = false;
 
   // Recuerda el último branch del shell admin visitado (Dashboard/Productos/
-  // Ventas), para que el back desde una ruta plana (Cocina, Confirmador de
-  // domicilios) regrese ahí en vez de siempre al Dashboard -- back "estilo
-  // navegador", no un destino fijo. Se actualiza como side-effect en
-  // _redirect (se ejecuta en cada navegación) porque es el único punto
-  // central por el que pasa toda ruta antes de construirse.
+  // Pedidos), para que el back desde una ruta plana (Ventas, Cocina,
+  // Confirmador de domicilios) regrese ahí en vez de siempre al Dashboard --
+  // back "estilo navegador", no un destino fijo. Se actualiza como
+  // side-effect en _redirect (se ejecuta en cada navegación) porque es el
+  // único punto central por el que pasa toda ruta antes de construirse.
   String _ultimaRutaAdminShell = '/admin/dashboard';
 
   @override
@@ -222,13 +223,16 @@ class _AppRouterState extends State<_AppRouter> {
         ),
 
         // ── Admin ────────────────────────────────────────────
-        // Solo Dashboard/Productos/Ventas son branches reales del shell:
-        // Confirmar pedidos (/admin/domicilios) y Panel Cocina (/cocina) son
-        // pantallas COMPARTIDAS con los roles confirmador/cocina (que no
-        // tienen bottom nav) -- go_router exige una ruta unica por path, asi
-        // que no pueden ser branches del shell a la vez que rutas planas
-        // para esos otros roles. Se quedan planas (ver mas abajo) y el admin
-        // las alcanza con context.go (AdminBottomNav lo maneja solo).
+        // Solo Dashboard/Productos/Pedidos son branches reales del shell:
+        // Ventas (/admin/ventas), Confirmar pedidos (/admin/domicilios) y
+        // Panel Cocina (/cocina) son rutas planas -- Ventas por ser de uso
+        // ocasional (ver comentario junto a su GoRoute mas abajo);
+        // domicilios/cocina porque son pantallas COMPARTIDAS con los roles
+        // confirmador/cocina (que no tienen bottom nav) y go_router exige
+        // una ruta unica por path, asi que no pueden ser branches del shell
+        // a la vez que rutas planas para esos otros roles. El admin las
+        // alcanza con context.go (AdminBottomNav y el boton de Ventas en
+        // AdminLayout lo manejan solos).
         //
         // Verificado pantalla por pantalla (no de forma generica): Dashboard
         // solo abre showDatePicker/showModalBottomSheet (Tiempo estimado,
@@ -237,18 +241,21 @@ class _AppRouterState extends State<_AppRouter> {
         // Productos/Toppings/Adiciones, 8 Navigator.push entre los 4 en
         // total para crear/editar) igual: cada sub-pantalla vive dentro del
         // IndexedStack de ProductosModuloScreen, que es la pantalla del
-        // branch -- ningun Navigator intermedio se interpone. Ventas (el
+        // branch -- ningun Navigator intermedio se interpone. Pedidos (el
         // mas cargado: crear/editar/detalle via Navigator.push, mas el
         // bottom sheet de personalizar producto DENTRO de crear/editar) se
-        // comporta igual: al pushearse sobre el context de VentasScreen o
-        // de una fila/pantalla ya empujada sobre el branch, todo queda en el
-        // mismo Navigator del branch. Los showDialog/showDatePicker sueltos
-        // (confirmaciones, motivo de anulacion, visor de comprobante) usan
-        // el rootNavigator por defecto de Flutter, pero eso no afecta el
-        // back -- un dialog siempre es la ruta activa mas alta sin importar
-        // que Navigator lo aloje, y lo cierra el back antes que se llegue a
-        // consultar el onExit de la raiz del branch (solo se llega ahi si
-        // NINGUN Navigator tiene nada que popear).
+        // comporta igual: al pushearse sobre el context de
+        // AdminPedidosScreen o de una fila/pantalla ya empujada sobre el
+        // branch, todo queda en el mismo Navigator del branch. Los
+        // showDialog/showDatePicker sueltos (confirmaciones, motivo de
+        // anulacion, visor de comprobante) usan el rootNavigator por
+        // defecto de Flutter, pero eso no afecta el back -- un dialog
+        // siempre es la ruta activa mas alta sin importar que Navigator lo
+        // aloje, y lo cierra el back antes que se llegue a consultar el
+        // onExit de la raiz del branch (solo se llega ahi si NINGUN
+        // Navigator tiene nada que popear). Ventas (ahora ruta plana) solo
+        // usa Navigator.push para detalle/editar y showDialog sueltos --
+        // mismo razonamiento, sin sorpresas nuevas.
         StatefulShellRoute.indexedStack(
           builder: (context, state, navigationShell) => RootShellScaffold(
             navigationShell: navigationShell,
@@ -269,18 +276,30 @@ class _AppRouterState extends State<_AppRouter> {
             ]),
             StatefulShellBranch(routes: [
               GoRoute(
-                path: '/admin/ventas',
-                builder: (_, __) => const VentasScreen(),
+                path: '/admin/pedidos',
+                builder: (_, __) => const AdminPedidosScreen(),
               ),
             ]),
           ],
         ),
 
-        // Confirmar pedidos y Panel Cocina: rutas planas compartidas con
-        // los roles confirmador/cocina (ver comentario arriba). El back
-        // consciente del rol (admin vuelve al Dashboard, confirmador/cocina
-        // aplican doble-back-para-salir) vive en los `flatRouteHandlers` de
-        // ShellAwareBackButtonDispatcher, más abajo en este archivo.
+        // Ventas, Confirmar pedidos y Panel Cocina: rutas planas. Ventas
+        // (historial de entregados, uso ocasional) perdió su cupo de branch
+        // del shell a manos de Pedidos (pantalla operativa de uso diario,
+        // con el wizard de crear venta) -- se alcanza igual que
+        // domicilios/cocina, vía el botón dedicado en AdminLayout (ver
+        // admin_layout.dart) en vez de bottom nav, para no crecer el nav de
+        // 5 a 6 items (recorte deliberado de una sesión anterior). Confirmar
+        // pedidos y Panel Cocina son pantallas COMPARTIDAS con los roles
+        // confirmador/cocina (ver comentario arriba). El back consciente del
+        // rol (admin vuelve al branch del shell que tenía abierto,
+        // confirmador/cocina aplican doble-back-para-salir) vive en los
+        // `flatRouteHandlers` de ShellAwareBackButtonDispatcher, más abajo
+        // en este archivo.
+        GoRoute(
+          path: '/admin/ventas',
+          builder: (_, __) => const VentasScreen(),
+        ),
         GoRoute(
           path: '/admin/domicilios',
           builder: (_, __) => const DomiciliosScreen(),
@@ -326,7 +345,7 @@ class _AppRouterState extends State<_AppRouter> {
   static const _ramasAdminShell = {
     '/admin/dashboard',
     '/admin/productos',
-    '/admin/ventas',
+    '/admin/pedidos',
   };
 
   // La lógica real vive en core/routing/auth_redirect.dart (computeAuthRedirect)
@@ -419,9 +438,10 @@ class _AppRouterState extends State<_AppRouter> {
           '/perfil': '/landing',
           '/domiciliario/caja': '/domiciliario/pedidos',
           '/admin/productos': '/admin/dashboard',
-          '/admin/ventas': '/admin/dashboard',
+          '/admin/pedidos': '/admin/dashboard',
         },
         flatRouteHandlers: {
+          '/admin/ventas': _staffFlatRouteExitHandler,
           '/admin/domicilios': _staffFlatRouteExitHandler,
           '/cocina': _staffFlatRouteExitHandler,
           '/login': _authScreenExitHandler,

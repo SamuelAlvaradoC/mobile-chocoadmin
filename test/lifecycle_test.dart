@@ -33,7 +33,7 @@ import 'package:chocoadmin/core/services/auth_service.dart';
 import 'package:chocoadmin/features/auth/providers/auth_provider.dart';
 import 'package:chocoadmin/features/cliente/providers/carrito_provider.dart';
 import 'package:chocoadmin/features/cliente/screens/perfil_screen.dart';
-import 'package:chocoadmin/features/admin/screens/ventas_screen.dart';
+import 'package:chocoadmin/features/admin/screens/pedidos_screen.dart' show AdminPedidosScreen;
 
 Future<void> _simularBackgroundYForeground(WidgetTester tester) async {
   // Mismo evento que WidgetsBindingObserver.didChangeAppLifecycleState
@@ -124,7 +124,7 @@ void main() {
         reason: 'pasar a background sin kill no debe perder lo que se estaba escribiendo');
   });
 
-  testWidgets('Ventas > Crear venta: la búsqueda de cliente a medio escribir sobrevive pasar a segundo plano', (tester) async {
+  testWidgets('Pedidos > Crear venta: la búsqueda de cliente a medio escribir sobrevive pasar a segundo plano', (tester) async {
     SharedPreferences.setMockInitialValues({
       'token': 'tok', 'user_id': 1, 'user_name': 'Admin Test', 'user_email': 'admin@test.com',
       'user_role': UserRole.admin.name, 'user_permisos': ['gestionar_ventas'],
@@ -139,7 +139,7 @@ void main() {
     });
 
     await tester.pumpWidget(MaterialApp(
-      home: ChangeNotifierProvider<AuthProvider>.value(value: authProvider, child: const VentasScreen()),
+      home: ChangeNotifierProvider<AuthProvider>.value(value: authProvider, child: const AdminPedidosScreen()),
     ));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
