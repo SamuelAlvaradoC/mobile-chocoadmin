@@ -139,7 +139,10 @@ void main() {
     });
 
     await tester.pumpWidget(MaterialApp(
-      home: ChangeNotifierProvider<AuthProvider>.value(value: authProvider, child: const AdminPedidosScreen()),
+      home: ChangeNotifierProvider<AuthProvider>.value(
+        value: authProvider,
+        child: const Scaffold(body: AdminPedidosScreen()),
+      ),
     ));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));

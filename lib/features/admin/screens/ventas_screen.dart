@@ -19,7 +19,6 @@ import '../../../core/utils/validar_sin_html.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../features/cliente/providers/catalogo_provider.dart';
 import '../../../features/cliente/widgets/toppings_modal.dart';
-import '../../../shared/layouts/admin_layout.dart';
 import '../../../shared/widgets/paginacion.dart';
 
 // Pago mixto (igual React handleEfMixto/handleEfectivoMixto): al escribir en
@@ -295,8 +294,7 @@ class _VentasScreenState extends State<VentasScreen> {
         ? filtradas
         : filtradas.skip((paginaActual - 1) * porPagina).take(porPagina).toList();
 
-    return AdminLayout(
-      body: Column(
+    return Column(
         children: [
           // ── Header ───────────────────────────────────────────────────────
           Container(
@@ -553,7 +551,6 @@ class _VentasScreenState extends State<VentasScreen> {
                           ),
           ),
         ],
-      ),
     );
   }
 
@@ -621,10 +618,10 @@ class _VentaRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final estStyle = _estadoStyle(venta.estado);
     final fecha = venta.creadoEn != null ? fmtFecha.format(venta.creadoEn!) : '--';
-    // Igual que React Ventas.jsx (trimmed): esta pantalla solo muestra
-    // entregados, así que "devolver a listo" (cambiar estado hacia atrás) y
-    // "anular" quedan fuera -- ambas son acciones de Pedidos, no de una
-    // venta ya cerrada.
+    // Igual que React Ventas.jsx: esta pantalla solo muestra entregados, así
+    // que "anular" queda fuera (ya no aplica a una venta cerrada). "Devolver
+    // a listo" SÍ aplica -- un pedido puede marcarse entregado por error (el
+    // domiciliario se equivocó, o se confirmó antes de tiempo).
     final auth = context.watch<AuthProvider>();
     final puedeGestionar = auth.tienePermiso('gestionar_ventas');
     final dir = venta.direccion;
@@ -637,6 +634,44 @@ class _VentaRow extends StatelessWidget {
       context,
       MaterialPageRoute(builder: (_) => _EditarVentaScreen(pedido: venta, onRefresh: onRefresh)),
     );
+    Future<void> devolver() async {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text('¿Devolver la venta ${venta.idFormateado}?'),
+          content: const Text('Esto la saca de Ventas y la regresa a Pedidos, en estado Listo.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFEF3C7), foregroundColor: const Color(0xFFCA8A04)),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Devolver'),
+            ),
+          ],
+        ),
+      );
+      if (confirm == true) {
+        try {
+          await ApiService.patch('/api/ventas/${venta.id}/estado', {'nombre_estado': 'listo'});
+          onRefresh();
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Venta devuelta a Listo'), backgroundColor: Color(0xFF16A34A)),
+            );
+          }
+        } on ApiException catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+          }
+        } catch (_) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Error al devolver la venta')));
+          }
+        }
+      }
+    }
 
     final mostrarEditar = puedeGestionar;
 
@@ -712,6 +747,7 @@ class _VentaRow extends StatelessWidget {
                   switch (v) {
                     case 'editar': abrirEditar(); break;
                     case 'imprimir': _confirmarImprimir(context, venta); break;
+                    case 'devolver': devolver(); break;
                   }
                 },
                 itemBuilder: (_) => [
@@ -730,6 +766,14 @@ class _VentaRow extends StatelessWidget {
                       Icon(Icons.receipt_long_outlined, size: 18, color: Color(0xFF666666)),
                       SizedBox(width: 10),
                       Text('Imprimir comprobante'),
+                    ]),
+                  ),
+                  const PopupMenuItem(
+                    value: 'devolver',
+                    child: Row(children: [
+                      Icon(Icons.replay_rounded, size: 18, color: Color(0xFFCA8A04)),
+                      SizedBox(width: 10),
+                      Text('Devolver a listo', style: TextStyle(color: Color(0xFFCA8A04))),
                     ]),
                   ),
                 ],

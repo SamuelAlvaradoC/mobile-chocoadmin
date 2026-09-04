@@ -6,14 +6,10 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../features/auth/providers/auth_provider.dart';
 
-/// AppBar compartido por Dashboard, Pedidos y Ventas (avatar/nombre +
-/// Ventas/Tienda/Salir). El bottom nav ya no vive aquí -- lo provee
-/// RootShellScaffold a nivel del StatefulShellRoute de Admin, para que
-/// Dashboard/Productos/Pedidos tengan cada uno su propio Navigator
-/// independiente. Ventas perdió su cupo de branch a manos de Pedidos (ver
-/// comentario en main.dart) -- este botón es su único punto de acceso fuera
-/// del shell, así que vive acá para estar disponible desde cualquier
-/// pantalla admin, no solo desde Pedidos.
+/// AppBar compartido por Dashboard y Ventas (avatar/nombre + Tienda/Salir).
+/// El bottom nav ya no vive aquí -- lo provee RootShellScaffold a nivel del
+/// StatefulShellRoute de Admin, para que Dashboard/Productos/Ventas tengan
+/// cada uno su propio Navigator independiente.
 class AdminLayout extends StatelessWidget {
   final Widget body;
 
@@ -74,14 +70,6 @@ class AdminLayout extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      _TopBtn(
-                        label: 'Ventas',
-                        icon: Icons.payments_outlined,
-                        bg: const Color(0xFFF5F5F5),
-                        fg: const Color(0xFF555555),
-                        onTap: () => context.go('/admin/ventas'),
-                      ),
-                      const SizedBox(width: 8),
                       _TopBtn(
                         label: 'Tienda',
                         icon: Icons.store_outlined,

@@ -9,13 +9,13 @@
 // Cliente (/landing home, /catalogo, /perfil -- Puntos vive dentro de
 // Perfil, no es branch propio), Domiciliario (/domiciliario/pedidos home,
 // /domiciliario/caja), Admin (/admin/dashboard home, /admin/productos,
-// /admin/pedidos), y las rutas planas rol-conscientes (/admin/ventas,
-// /cocina, /admin/domicilios) con el mismo patrón de
-// _staffFlatRouteExitHandler de main.dart (admin -> vuelve al último branch
-// del shell admin visitado, cualquier otro rol -> doble-back-para-salir).
-// /login, /register y /forgot-password también son planas, con el mismo
-// patrón de _authScreenExitHandler real: back siempre va a /catalogo (no
-// hay "de dónde vine" real porque se llega con context.go(), no con push).
+// /admin/ventas), y las rutas planas rol-conscientes (/cocina,
+// /admin/domicilios) con el mismo patrón de _staffFlatRouteExitHandler de
+// main.dart (admin -> vuelve al dashboard, cualquier otro rol ->
+// doble-back-para-salir). /login, /register y /forgot-password también son
+// planas, con el mismo patrón de _authScreenExitHandler real: back siempre
+// va a /catalogo (no hay "de dónde vine" real porque se llega con
+// context.go(), no con push).
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -43,8 +43,8 @@ Widget _bottomNavDeIndices(StatefulNavigationShell shell, List<String> labels) {
 
   // Copia real de _ultimaRutaAdminShell + su tracking en _redirect
   // (main.dart): admin vuelve al branch del shell admin que tenía abierto
-  // antes (Dashboard/Productos/Pedidos), no siempre al Dashboard.
-  const ramasAdminShell = {'/admin/dashboard', '/admin/productos', '/admin/pedidos'};
+  // antes (Dashboard/Productos/Ventas), no siempre al Dashboard.
+  const ramasAdminShell = {'/admin/dashboard', '/admin/productos', '/admin/ventas'};
   var ultimaRutaAdminShell = '/admin/dashboard';
   String? redirect(BuildContext context, GoRouterState state) {
     if (ramasAdminShell.contains(state.matchedLocation)) {
@@ -113,21 +113,19 @@ Widget _bottomNavDeIndices(StatefulNavigationShell shell, List<String> labels) {
       StatefulShellRoute.indexedStack(
         builder: (c, s, shell) => RootShellScaffold(
           navigationShell: shell,
-          bottomNavBuilder: (shell) => _bottomNavDeIndices(shell, const ['Dashboard', 'Productos', 'Pedidos']),
+          bottomNavBuilder: (shell) => _bottomNavDeIndices(shell, const ['Dashboard', 'Productos', 'Ventas']),
         ),
         branches: [
           StatefulShellBranch(routes: [GoRoute(path: '/admin/dashboard', builder: (_, __) => const Text('Home Dashboard'))]),
           StatefulShellBranch(routes: [GoRoute(path: '/admin/productos', builder: (_, __) => const Text('Home Productos'))]),
-          StatefulShellBranch(routes: [GoRoute(path: '/admin/pedidos', builder: (_, __) => const Text('Home Pedidos'))]),
+          StatefulShellBranch(routes: [GoRoute(path: '/admin/ventas', builder: (_, __) => const Text('Home Ventas'))]),
         ],
       ),
-      // ── Ventas / Cocina / Confirmador (planas, rol-conscientes) ──
-      // Scaffold propio -- son pantallas de un solo rol (o, para Ventas,
-      // de acceso ocasional) sin bottom nav propio, así que a diferencia
-      // de los branches (que lo heredan de RootShellScaffold) necesitan
-      // el suyo para que ScaffoldMessenger encuentre dónde mostrar el
-      // SnackBar de doble-back.
-      GoRoute(path: '/admin/ventas', builder: (_, __) => const Scaffold(body: Text('Ventas (plano)'))),
+      // ── Cocina / Confirmador (planas, rol-conscientes) ──────────
+      // Scaffold propio -- son pantallas de un solo rol sin bottom nav, así
+      // que a diferencia de los branches (que lo heredan de
+      // RootShellScaffold) necesitan el suyo para que ScaffoldMessenger
+      // encuentre dónde mostrar el SnackBar de doble-back.
       GoRoute(path: '/admin/domicilios', builder: (_, __) => const Scaffold(body: Text('Confirmador (plano)'))),
       GoRoute(path: '/cocina', builder: (_, __) => const Scaffold(body: Text('Cocina (plano)'))),
       GoRoute(path: '/login', builder: (_, __) => const Scaffold(body: Text('Login (plano)'))),
@@ -147,10 +145,9 @@ Widget _bottomNavDeIndices(StatefulNavigationShell shell, List<String> labels) {
         '/perfil': '/landing',
         '/domiciliario/caja': '/domiciliario/pedidos',
         '/admin/productos': '/admin/dashboard',
-        '/admin/pedidos': '/admin/dashboard',
+        '/admin/ventas': '/admin/dashboard',
       },
       flatRouteHandlers: {
-        '/admin/ventas': staffFlatHandler,
         '/admin/domicilios': staffFlatHandler,
         '/cocina': staffFlatHandler,
         // main.dart registra /login, /register y /forgot-password con el
@@ -274,8 +271,8 @@ void main() {
       expect(find.text('Home Dashboard'), findsOneWidget);
     });
 
-    testWidgets('back en la raíz de Pedidos lleva a Dashboard (home)', (tester) async {
-      final app = _buildApp(initialLocation: '/admin/pedidos');
+    testWidgets('back en la raíz de Ventas lleva a Dashboard (home)', (tester) async {
+      final app = _buildApp(initialLocation: '/admin/ventas');
       await tester.pumpWidget(app.widget);
       await tester.pumpAndSettle();
 
@@ -296,68 +293,39 @@ void main() {
       expect(find.text('Presiona atrás de nuevo para salir'), findsOneWidget);
     });
 
-    testWidgets('tocar Productos↔Pedidos directamente SÍ navega normal (el dispatcher no debe interferir)', (tester) async {
+    testWidgets('tocar Productos↔Ventas directamente SÍ navega normal (el dispatcher no debe interferir)', (tester) async {
       final app = _buildApp(initialLocation: '/admin/productos');
       await tester.pumpWidget(app.widget);
       await tester.pumpAndSettle();
       expect(find.text('Home Productos'), findsOneWidget);
 
-      await tester.tap(find.text('Pedidos')); // toca el tab directamente, sin pasar por Dashboard
+      await tester.tap(find.text('Ventas')); // toca el tab directamente, sin pasar por Dashboard
       await tester.pumpAndSettle();
 
-      expect(find.text('Home Pedidos'), findsOneWidget,
+      expect(find.text('Home Ventas'), findsOneWidget,
           reason: 'cambiar de tab directamente no debe rebotar a Dashboard como pasaba con el bug de onExit');
       expect(find.text('Home Dashboard'), findsNothing);
     });
 
-    testWidgets('admin en Pedidos -> Confirmar pedidos -> back vuelve a Pedidos, no siempre al Dashboard', (tester) async {
-      // Reproduce el caso reportado: "soy el admin, paso a Pedidos, de
-      // Pedidos a Confirmar, debería devolver a Pedidos" -- back "estilo
-      // navegador" en vez de un destino fijo.
-      final app = _buildApp(initialLocation: '/admin/pedidos', rol: _RolStaff.admin);
+    testWidgets('admin en Ventas -> Confirmar pedidos -> back vuelve a Ventas, no siempre al Dashboard', (tester) async {
+      // Reproduce el caso reportado: "soy el admin, paso a Ventas, de Ventas
+      // a Confirmar, debería devolver a Ventas" -- back "estilo navegador"
+      // en vez de un destino fijo.
+      final app = _buildApp(initialLocation: '/admin/ventas', rol: _RolStaff.admin);
       await tester.pumpWidget(app.widget);
       await tester.pumpAndSettle();
-      expect(find.text('Home Pedidos'), findsOneWidget);
+      expect(find.text('Home Ventas'), findsOneWidget);
 
-      app.router.go('/admin/domicilios'); // "Confirmar pedidos" desde Pedidos
+      app.router.go('/admin/domicilios'); // "Confirmar pedidos" desde Ventas
       await tester.pumpAndSettle();
       expect(find.text('Confirmador (plano)'), findsOneWidget);
 
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
 
-      expect(find.text('Home Pedidos'), findsOneWidget,
-          reason: 'debe recordar que Pedidos fue el último branch admin visitado, no caer siempre a Dashboard');
+      expect(find.text('Home Ventas'), findsOneWidget,
+          reason: 'debe recordar que Ventas fue el último branch admin visitado, no caer siempre a Dashboard');
       expect(find.text('Home Dashboard'), findsNothing);
-    });
-  });
-
-  group('Ventas (ruta plana /admin/ventas, rol-consciente)', () {
-    // Ventas perdió su cupo de branch del shell admin a manos de Pedidos
-    // (ver comentario en main.dart) -- ahora es una ruta plana más, con el
-    // mismo patrón staffFlatHandler que Cocina/Confirmador.
-    testWidgets('visto por admin: back vuelve al Dashboard', (tester) async {
-      final app = _buildApp(initialLocation: '/admin/ventas', rol: _RolStaff.admin);
-      await tester.pumpWidget(app.widget);
-      await tester.pumpAndSettle();
-      expect(find.text('Ventas (plano)'), findsOneWidget);
-
-      await tester.binding.handlePopRoute();
-      await tester.pumpAndSettle();
-
-      expect(find.text('Home Dashboard'), findsOneWidget);
-    });
-
-    testWidgets('visto por un rol sin bottom nav: back muestra el snackbar de doble-back', (tester) async {
-      final app = _buildApp(initialLocation: '/admin/ventas', rol: _RolStaff.otro);
-      await tester.pumpWidget(app.widget);
-      await tester.pumpAndSettle();
-
-      await tester.binding.handlePopRoute();
-      await tester.pump();
-
-      expect(find.text('Presiona atrás de nuevo para salir'), findsOneWidget);
-      expect(find.text('Ventas (plano)'), findsOneWidget, reason: 'el primer back no debe salir todavía');
     });
   });
 

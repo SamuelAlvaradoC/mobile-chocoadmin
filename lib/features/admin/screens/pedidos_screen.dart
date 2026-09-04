@@ -19,7 +19,6 @@ import '../../../core/utils/validar_sin_html.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../features/cliente/providers/catalogo_provider.dart';
 import '../../../features/cliente/widgets/toppings_modal.dart';
-import '../../../shared/layouts/admin_layout.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/colombia_location_picker.dart';
 import '../../../shared/widgets/paginacion.dart';
@@ -424,8 +423,7 @@ class _AdminPedidosScreenState extends State<AdminPedidosScreen> {
         ? filtradas
         : filtradas.skip((paginaActual - 1) * porPagina).take(porPagina).toList();
 
-    return AdminLayout(
-      body: Column(
+    return Column(
         children: [
           // ── Header ───────────────────────────────────────────────────────
           Container(
@@ -737,7 +735,6 @@ class _AdminPedidosScreenState extends State<AdminPedidosScreen> {
                           ),
           ),
         ],
-      ),
     );
   }
 
