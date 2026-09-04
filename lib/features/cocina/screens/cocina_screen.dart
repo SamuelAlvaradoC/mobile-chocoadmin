@@ -129,11 +129,6 @@ class _CocinaScreenState extends State<CocinaScreen> {
         title: const Text('Panel Cocina'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Refrescar',
-            onPressed: _cargar,
-          ),
-          IconButton(
             icon: const Icon(Icons.logout_rounded, color: AppColors.error),
             tooltip: 'Cerrar sesión',
             onPressed: () => context.read<AuthProvider>().logout(),

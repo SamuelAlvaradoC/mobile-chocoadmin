@@ -11,8 +11,7 @@ import '../../../core/services/cloudinary_service.dart';
 import '../../../shared/widgets/paginacion.dart';
 
 class ProductosScreen extends StatefulWidget {
-  final ValueChanged<Future<void> Function()>? onRegistrarRefresco;
-  const ProductosScreen({super.key, this.onRegistrarRefresco});
+  const ProductosScreen({super.key});
   @override
   State<ProductosScreen> createState() => _ProductosScreenState();
 }
@@ -30,7 +29,6 @@ class _ProductosScreenState extends State<ProductosScreen> {
   void initState() {
     super.initState();
     _cargar();
-    widget.onRegistrarRefresco?.call(_cargar);
   }
 
   @override

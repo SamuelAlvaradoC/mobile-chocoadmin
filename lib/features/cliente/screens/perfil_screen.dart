@@ -25,12 +25,6 @@ class PerfilScreen extends StatefulWidget {
 class _PerfilScreenState extends State<PerfilScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
-  bool _refrescando = false;
-
-  // Índices: 0 Datos, 1 Historial, 2 Seguridad, 3 Direcciones, 4 Puntos.
-  // Datos y Seguridad son formularios de edición puros -- sin datos que
-  // "recargar" -- así que se quedan en null (igual que en la versión web).
-  final List<Future<void> Function()?> _cargarPorTab = [null, null, null, null, null];
 
   @override
   void initState() {
@@ -44,17 +38,6 @@ class _PerfilScreenState extends State<PerfilScreen>
     super.dispose();
   }
 
-  Future<void> _refrescar() async {
-    final cargar = _cargarPorTab[_tabController.index];
-    if (cargar == null || _refrescando) return;
-    setState(() => _refrescando = true);
-    try {
-      await cargar();
-    } finally {
-      if (mounted) setState(() => _refrescando = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
@@ -65,26 +48,7 @@ class _PerfilScreenState extends State<PerfilScreen>
       appBar: AppBar(
         title: const Text('Mi perfil'),
         centerTitle: true,
-        actions: [
-          AnimatedBuilder(
-            animation: _tabController,
-            builder: (context, _) {
-              final hayRefresco = _cargarPorTab[_tabController.index] != null;
-              if (!hayRefresco) return const SizedBox.shrink();
-              return IconButton(
-                icon: _refrescando
-                    ? const SizedBox(
-                        width: 18, height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.refresh_rounded),
-                tooltip: 'Refrescar',
-                onPressed: _refrescando ? null : _refrescar,
-              );
-            },
-          ),
-          const ClientLogoutAction(),
-        ],
+        actions: const [ClientLogoutAction()],
       ),
       body: Column(
         children: [
@@ -132,10 +96,10 @@ class _PerfilScreenState extends State<PerfilScreen>
               controller: _tabController,
               children: [
                 _DatosTab(user: user),
-                _HistorialTab(onRegistrarRefresco: (fn) => _cargarPorTab[1] = fn),
+                const _HistorialTab(),
                 const _SeguridadTab(),
-                _DireccionesTab(onRegistrarRefresco: (fn) => _cargarPorTab[3] = fn),
-                _PuntosTab(onRegistrarRefresco: (fn) => _cargarPorTab[4] = fn),
+                const _DireccionesTab(),
+                const _PuntosTab(),
               ],
             ),
           ),
@@ -455,8 +419,7 @@ class _DatosTabState extends State<_DatosTab> {
 // ────────────────────────────────────────────────────────────────────────────
 
 class _HistorialTab extends StatefulWidget {
-  final ValueChanged<Future<void> Function()>? onRegistrarRefresco;
-  const _HistorialTab({this.onRegistrarRefresco});
+  const _HistorialTab();
 
   @override
   State<_HistorialTab> createState() => _HistorialTabState();
@@ -478,7 +441,6 @@ class _HistorialTabState extends State<_HistorialTab> {
     super.initState();
     _cargar();
     _cargarTiempo();
-    widget.onRegistrarRefresco?.call(_cargar);
   }
 
   Future<void> _cargarTiempo() async {
@@ -1113,8 +1075,7 @@ class _SeguridadTabState extends State<_SeguridadTab> {
 // ────────────────────────────────────────────────────────────────────────────
 
 class _DireccionesTab extends StatefulWidget {
-  final ValueChanged<Future<void> Function()>? onRegistrarRefresco;
-  const _DireccionesTab({this.onRegistrarRefresco});
+  const _DireccionesTab();
   @override
   State<_DireccionesTab> createState() => _DireccionesTabState();
 }
@@ -1135,7 +1096,6 @@ class _DireccionesTabState extends State<_DireccionesTab> {
   void initState() {
     super.initState();
     _cargar();
-    widget.onRegistrarRefresco?.call(_cargar);
   }
 
   Future<void> _cargar() async {
@@ -1450,8 +1410,7 @@ class _DireccionesTabState extends State<_DireccionesTab> {
 // ────────────────────────────────────────────────────────────────────────────
 
 class _PuntosTab extends StatefulWidget {
-  final ValueChanged<Future<void> Function()>? onRegistrarRefresco;
-  const _PuntosTab({this.onRegistrarRefresco});
+  const _PuntosTab();
   @override
   State<_PuntosTab> createState() => _PuntosTabState();
 }
@@ -1467,7 +1426,6 @@ class _PuntosTabState extends State<_PuntosTab> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _cargar());
-    widget.onRegistrarRefresco?.call(_cargar);
   }
 
   Future<void> _cargar() async {

@@ -10,32 +10,13 @@ import '../../features/auth/providers/auth_provider.dart';
 /// El bottom nav ya no vive aquí -- lo provee RootShellScaffold a nivel del
 /// StatefulShellRoute de Admin, para que Dashboard/Productos/Ventas tengan
 /// cada uno su propio Navigator independiente.
-class AdminLayout extends StatefulWidget {
+class AdminLayout extends StatelessWidget {
   final Widget body;
-  final Future<void> Function()? onRefresh;
 
   const AdminLayout({
     super.key,
     required this.body,
-    this.onRefresh,
   });
-
-  @override
-  State<AdminLayout> createState() => _AdminLayoutState();
-}
-
-class _AdminLayoutState extends State<AdminLayout> {
-  bool _refrescando = false;
-
-  Future<void> _refrescar() async {
-    if (widget.onRefresh == null || _refrescando) return;
-    setState(() => _refrescando = true);
-    try {
-      await widget.onRefresh!();
-    } finally {
-      if (mounted) setState(() => _refrescando = false);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -89,27 +70,6 @@ class _AdminLayoutState extends State<AdminLayout> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (widget.onRefresh != null) ...[
-                        GestureDetector(
-                          onTap: _refrescar,
-                          child: Container(
-                            width: 34,
-                            height: 34,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF5F5F5),
-                              borderRadius: BorderRadius.circular(9),
-                            ),
-                            child: _refrescando
-                                ? const SizedBox(
-                                    width: 15, height: 15,
-                                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF555555)),
-                                  )
-                                : const Icon(Icons.refresh_rounded, size: 18, color: Color(0xFF555555)),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                      ],
                       _TopBtn(
                         label: 'Tienda',
                         icon: Icons.store_outlined,
@@ -133,7 +93,7 @@ class _AdminLayoutState extends State<AdminLayout> {
           ),
         ),
       ),
-      body: widget.body,
+      body: body,
     );
   }
 }

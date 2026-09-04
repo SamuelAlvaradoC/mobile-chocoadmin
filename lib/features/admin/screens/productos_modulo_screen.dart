@@ -23,23 +23,6 @@ class ProductosModuloScreen extends StatefulWidget {
 
 class _ProductosModuloScreenState extends State<ProductosModuloScreen> {
   int _seleccionado = 1; // arranca en "Productos", el más usado
-  bool _refrescando = false;
-
-  // Cada sub-pantalla se registra una sola vez (quedan montadas todo el
-  // tiempo dentro del IndexedStack) -- el botón del AppBar llama a la de
-  // la sección actualmente seleccionada.
-  final List<Future<void> Function()?> _cargarPorSeccion = [null, null, null, null];
-
-  Future<void> _refrescar() async {
-    final cargar = _cargarPorSeccion[_seleccionado];
-    if (cargar == null || _refrescando) return;
-    setState(() => _refrescando = true);
-    try {
-      await cargar();
-    } finally {
-      if (mounted) setState(() => _refrescando = false);
-    }
-  }
 
   static const _secciones = [
     (icon: Icons.category_rounded, label: 'Categorías'),
@@ -54,18 +37,6 @@ class _ProductosModuloScreenState extends State<ProductosModuloScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Productos'),
-        actions: [
-          IconButton(
-            icon: _refrescando
-                ? const SizedBox(
-                    width: 18, height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.refresh_rounded),
-            tooltip: 'Refrescar',
-            onPressed: _refrescando ? null : _refrescar,
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -96,11 +67,11 @@ class _ProductosModuloScreenState extends State<ProductosModuloScreen> {
             // chip no se recarga desde cero (conserva scroll, búsqueda, etc.)
             child: IndexedStack(
               index: _seleccionado,
-              children: [
-                CategoriasScreen(onRegistrarRefresco: (fn) => _cargarPorSeccion[0] = fn),
-                ProductosScreen(onRegistrarRefresco: (fn) => _cargarPorSeccion[1] = fn),
-                ToppingsScreen(onRegistrarRefresco: (fn) => _cargarPorSeccion[2] = fn),
-                AdicionesScreen(onRegistrarRefresco: (fn) => _cargarPorSeccion[3] = fn),
+              children: const [
+                CategoriasScreen(),
+                ProductosScreen(),
+                ToppingsScreen(),
+                AdicionesScreen(),
               ],
             ),
           ),

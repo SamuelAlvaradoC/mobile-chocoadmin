@@ -323,11 +323,6 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
         title: const Text('Confirmar pedidos'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Refrescar',
-            onPressed: _cargar,
-          ),
-          IconButton(
             icon: const Icon(Icons.logout_rounded, color: AppColors.error),
             tooltip: 'Cerrar sesión',
             onPressed: () => context.read<AuthProvider>().logout(),
