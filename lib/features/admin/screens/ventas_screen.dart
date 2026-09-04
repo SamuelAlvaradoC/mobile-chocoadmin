@@ -186,7 +186,15 @@ Future<void> _confirmarImprimir(BuildContext context, Pedido venta) async {
 }
 
 class VentasScreen extends StatefulWidget {
-  const VentasScreen({super.key});
+  // VentasModuloScreen usa IndexedStack para conservar el estado de ambas
+  // pestañas (scroll, búsqueda, filtros) al cambiar entre Ventas y Pedidos
+  // -- pero eso significa que un cambio hecho en una pestaña (ej. "Devolver
+  // a listo" en Ventas) no refresca por sí solo la otra, que sigue montada
+  // con su lista vieja en memoria. onReady expone la función de recarga de
+  // este widget hacia el módulo, que la dispara al entrar a esta pestaña.
+  final void Function(Future<void> Function() recargar)? onReady;
+
+  const VentasScreen({super.key, this.onReady});
 
   @override
   State<VentasScreen> createState() => _VentasScreenState();
@@ -216,6 +224,7 @@ class _VentasScreenState extends State<VentasScreen> {
     super.initState();
     _filtroFecha = DateFormat('yyyy-MM-dd').format(DateTime.now().toUtc().subtract(const Duration(hours: 5)));
     _cargar();
+    widget.onReady?.call(_cargar);
   }
 
   @override

@@ -291,7 +291,14 @@ Future<void> _anularVentaRapidoDialog(
 }
 
 class AdminPedidosScreen extends StatefulWidget {
-  const AdminPedidosScreen({super.key});
+  // Ver el mismo comentario en VentasScreen.onReady (ventas_screen.dart):
+  // VentasModuloScreen usa IndexedStack para conservar el estado de ambas
+  // pestañas, así que necesita esta forma de disparar una recarga de esta
+  // pantalla al entrar a su pestaña -- un cambio hecho desde Ventas (ej.
+  // "Devolver a listo") no la refresca sola.
+  final void Function(Future<void> Function() recargar)? onReady;
+
+  const AdminPedidosScreen({super.key, this.onReady});
 
   @override
   State<AdminPedidosScreen> createState() => _AdminPedidosScreenState();
@@ -332,6 +339,7 @@ class _AdminPedidosScreenState extends State<AdminPedidosScreen> {
     super.initState();
     _filtroFecha = DateFormat('yyyy-MM-dd').format(DateTime.now().toUtc().subtract(const Duration(hours: 5)));
     _cargar();
+    widget.onReady?.call(_cargar);
   }
 
   @override

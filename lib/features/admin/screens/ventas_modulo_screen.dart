@@ -35,6 +35,23 @@ class _VentasModuloScreenState extends State<VentasModuloScreen> {
   // (mismo comportamiento que tenía antes de existir este módulo).
   int _seleccionado = 0;
 
+  // El IndexedStack de más abajo mantiene ambas pantallas montadas -- una
+  // acción en una pestaña (ej. "Devolver a listo" en Ventas) no refresca
+  // sola a la otra. Se recarga la pestaña destino cada vez que se le entra,
+  // igual que en React una navegación entre /admin/ventas y /admin/pedidos
+  // siempre vuelve a pedir los datos.
+  Future<void> Function()? _recargarVentas;
+  Future<void> Function()? _recargarPedidos;
+
+  void _seleccionar(int i) {
+    setState(() => _seleccionado = i);
+    if (i == 0) {
+      _recargarVentas?.call();
+    } else {
+      _recargarPedidos?.call();
+    }
+  }
+
   static const _secciones = [
     (icon: Icons.payments_outlined, label: 'Ventas'),
     (icon: Icons.receipt_long_rounded, label: 'Pedidos'),
@@ -57,7 +74,7 @@ class _VentasModuloScreenState extends State<VentasModuloScreen> {
                       icon: _secciones[i].icon,
                       label: _secciones[i].label,
                       active: _seleccionado == i,
-                      onTap: () => setState(() => _seleccionado = i),
+                      onTap: () => _seleccionar(i),
                     ),
                   ),
               ],
@@ -67,12 +84,13 @@ class _VentasModuloScreenState extends State<VentasModuloScreen> {
           Expanded(
             // IndexedStack mantiene ambas pantallas montadas: al volver a
             // una pestaña no se recarga desde cero (conserva scroll,
-            // búsqueda y filtros).
+            // búsqueda y filtros) -- la recarga de datos la dispara
+            // _seleccionar de todas formas, ver comentario arriba.
             child: IndexedStack(
               index: _seleccionado,
-              children: const [
-                VentasScreen(),
-                AdminPedidosScreen(),
+              children: [
+                VentasScreen(onReady: (fn) => _recargarVentas = fn),
+                AdminPedidosScreen(onReady: (fn) => _recargarPedidos = fn),
               ],
             ),
           ),
