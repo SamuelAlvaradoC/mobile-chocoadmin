@@ -257,21 +257,41 @@ class _HeroImagen extends StatelessWidget {
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
-      child: CachedNetworkImage(
-        imageUrl: 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1780607775/40bc9e7c-2c1d-48a5-a4b8-fdcd46a17a4e_al6zv9.jpg',
-        width: imgSize,
-        height: imgSize,
-        fit: BoxFit.cover,
-        placeholder: (_, __) => Container(
-          width: imgSize, height: imgSize,
-          color: Colors.white.withValues(alpha: 0.1),
-          alignment: Alignment.center,
-          child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-        ),
-        errorWidget: (_, __, ___) => Container(
-          width: imgSize, height: imgSize,
-          color: Colors.white.withValues(alpha: 0.1),
-        ),
+      child: Stack(
+        children: [
+          CachedNetworkImage(
+            imageUrl: 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1780607775/40bc9e7c-2c1d-48a5-a4b8-fdcd46a17a4e_al6zv9.jpg',
+            width: imgSize,
+            height: imgSize,
+            fit: BoxFit.cover,
+            placeholder: (_, __) => Container(
+              width: imgSize, height: imgSize,
+              color: Colors.white.withValues(alpha: 0.1),
+              alignment: Alignment.center,
+              child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+            ),
+            errorWidget: (_, __, ___) => Container(
+              width: imgSize, height: imgSize,
+              color: Colors.white.withValues(alpha: 0.1),
+            ),
+          ),
+          // Igual que .hero-imagen-overlay en Hero.css (React): el fondo de
+          // la foto es un rojo más anaranjado/saturado que el rojo marca
+          // (#CA0B0B), por eso se notaba el corte de la imagen como una
+          // calcomanía pegada encima. Un overlay en BlendMode.multiply al
+          // 35% tiñe la foto hacia el rojo marca sin aplanarla (conserva
+          // luces/sombras), igual que mix-blend-mode:multiply en CSS.
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFCA0B0B).withValues(alpha: 0.35),
+                  backgroundBlendMode: BlendMode.multiply,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
