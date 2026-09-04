@@ -422,6 +422,7 @@ class _VentasScreenState extends State<VentasScreen> {
         : filtradas.skip((paginaActual - 1) * porPagina).take(porPagina).toList();
 
     return AdminLayout(
+      onRefresh: _cargar,
       body: Column(
         children: [
           // ── Header ───────────────────────────────────────────────────────

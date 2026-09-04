@@ -14,13 +14,32 @@ const _kLogoUrl =
 /// aquí -- lo provee RootShellScaffold a nivel del StatefulShellRoute (ver
 /// DomiciliarioBottomNav más abajo), para que cada tab tenga su propio
 /// Navigator independiente.
-class DomiciliarioLayout extends StatelessWidget {
+class DomiciliarioLayout extends StatefulWidget {
   final Widget body;
+  final Future<void> Function()? onRefresh;
 
   const DomiciliarioLayout({
     super.key,
     required this.body,
+    this.onRefresh,
   });
+
+  @override
+  State<DomiciliarioLayout> createState() => _DomiciliarioLayoutState();
+}
+
+class _DomiciliarioLayoutState extends State<DomiciliarioLayout> {
+  bool _refrescando = false;
+
+  Future<void> _refrescar() async {
+    if (widget.onRefresh == null || _refrescando) return;
+    setState(() => _refrescando = true);
+    try {
+      await widget.onRefresh!();
+    } finally {
+      if (mounted) setState(() => _refrescando = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +70,17 @@ class DomiciliarioLayout extends StatelessWidget {
           ],
         ),
         actions: [
+          if (widget.onRefresh != null)
+            IconButton(
+              icon: _refrescando
+                  ? const SizedBox(
+                      width: 18, height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF1a1a1a)),
+                    )
+                  : const Icon(Icons.refresh_rounded, color: Color(0xFF1a1a1a)),
+              tooltip: 'Refrescar',
+              onPressed: _refrescando ? null : _refrescar,
+            ),
           IconButton(
             icon: const Icon(Icons.store_outlined, color: Color(0xFF1a1a1a)),
             tooltip: 'Ir a la tienda',
@@ -64,7 +94,7 @@ class DomiciliarioLayout extends StatelessWidget {
           const SizedBox(width: 4),
         ],
       ),
-      body: body,
+      body: widget.body,
     );
   }
 }

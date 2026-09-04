@@ -6,7 +6,8 @@ import '../../../core/services/api_service.dart';
 import '../../../shared/widgets/paginacion.dart';
 
 class CategoriasScreen extends StatefulWidget {
-  const CategoriasScreen({super.key});
+  final ValueChanged<Future<void> Function()>? onRegistrarRefresco;
+  const CategoriasScreen({super.key, this.onRegistrarRefresco});
 
   @override
   State<CategoriasScreen> createState() => _CategoriasScreenState();
@@ -24,6 +25,7 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
   void initState() {
     super.initState();
     _cargar();
+    widget.onRegistrarRefresco?.call(_cargar);
   }
 
   @override

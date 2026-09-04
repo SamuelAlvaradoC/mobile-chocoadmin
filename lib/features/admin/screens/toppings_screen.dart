@@ -9,7 +9,8 @@ import '../../../core/services/cloudinary_service.dart';
 import '../../../shared/widgets/paginacion.dart';
 
 class ToppingsScreen extends StatefulWidget {
-  const ToppingsScreen({super.key});
+  final ValueChanged<Future<void> Function()>? onRegistrarRefresco;
+  const ToppingsScreen({super.key, this.onRegistrarRefresco});
 
   @override
   State<ToppingsScreen> createState() => _ToppingsScreenState();
@@ -27,6 +28,7 @@ class _ToppingsScreenState extends State<ToppingsScreen> {
   void initState() {
     super.initState();
     _cargar();
+    widget.onRegistrarRefresco?.call(_cargar);
   }
 
   @override

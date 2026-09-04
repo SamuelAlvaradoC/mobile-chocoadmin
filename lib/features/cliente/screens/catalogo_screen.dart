@@ -42,6 +42,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
   final _busquedaCtrl = TextEditingController();
   String _busqueda = '';
   bool _carritoExpandido = false;
+  bool _refrescando = false;
   bool? _tiendaAbierta;
   dynamic _horaApertura;
   dynamic _horaCierre;
@@ -64,11 +65,17 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
   }
 
   Future<void> _refrescar() async {
-    await Future.wait([
-      context.read<CatalogoProvider>().cargarTodo(),
-      _fetchEstadoTienda(),
-      _fetchTiempoEspera(),
-    ]);
+    if (_refrescando) return;
+    setState(() => _refrescando = true);
+    try {
+      await Future.wait([
+        context.read<CatalogoProvider>().cargarTodo(),
+        _fetchEstadoTienda(),
+        _fetchTiempoEspera(),
+      ]);
+    } finally {
+      if (mounted) setState(() => _refrescando = false);
+    }
   }
 
   Future<void> _fetchEstadoTienda() async {
@@ -267,11 +274,21 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
             const Text('ChocoFreseo'),
           ],
         ),
-        actions: const [
+        actions: [
+          IconButton(
+            icon: _refrescando
+                ? const SizedBox(
+                    width: 18, height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh_rounded),
+            tooltip: 'Refrescar',
+            onPressed: _refrescando ? null : _refrescar,
+          ),
           // El ícono de "ir al inicio" se quitó de aquí -- el bottom nav ya
           // tiene la pestaña "Inicio", así que era redundante.
-          ClientVolverAlPanelAction(),
-          ClientLogoutAction(),
+          const ClientVolverAlPanelAction(),
+          const ClientLogoutAction(),
         ],
       ),
       body: SafeArea(
