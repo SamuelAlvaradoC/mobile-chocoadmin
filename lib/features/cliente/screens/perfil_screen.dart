@@ -35,9 +35,9 @@ class _PerfilScreenState extends State<PerfilScreen>
   int _puntos = 0;
   double _saldoPuntos = 0;
   bool _puntosLoading = true;
-  // Configurable por el admin desde Dashboard (tabla configuraciones, clave
-  // valor_punto_pesos) -- 12.5 es solo el default mientras carga o si la
-  // llamada falla. Endpoint público (como /horario).
+  // Configurable por el admin desde esta misma pantalla (pestaña "Puntos",
+  // ver _PuntosTab/_ValorPuntoCard) -- 12.5 es solo el default mientras
+  // carga o si la llamada falla. Endpoint de lectura público (como /horario).
   double _valorPunto = 12.5;
 
   @override
@@ -55,6 +55,15 @@ class _PerfilScreenState extends State<PerfilScreen>
       final valor = double.tryParse(inner['valor_punto_pesos']?.toString() ?? '');
       if (valor != null && mounted) setState(() => _valorPunto = valor);
     } catch (_) {}
+  }
+
+  // Sin "valor histórico": cambiar esto actualiza de inmediato el saldo en
+  // pesos de TODOS los clientes (lo calcula el backend en tiempo real, ver
+  // puntos/service.js). Las ventas ya cerradas no se tocan. Movido aquí
+  // desde Dashboard -- misma llamada, sin cambios de lógica.
+  Future<void> _guardarValorPunto(double valor) async {
+    await ApiService.patch('/api/configuracion/valor-punto', {'valor_punto_pesos': valor});
+    if (mounted) setState(() => _valorPunto = valor);
   }
 
   @override
@@ -150,7 +159,14 @@ class _PerfilScreenState extends State<PerfilScreen>
                 const _HistorialTab(),
                 const _SeguridadTab(),
                 const _DireccionesTab(),
-                _PuntosTab(puntos: _puntos, saldo: _saldoPuntos, loading: _puntosLoading, valorPunto: _valorPunto, onRefresh: _cargarPuntos),
+                _PuntosTab(
+                  puntos: _puntos,
+                  saldo: _saldoPuntos,
+                  loading: _puntosLoading,
+                  valorPunto: _valorPunto,
+                  onRefresh: _cargarPuntos,
+                  onGuardarValorPunto: user?.role == UserRole.admin ? _guardarValorPunto : null,
+                ),
               ],
             ),
           ),
@@ -1518,7 +1534,17 @@ class _PuntosTab extends StatelessWidget {
   final bool loading;
   final double valorPunto;
   final Future<void> Function() onRefresh;
-  const _PuntosTab({required this.puntos, required this.saldo, required this.loading, required this.valorPunto, required this.onRefresh});
+  // Solo admin: control para editar el valor del punto (movido aquí desde
+  // Dashboard) -- null cuando el usuario no es admin.
+  final Future<void> Function(double)? onGuardarValorPunto;
+  const _PuntosTab({
+    required this.puntos,
+    required this.saldo,
+    required this.loading,
+    required this.valorPunto,
+    required this.onRefresh,
+    this.onGuardarValorPunto,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1607,6 +1633,222 @@ class _PuntosTab extends StatelessWidget {
               ],
             ),
           ),
+          if (onGuardarValorPunto != null) ...[
+            const SizedBox(height: AppSizes.md),
+            _ValorPuntoCard(valorPunto: valorPunto, onSaved: onGuardarValorPunto!),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Editor admin del valor del punto de fidelidad -- movido aquí (antes vivía
+// en Dashboard, junto a horario/tiempo de espera). Widget/lógica sin tocar:
+// misma tarjeta + bottom sheet, mismas validaciones y alerta de rango, solo
+// cambia desde dónde se muestra la entrada para abrirlo.
+// ────────────────────────────────────────────────────────────────────────────
+
+// Rango habitual del negocio -- fuera de esto (pero dentro del tope
+// absoluto) se pide confirmar antes de guardar, en vez de bloquear: puede
+// ser una decisión real (ej. una promoción), no siempre un error de tecleo.
+const _valorPuntoRangoUsualMin = 10.0;
+const _valorPuntoRangoUsualMax = 25.0;
+// Tope absoluto -- evita un error de tecleo tipo "99999" (mismo valor que
+// valida el backend en configuracion/routes.js).
+const _valorPuntoMax = 100.0;
+
+class _ValorPuntoCard extends StatelessWidget {
+  final double valorPunto;
+  final Future<void> Function(double) onSaved;
+  const _ValorPuntoCard({required this.valorPunto, required this.onSaved});
+
+  // Mismo patrón que Tiempo estimado / Horario (Dashboard): editar abre un bottom sheet.
+  void _abrirEditor(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => _EditarValorPuntoSheet(valorInicial: valorPunto, onSaved: onSaved),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const gold = Color(0xFFCA8A04);
+    final valorFmt = valorPunto == valorPunto.roundToDouble()
+        ? valorPunto.toStringAsFixed(0)
+        : valorPunto.toStringAsFixed(2);
+    return Material(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+      child: InkWell(
+        onTap: () => _abrirEditor(context),
+        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        child: Container(
+          padding: const EdgeInsets.all(AppSizes.md),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+            boxShadow: const [BoxShadow(color: AppColors.shadow, blurRadius: 6, offset: Offset(0, 2))],
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(color: gold.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+                alignment: Alignment.center,
+                child: const Icon(Icons.stars_rounded, size: 20, color: gold),
+              ),
+              const SizedBox(width: AppSizes.sm),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('Valor del punto de fidelidad', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+                Text('\$$valorFmt por punto',
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: gold)),
+              ])),
+            ]),
+            const SizedBox(height: AppSizes.xs),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+              decoration: BoxDecoration(color: gold, borderRadius: BorderRadius.circular(6)),
+              child: const Text('✏ Editar valor', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+class _EditarValorPuntoSheet extends StatefulWidget {
+  final double valorInicial;
+  final Future<void> Function(double) onSaved;
+  const _EditarValorPuntoSheet({required this.valorInicial, required this.onSaved});
+
+  @override
+  State<_EditarValorPuntoSheet> createState() => _EditarValorPuntoSheetState();
+}
+
+class _EditarValorPuntoSheetState extends State<_EditarValorPuntoSheet> {
+  late final _ctrl = TextEditingController(
+    text: widget.valorInicial == widget.valorInicial.roundToDouble()
+        ? widget.valorInicial.toStringAsFixed(0)
+        : widget.valorInicial.toStringAsFixed(2),
+  );
+  bool _guardando = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  // null = valor inválido (ya dejó el mensaje en _error)
+  double? _validar() {
+    final v = double.tryParse(_ctrl.text.replaceAll(',', '.'));
+    if (v == null) { setState(() => _error = 'Ingresa un número válido'); return null; }
+    if (v <= 0) { setState(() => _error = 'El valor debe ser mayor a 0'); return null; }
+    if (v > _valorPuntoMax) { setState(() => _error = 'El valor no puede superar \$${_valorPuntoMax.toStringAsFixed(0)} por punto'); return null; }
+    if (double.parse(v.toStringAsFixed(2)) != v) { setState(() => _error = 'Máximo 2 decimales'); return null; }
+    return v;
+  }
+
+  Future<void> _confirmarFueraDeRango(double v) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('¿Valor fuera de lo habitual?'),
+        content: Text(
+          '\$${v.toStringAsFixed(2)} por punto está fuera del rango habitual '
+          '(\$${_valorPuntoRangoUsualMin.toStringAsFixed(0)}–\$${_valorPuntoRangoUsualMax.toStringAsFixed(0)}). '
+          'Este cambio afecta de inmediato el saldo en pesos de TODOS los clientes. '
+          '¿Confirmas que quieres guardar este valor?',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Sí, guardar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmar == true) await _guardar(v, confirmado: true);
+  }
+
+  Future<void> _guardar(double? valorConfirmado, {bool confirmado = false}) async {
+    final v = valorConfirmado ?? _validar();
+    if (v == null) return;
+
+    if (!confirmado && (v < _valorPuntoRangoUsualMin || v > _valorPuntoRangoUsualMax)) {
+      await _confirmarFueraDeRango(v);
+      return;
+    }
+
+    setState(() { _guardando = true; _error = null; });
+    try {
+      await widget.onSaved(v);
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _guardando = false;
+          _error = e is ApiException ? e.message : 'Error al guardar el valor del punto';
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40, height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)),
+            ),
+          ),
+          Text('Valor del punto de fidelidad',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 6),
+          const Text(
+            'No hay "valor histórico": cambiar esto actualiza de inmediato el saldo en pesos de todos los clientes. Las ventas ya cerradas no se tocan.',
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+          ),
+          const SizedBox(height: AppSizes.md),
+          TextField(
+            controller: _ctrl,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            autofocus: true,
+            decoration: InputDecoration(labelText: 'Pesos por punto', prefixText: '\$ ', errorText: _error),
+            onChanged: (_) { if (_error != null) setState(() => _error = null); },
+          ),
+          const SizedBox(height: AppSizes.lg),
+          Row(children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _guardando ? null : () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
+            ),
+            const SizedBox(width: AppSizes.sm),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: _guardando ? null : () => _guardar(null),
+                child: _guardando
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('Guardar'),
+              ),
+            ),
+          ]),
         ],
       ),
     );
