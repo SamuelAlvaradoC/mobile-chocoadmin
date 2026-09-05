@@ -418,12 +418,17 @@ class Pedido {
     // ── motivo anulación ─────────────────────────────────────────────────────
     String? motivoAnulacion = (ventaMap ?? json)['motivo_anulacion']?.toString();
 
-    // ── puntos ganados (acumulación) ────────────────────────────────────────
+    // ── puntos ganados (acumulación neta) ───────────────────────────────────
+    // Neto acumulacion - reversion, no solo la suma de acumulaciones: una
+    // venta que pasó por entregado más de una vez (devuelta a listo y
+    // reentregada) tiene una fila de reversion por cada retroceso, y
+    // sumarlas sin descontar mostraba el doble de los puntos que el cliente
+    // realmente tiene ganados en esta venta.
     int puntosGanados = 0;
     final movsRaw = (ventaMap ?? json)['movimientosPuntos'];
     if (movsRaw is List) {
       for (final m in movsRaw) {
-        if (m is Map && m['tipo'] == 'acumulacion') {
+        if (m is Map && (m['tipo'] == 'acumulacion' || m['tipo'] == 'reversion')) {
           puntosGanados += int.tryParse((m['puntos'] ?? 0).toString()) ?? 0;
         }
       }
