@@ -147,8 +147,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    // Abre "Crear venta" (botón "Nueva venta", visible con permiso gestionar_ventas).
-    await tester.tap(find.text('Nueva venta'));
+    // Abre "Crear venta" (botón "Nuevo Pedido", visible con permiso gestionar_ventas).
+    await tester.tap(find.text('Nuevo Pedido'));
     await tester.pumpAndSettle();
 
     final campoBuscarCliente = find.byWidgetPredicate(

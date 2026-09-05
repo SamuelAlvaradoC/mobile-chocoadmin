@@ -485,7 +485,7 @@ class _AdminPedidosScreenState extends State<AdminPedidosScreen> {
                                   color: Colors.white, size: 14),
                               SizedBox(width: 4),
                               Text(
-                                'Nueva venta',
+                                'Nuevo Pedido',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
@@ -2436,7 +2436,7 @@ class _CrearVentaScreenState extends State<_CrearVentaScreen> {
         widget.onVentaCreada();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Venta creada exitosamente'),
+            content: Text('Pedido creado exitosamente'),
             backgroundColor: AppColors.success,
           ),
         );
@@ -2455,7 +2455,7 @@ class _CrearVentaScreenState extends State<_CrearVentaScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Nueva venta manual'),
+        title: const Text('Nuevo Pedido'),
       ),
       body: Column(
         children: [
@@ -2557,7 +2557,7 @@ class _CrearVentaScreenState extends State<_CrearVentaScreen> {
                 Expanded(
                   flex: 2,
                   child: AppButton(
-                    label: _paso == 2 ? 'Crear venta' : 'Siguiente',
+                    label: _paso == 2 ? 'Crear pedido' : 'Siguiente',
                     isLoading: _guardando,
                     onPressed: _paso == 2 ? _crear : _siguiente,
                   ),
