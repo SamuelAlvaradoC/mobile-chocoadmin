@@ -122,11 +122,13 @@ Future<void> _generarComprobante(BuildContext context, int idVenta) async {
   final usuarioMap = clienteMap['usuario'] is Map ? clienteMap['usuario'] as Map : {};
   final telefono = clienteMap['telefono'] ?? usuarioMap['telefono'] ?? '—';
 
-  final dirObj = ventaCompleta['direccion'];
-  final dirLinea = dirObj is Map ? (dirObj['direccion_linea'] ?? '—') : (dirObj ?? '—');
-  final barrio = dirObj is Map ? (dirObj['barrio'] ?? '') : '';
-  final ciudad = dirObj is Map ? (dirObj['ciudad'] ?? '') : '';
-  final referencia = dirObj is Map ? (dirObj['referencia'] ?? '') : '';
+  // La dirección se lee de las columnas propias de la venta (copiadas al
+  // momento de la compra), no de la relación con `direcciones` -- así una
+  // reimpresión sigue funcionando aunque esa dirección se haya borrado.
+  final dirLinea = ventaCompleta['direccion_linea'] ?? '—';
+  final barrio = ventaCompleta['barrio'] ?? '';
+  final ciudad = ventaCompleta['ciudad'] ?? '';
+  final referencia = ventaCompleta['referencia_direccion'] ?? '';
 
   try {
     final socketUrl = AppConfig.apiBaseUrl.replaceAll(RegExp(r'/api$'), '');
@@ -1857,7 +1859,7 @@ class _EditarVentaScreenState extends State<_EditarVentaScreen> {
               if (!esEntregada) ...[
                 const Text('Costo domicilio', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF555555))),
                 const SizedBox(height: 8),
-                if (widget.pedido.idBarrio != null && !_overrideDomicilio) ...[
+                if (widget.pedido.barrio != null && !_overrideDomicilio) ...[
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
@@ -1872,7 +1874,7 @@ class _EditarVentaScreenState extends State<_EditarVentaScreen> {
                       child: const Text('Cambiar precio manualmente', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary, decoration: TextDecoration.underline)),
                     ),
                   ]),
-                ] else if (widget.pedido.idBarrio != null && _overrideDomicilio) ...[
+                ] else if (widget.pedido.barrio != null && _overrideDomicilio) ...[
                   TextField(
                     controller: _costoCtrl,
                     keyboardType: TextInputType.number,

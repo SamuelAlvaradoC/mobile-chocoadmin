@@ -222,7 +222,6 @@ class Pedido {
   final String? direccion;
   final String? ciudad;
   final String? barrio;
-  final int? idBarrio;
   final double? latitud;
   final double? longitud;
   final String? metodoPago;
@@ -250,7 +249,6 @@ class Pedido {
     this.direccion,
     this.ciudad,
     this.barrio,
-    this.idBarrio,
     this.latitud,
     this.longitud,
     this.metodoPago,
@@ -329,22 +327,14 @@ class Pedido {
     }
 
     // ── dirección ────────────────────────────────────────────────────────────
-    String? direccion;
-    String? barrio;
-    String? ciudad;
-    int? idBarrio;
+    // Se lee de las columnas propias de la venta (direccion_linea/barrio/
+    // ciudad, copiadas al momento de la compra), no de la relación con
+    // `direcciones` -- así el detalle de un pedido ya hecho no se ve afectado
+    // si esa dirección se edita o se borra después.
     final dirSrc = ventaMap ?? json;
-    final dirRaw = dirSrc['direccion'];
-    if (dirRaw is Map) {
-      direccion = (dirRaw['direccion_linea'] ?? dirRaw['direccion'])?.toString();
-      barrio = dirRaw['barrio']?.toString();
-      ciudad = dirRaw['ciudad']?.toString();
-      idBarrio = dirRaw['id_barrio'] != null ? int.tryParse(dirRaw['id_barrio'].toString()) : null;
-    } else if (dirRaw is String) {
-      direccion = dirRaw;
-      barrio = dirSrc['barrio']?.toString();
-      ciudad = dirSrc['ciudad']?.toString();
-    }
+    final String? direccion = dirSrc['direccion_linea']?.toString();
+    final String? barrio = dirSrc['barrio']?.toString();
+    final String? ciudad = dirSrc['ciudad']?.toString();
 
     // ── fecha ────────────────────────────────────────────────────────────────
     final fechaSrc = ventaMap ?? json;
@@ -447,7 +437,6 @@ class Pedido {
         direccion: direccion,
         ciudad: ciudad,
         barrio: barrio,
-        idBarrio: idBarrio,
         latitud: json['latitud'] != null ? double.tryParse(json['latitud'].toString()) : null,
         longitud: json['longitud'] != null ? double.tryParse(json['longitud'].toString()) : null,
         metodoPago: metodoPago,
@@ -499,7 +488,6 @@ class Pedido {
     String? direccion,
     String? ciudad,
     String? barrio,
-    int? idBarrio,
     double? latitud,
     double? longitud,
     String? metodoPago,
@@ -526,7 +514,6 @@ class Pedido {
     direccion: direccion ?? this.direccion,
     ciudad: ciudad ?? this.ciudad,
     barrio: barrio ?? this.barrio,
-    idBarrio: idBarrio ?? this.idBarrio,
     latitud: latitud ?? this.latitud,
     longitud: longitud ?? this.longitud,
     metodoPago: metodoPago ?? this.metodoPago,
