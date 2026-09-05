@@ -35,12 +35,26 @@ class _PerfilScreenState extends State<PerfilScreen>
   int _puntos = 0;
   double _saldoPuntos = 0;
   bool _puntosLoading = true;
+  // Configurable por el admin desde Dashboard (tabla configuraciones, clave
+  // valor_punto_pesos) -- 12.5 es solo el default mientras carga o si la
+  // llamada falla. Endpoint público (como /horario).
+  double _valorPunto = 12.5;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
     _cargarPuntos();
+    _cargarValorPunto();
+  }
+
+  Future<void> _cargarValorPunto() async {
+    try {
+      final data = await ApiService.get('/api/configuracion/valor-punto');
+      final inner = data is Map && data['data'] is Map ? data['data'] as Map : (data is Map ? data : <String, dynamic>{});
+      final valor = double.tryParse(inner['valor_punto_pesos']?.toString() ?? '');
+      if (valor != null && mounted) setState(() => _valorPunto = valor);
+    } catch (_) {}
   }
 
   @override
@@ -136,7 +150,7 @@ class _PerfilScreenState extends State<PerfilScreen>
                 const _HistorialTab(),
                 const _SeguridadTab(),
                 const _DireccionesTab(),
-                _PuntosTab(puntos: _puntos, saldo: _saldoPuntos, loading: _puntosLoading, onRefresh: _cargarPuntos),
+                _PuntosTab(puntos: _puntos, saldo: _saldoPuntos, loading: _puntosLoading, valorPunto: _valorPunto, onRefresh: _cargarPuntos),
               ],
             ),
           ),
@@ -1502,8 +1516,9 @@ class _PuntosTab extends StatelessWidget {
   final int puntos;
   final double saldo;
   final bool loading;
+  final double valorPunto;
   final Future<void> Function() onRefresh;
-  const _PuntosTab({required this.puntos, required this.saldo, required this.loading, required this.onRefresh});
+  const _PuntosTab({required this.puntos, required this.saldo, required this.loading, required this.valorPunto, required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
@@ -1565,8 +1580,9 @@ class _PuntosTab extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 10),
-                      const Text('1 punto = \$12.50 · Se acumulan con cada compra',
-                          style: TextStyle(fontSize: 11, color: Colors.white60)),
+                      Text(
+                          '1 punto = \$${valorPunto == valorPunto.roundToDouble() ? valorPunto.toStringAsFixed(0) : valorPunto.toStringAsFixed(2)} · Se acumulan con cada compra',
+                          style: const TextStyle(fontSize: 11, color: Colors.white60)),
                     ],
                   ),
           ),

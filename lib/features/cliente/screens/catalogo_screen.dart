@@ -580,11 +580,26 @@ class _CarritoBottomBarState extends State<_CarritoBottomBar> {
   int _puntosAUsar = 0;
   bool _usarPuntos = false;
   bool _cargandoPuntos = false;
+  // Configurable por el admin desde Perfil (tabla configuraciones, clave
+  // valor_punto_pesos) -- 12.5 es solo el default mientras carga o si la
+  // llamada falla. Endpoint público (como /horario): el catálogo es
+  // navegable sin login.
+  double _valorPunto = 12.5;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _cargarPuntos());
+    _cargarValorPunto();
+  }
+
+  Future<void> _cargarValorPunto() async {
+    try {
+      final data = await ApiService.get('/api/configuracion/valor-punto');
+      final inner = data is Map && data['data'] is Map ? data['data'] as Map : (data is Map ? data : <String, dynamic>{});
+      final valor = double.tryParse(inner['valor_punto_pesos']?.toString() ?? '');
+      if (valor != null && mounted) setState(() => _valorPunto = valor);
+    } catch (_) {}
   }
 
   Future<void> _cargarPuntos() async {
@@ -604,7 +619,7 @@ class _CarritoBottomBarState extends State<_CarritoBottomBar> {
 
   int _maxPuntosUsables(double subtotal) {
     final maxPorPts = _puntos;
-    final maxPorTotal = (subtotal / 12.5).floor();
+    final maxPorTotal = (subtotal / _valorPunto).floor();
     final raw = maxPorPts < maxPorTotal ? maxPorPts : maxPorTotal;
     return (raw / 8).floor() * 8;
   }
@@ -656,7 +671,7 @@ class _CarritoBottomBarState extends State<_CarritoBottomBar> {
 
     final subtotal = carrito.total;
     final maxUsables = _maxPuntosUsables(subtotal);
-    final descuentoPuntos = _usarPuntos ? _puntosAUsar * 12.5 : 0.0;
+    final descuentoPuntos = _usarPuntos ? _puntosAUsar * _valorPunto : 0.0;
     final totalConDescuento = subtotal - descuentoPuntos;
     final mostrarPuntos = _puntos > 0;
 
@@ -894,7 +909,7 @@ class _CarritoBottomBarState extends State<_CarritoBottomBar> {
                                   children: [
                                     Text('Puntos disponibles',
                                         style: GoogleFonts.nunito(fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFF1a1a1a))),
-                                    Text('$_puntos pts · saldo \$${(_puntos * 12.5).toStringAsFixed(0)}',
+                                    Text('$_puntos pts · saldo \$${(_puntos * _valorPunto).toStringAsFixed(0)}',
                                         style: GoogleFonts.nunito(fontSize: 10, color: AppColors.textSecondary)),
                                   ],
                                 ),

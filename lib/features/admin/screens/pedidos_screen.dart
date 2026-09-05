@@ -2192,6 +2192,10 @@ class _CrearVentaScreenState extends State<_CrearVentaScreen> {
   int  _puntosCliente = 0;
   int  _puntosAplicar = 0;
   bool _usarPuntos    = false;
+  // Configurable por el admin desde Perfil (tabla configuraciones, clave
+  // valor_punto_pesos) -- 12.5 es solo el default mientras carga o si la
+  // llamada falla.
+  double _valorPunto  = 12.5;
 
   // Costo domicilio calculado dinámicamente
   double _costoDomicilio    = 5500;
@@ -2209,6 +2213,16 @@ class _CrearVentaScreenState extends State<_CrearVentaScreen> {
   void initState() {
     super.initState();
     _cargarTodosClientes();
+    _cargarValorPunto();
+  }
+
+  Future<void> _cargarValorPunto() async {
+    try {
+      final data = await ApiService.get('/api/configuracion/valor-punto');
+      final inner = data is Map && data['data'] is Map ? data['data'] as Map : (data is Map ? data : <String, dynamic>{});
+      final valor = double.tryParse(inner['valor_punto_pesos']?.toString() ?? '');
+      if (valor != null && mounted) setState(() => _valorPunto = valor);
+    } catch (_) {}
   }
 
   @override
@@ -2256,12 +2270,12 @@ class _CrearVentaScreenState extends State<_CrearVentaScreen> {
   }
 
   int get _maxPuntos {
-    final max = (_totalCarrito / 12.5).floor();
+    final max = (_totalCarrito / _valorPunto).floor();
     final limit = max < _puntosCliente ? max : _puntosCliente;
     return (limit ~/ 8) * 8;
   }
   int get _puntosAplicarEfectivo => _puntosAplicar < _maxPuntos ? _puntosAplicar : _maxPuntos;
-  double get _descuentoPuntos => _usarPuntos ? _puntosAplicarEfectivo * 12.5 : 0;
+  double get _descuentoPuntos => _usarPuntos ? _puntosAplicarEfectivo * _valorPunto : 0;
 
   Future<void> _cargarPuntosCliente(int id) async {
     try {
@@ -3306,7 +3320,7 @@ class _CrearVentaScreenState extends State<_CrearVentaScreen> {
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 const Text('Puntos de fidelidad',
                     style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF1D4ED8))),
-                Text('$_puntosCliente pts = \$${(_puntosCliente * 12.5).toStringAsFixed(0).replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => '.')}',
+                Text('$_puntosCliente pts = \$${(_puntosCliente * _valorPunto).toStringAsFixed(0).replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => '.')}',
                     style: const TextStyle(fontSize: 12, color: Color(0xFF1D4ED8), fontWeight: FontWeight.w600)),
               ]),
               const SizedBox(height: 8),

@@ -91,8 +91,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   // ── Puntos de fidelidad ────────────────────────────────────
   int _puntosUsados = 0;
-  /// Cada punto equivale a $12.5 COP de descuento
-  static const double _valorPorPunto = 12.5;
+  // Configurable por el admin desde Perfil (tabla configuraciones,
+  // clave valor_punto_pesos) -- 12.5 es solo el default mientras carga o si
+  // la llamada falla, igual que el resto de la app.
+  double _valorPorPunto = 12.5;
 
   // ── Costo domicilio ────────────────────────────────────
   static const double _costoDomicilioDefault = 5500.0;
@@ -118,6 +120,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _cargarPerfil();
     });
+    _cargarValorPunto();
+  }
+
+  Future<void> _cargarValorPunto() async {
+    try {
+      final data = await ApiService.get('/api/configuracion/valor-punto');
+      final inner = data is Map && data['data'] is Map ? data['data'] as Map : (data is Map ? data : <String, dynamic>{});
+      final valor = double.tryParse(inner['valor_punto_pesos']?.toString() ?? '');
+      if (valor != null && mounted) setState(() => _valorPorPunto = valor);
+    } catch (_) {}
   }
 
   Future<void> _calcularCostoDomicilio(Map<String, dynamic> dir) async {
