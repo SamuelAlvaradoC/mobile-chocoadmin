@@ -518,6 +518,67 @@ class _Chip extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Personalizacion compacta "Etiqueta: valores" -- solo para el modal Ver
+// Detalle. A diferencia de _ProductRow (tarjeta de la lista, no se toca),
+// aqui SI se distingue esBowl: en un producto bowl la columna salsas guarda
+// su Cobertura elegida, no untables reales (ver comentario en LineaDetalle,
+// core/models/pedido.dart). Cada etiqueta lleva un puntito del mismo color
+// que tenian los chips originales, como apoyo visual sin volver a las
+// pildoras grandes.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const Map<String, Color> _colorCategoria = {
+  'Cobertura': Color(0xFF1E3A5F),
+  'Elección de chocolate': Color(0xFF1E3A5F),
+  'Toppings': Color(0xFF1A1A1A),
+  'Adiciones': Color(0xFFD97706),
+  'Untables': Color(0xFFEA580C),
+};
+
+class _PersonalizacionCompacta extends StatelessWidget {
+  final LineaDetalle linea;
+  const _PersonalizacionCompacta({required this.linea});
+
+  @override
+  Widget build(BuildContext context) {
+    final cobertura = linea.esBowl && linea.salsas.isNotEmpty ? linea.salsas.map(_nombreSalsa).join(', ') : null;
+    final untables = !linea.esBowl && linea.salsas.isNotEmpty ? linea.salsas.map(_nombreSalsa).join(', ') : null;
+    final chocolate = linea.chocolate;
+    final toppings = linea.toppings.isNotEmpty ? linea.toppings.join(', ') : null;
+    final adiciones = linea.adiciones.isNotEmpty ? linea.adiciones.map(_adicionLabel).join(', ') : null;
+
+    final lineas = <Widget>[
+      if (cobertura != null) _lineaCompacta('Cobertura', cobertura),
+      if (chocolate != null) _lineaCompacta('Elección de chocolate', chocolate),
+      if (toppings != null) _lineaCompacta('Toppings', toppings),
+      if (adiciones != null) _lineaCompacta('Adiciones', adiciones),
+      if (untables != null) _lineaCompacta('Untables', untables),
+    ];
+    if (lineas.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: lineas),
+    );
+  }
+
+  Widget _lineaCompacta(String label, String valor) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 3),
+      child: RichText(
+        text: TextSpan(
+          style: GoogleFonts.nunito(fontSize: 13, color: const Color(0xFF333333)),
+          children: [
+            TextSpan(text: '● ', style: TextStyle(fontSize: 10, color: _colorCategoria[label] ?? const Color(0xFF888888))),
+            TextSpan(text: '$label: ', style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF1a1a1a))),
+            TextSpan(text: valor),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Detail modal
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -651,18 +712,7 @@ class _ModalDetalle extends StatelessWidget {
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Text('${l.cantidad}× ${l.nombreProducto}',
                               style: GoogleFonts.nunito(fontSize: 15, fontWeight: FontWeight.w800, color: const Color(0xFF1a1a1a))),
-                          const SizedBox(height: 6),
-                          Wrap(spacing: 5, runSpacing: 5, children: [
-                            if (l.chocolate != null)
-                              _Chip(
-                                label: 'Chocolate ${l.chocolate!}',
-                                bg: l.chocolate!.toLowerCase().contains('negro') ? const Color(0xFF1E3A5F) : const Color(0xFFF0F0F0),
-                                fg: l.chocolate!.toLowerCase().contains('negro') ? Colors.white : const Color(0xFF555555),
-                              ),
-                            ...l.salsas.map((s) => _Chip(label: _nombreSalsa(s), outlined: true, outlineColor: const Color(0xFFEA580C), fg: const Color(0xFFEA580C), bg: const Color(0xFFFFF7ED))),
-                            ...l.toppings.map((t) => _Chip(label: t, bg: const Color(0xFF1A1A1A), fg: Colors.white)),
-                            ...l.adiciones.map((a) => _Chip(label: _adicionLabel(a), bg: const Color(0xFFD97706), fg: Colors.white)),
-                          ]),
+                          _PersonalizacionCompacta(linea: l),
                         ]),
                       );
                     }),
