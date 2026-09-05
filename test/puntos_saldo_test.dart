@@ -6,7 +6,9 @@
 // Puntos ahora vive dentro de Perfil como pestaña (ya no es su propia
 // pantalla/branch), así que estos tests montan PerfilScreen y tocan el pill
 // "Puntos" antes de verificar -- mismo patrón que pull_to_refresh_test.dart
-// usa para Historial/Direcciones.
+// usa para Historial/Direcciones. El saldo también aparece en una franja
+// compacta siempre visible en el header de Perfil, así que una vez en la
+// pestaña "Puntos" el mismo valor está en pantalla dos veces.
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -69,9 +71,14 @@ void main() {
 
     await _irATabPuntos(tester);
 
-    expect(find.text('100'), findsOneWidget); // puntos disponibles
-    expect(find.textContaining('987.654'), findsOneWidget,
-        reason: 'debe mostrar el saldo_pesos real del backend, no puntos*12.5 (que sería 1.250)');
+    expect(find.text('100'), findsOneWidget); // puntos disponibles (tarjeta de la pestaña)
+    // El saldo aparece dos veces a la vez: en la franja compacta del header
+    // (siempre visible) y en la tarjeta grande de la pestaña "Puntos" -- ese
+    // es justo el punto de este cambio (visibilidad inmediata sin duplicar
+    // la fuente de datos, ambos leen el mismo estado levantado en
+    // _PerfilScreenState).
+    expect(find.textContaining('987.654'), findsNWidgets(2),
+        reason: 'debe mostrar el saldo_pesos real del backend (header + pestaña), no puntos*12.5 (que sería 1.250)');
     expect(find.textContaining('1.250'), findsNothing,
         reason: 'NO debe caer al fallback cuando saldo_pesos sí vino en la respuesta');
   });
@@ -97,7 +104,9 @@ void main() {
     // pantalla en blanco si el backend cambia de forma.
     expect(tester.takeException(), isNull);
     expect(find.text('40'), findsOneWidget);
-    expect(find.textContaining('500'), findsOneWidget,
-        reason: 'fallback documentado (puntos * 12.5) cuando falta saldo_pesos');
+    // Igual que en el otro test: el saldo con fallback aparece en el header
+    // y en la pestaña a la vez, ambos desde el mismo estado compartido.
+    expect(find.textContaining('500'), findsNWidgets(2),
+        reason: 'fallback documentado (puntos * 12.5) cuando falta saldo_pesos, visible en header + pestaña');
   });
 }

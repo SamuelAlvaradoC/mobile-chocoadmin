@@ -15,6 +15,8 @@ import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/colombia_location_picker.dart';
 
+final _fmtMonedaPuntos = NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
+
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
 
@@ -26,16 +28,44 @@ class _PerfilScreenState extends State<PerfilScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
+  // Levantado aquí (en vez de vivir solo dentro de _PuntosTab) para que el
+  // banner del header y la pestaña "Puntos" lean el mismo dato ya cargado
+  // -- una sola llamada a la API, sin dos fuentes que puedan desincronizarse
+  // si se refrescan en momentos distintos.
+  int _puntos = 0;
+  double _saldoPuntos = 0;
+  bool _puntosLoading = true;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
+    _cargarPuntos();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> _cargarPuntos() async {
+    setState(() => _puntosLoading = true);
+    try {
+      final data = await ApiService.get('/api/puntos/mis-puntos');
+      final inner = data is Map && data['data'] is Map ? data['data'] as Map : (data is Map ? data : <String, dynamic>{});
+      if (mounted) {
+        setState(() {
+          _puntos = (inner['puntos'] ?? 0) is int
+              ? inner['puntos'] as int
+              : int.tryParse(inner['puntos']?.toString() ?? '0') ?? 0;
+          _saldoPuntos = double.tryParse((inner['saldo_pesos'] ?? (_puntos * 12.5)).toString()) ?? (_puntos * 12.5);
+          _puntosLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _puntosLoading = false);
+    }
   }
 
   @override
@@ -88,6 +118,13 @@ class _PerfilScreenState extends State<PerfilScreen>
             ),
           ),
 
+          // ── Saldo de puntos — visible de inmediato, igual que en React
+          // (Perfil.jsx: la tarjeta "Mis puntos ChocoFreseo" vive en el
+          // header, no detrás de una pestaña). Antes solo se veía dentro de
+          // la pestaña "Puntos"; esta franja compacta muestra el mismo dato
+          // apenas se entra al perfil, sin duplicar la fuente de datos.
+          _PuntosBanner(puntos: _puntos, saldo: _saldoPuntos, loading: _puntosLoading),
+
           // ── Selector de secciones (segmented pills, no TabBar subrayado) ──
           _PerfilSegmentedControl(controller: _tabController),
 
@@ -99,12 +136,62 @@ class _PerfilScreenState extends State<PerfilScreen>
                 const _HistorialTab(),
                 const _SeguridadTab(),
                 const _DireccionesTab(),
-                const _PuntosTab(),
+                _PuntosTab(puntos: _puntos, saldo: _saldoPuntos, loading: _puntosLoading, onRefresh: _cargarPuntos),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Franja compacta de puntos en el header — mismo dato que la pestaña
+// "Puntos" (levantado en _PerfilScreenState), solo que visible sin tener
+// que navegar a esa pestaña.
+// ────────────────────────────────────────────────────────────────────────────
+
+class _PuntosBanner extends StatelessWidget {
+  final int puntos;
+  final double saldo;
+  final bool loading;
+  const _PuntosBanner({required this.puntos, required this.saldo, required this.loading});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(AppSizes.md, AppSizes.sm, AppSizes.md, 0),
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppColors.primary, Color(0xFF8B0000)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        boxShadow: [
+          BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 3)),
+        ],
+      ),
+      child: loading
+          ? const SizedBox(
+              height: 18,
+              child: Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))),
+            )
+          : Row(
+              children: [
+                const Icon(Icons.stars_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Text('$puntos pts',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 15)),
+                const SizedBox(width: 4),
+                Text('disponibles', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
+                const Spacer(),
+                Text(_fmtMonedaPuntos.format(saldo),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
+              ],
+            ),
     );
   }
 }
@@ -1404,54 +1491,25 @@ class _DireccionesTabState extends State<_DireccionesTab> {
 
 // ────────────────────────────────────────────────────────────────────────────
 // Tab Puntos — antes era su propia pantalla con ítem propio en el bottom
-// nav; ahora vive dentro de Perfil como una pestaña más. Misma llamada a la
-// API (GET /api/puntos/mis-puntos) y mismo cálculo de saldo, solo sin su
-// propio Scaffold/AppBar (los provee PerfilScreen).
+// nav; ahora vive dentro de Perfil como una pestaña más, sin su propio
+// Scaffold/AppBar (los provee PerfilScreen). El dato (puntos/saldo/loading)
+// se recibe por parámetro desde _PerfilScreenState -- una sola llamada a
+// GET /api/puntos/mis-puntos compartida con el banner del header, en vez de
+// que cada uno la pida por su cuenta.
 // ────────────────────────────────────────────────────────────────────────────
 
-class _PuntosTab extends StatefulWidget {
-  const _PuntosTab();
-  @override
-  State<_PuntosTab> createState() => _PuntosTabState();
-}
-
-class _PuntosTabState extends State<_PuntosTab> {
-  int _puntos = 0;
-  double _saldo = 0;
-  bool _loading = true;
-
-  final _fmtMoneda = NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _cargar());
-  }
-
-  Future<void> _cargar() async {
-    setState(() => _loading = true);
-    try {
-      final data = await ApiService.get('/api/puntos/mis-puntos');
-      final inner = data is Map && data['data'] is Map ? data['data'] as Map : (data is Map ? data : <String, dynamic>{});
-      if (mounted) {
-        setState(() {
-          _puntos = (inner['puntos'] ?? 0) is int
-              ? inner['puntos'] as int
-              : int.tryParse(inner['puntos']?.toString() ?? '0') ?? 0;
-          _saldo = double.tryParse((inner['saldo_pesos'] ?? (_puntos * 12.5)).toString()) ?? (_puntos * 12.5);
-          _loading = false;
-        });
-      }
-    } catch (_) {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
+class _PuntosTab extends StatelessWidget {
+  final int puntos;
+  final double saldo;
+  final bool loading;
+  final Future<void> Function() onRefresh;
+  const _PuntosTab({required this.puntos, required this.saldo, required this.loading, required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
       color: AppColors.primary,
-      onRefresh: _cargar,
+      onRefresh: onRefresh,
       child: ListView(
         padding: const EdgeInsets.all(AppSizes.md),
         children: [
@@ -1468,7 +1526,7 @@ class _PuntosTabState extends State<_PuntosTab> {
                 BoxShadow(color: AppColors.primary.withValues(alpha: 0.35), blurRadius: 10, offset: const Offset(0, 4)),
               ],
             ),
-            child: _loading
+            child: loading
                 ? const Center(
                     child: SizedBox(height: 40, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
                   )
@@ -1484,7 +1542,7 @@ class _PuntosTabState extends State<_PuntosTab> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('$_puntos',
+                                Text('$puntos',
                                     style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Colors.white, height: 1)),
                                 const Text('puntos disponibles', style: TextStyle(fontSize: 12, color: Colors.white70)),
                               ],
@@ -1497,7 +1555,7 @@ class _PuntosTabState extends State<_PuntosTab> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(_fmtMoneda.format(_saldo),
+                                  Text(_fmtMonedaPuntos.format(saldo),
                                       style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Colors.white, height: 1)),
                                   const Text('saldo disponible', style: TextStyle(fontSize: 12, color: Colors.white70)),
                                 ],
