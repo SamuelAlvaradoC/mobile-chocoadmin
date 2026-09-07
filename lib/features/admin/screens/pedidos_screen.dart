@@ -1090,6 +1090,8 @@ class _VentaDetalleScreenState extends State<_VentaDetalleScreen> {
                       _DetalleRow('Domiciliario', p.nombreDomiciliario),
                     if (p.direccionCompleta.isNotEmpty)
                       _DetalleRow('Dirección', p.direccionCompleta, full: true),
+                    if (p.referencia != null && p.referencia!.isNotEmpty)
+                      _DetalleRow('Referencia', p.referencia, full: true),
                   ]),
                   // Desglose mixto
                   if (p.metodoPago == 'mixto') ...[

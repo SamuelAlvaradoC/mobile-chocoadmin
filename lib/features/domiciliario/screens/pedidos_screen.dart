@@ -723,6 +723,10 @@ class _ModalDetalle extends StatelessWidget {
                                   Expanded(child: _DetalleItem(label: 'Teléfono', valor: pedido.clienteTelefono ?? '-', full: true)),
                                 ],
                               ),
+                              if (pedido.referencia != null && pedido.referencia!.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                _DetalleItem(label: 'Referencia', valor: pedido.referencia!, full: true),
+                              ],
                               if (pedido.formaPago != null && pedido.formaPago!.isNotEmpty) ...[
                                 const SizedBox(height: 8),
                                 Container(

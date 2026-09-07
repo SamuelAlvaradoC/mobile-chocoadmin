@@ -1023,6 +1023,11 @@ class _DetalleAdminModalState extends State<_DetalleAdminModal> {
                       value: pedido.direccion?.isNotEmpty == true
                           ? pedido.direccion
                           : null),
+                  _InfoSection(
+                      label: 'Referencia',
+                      value: pedido.referencia?.isNotEmpty == true
+                          ? pedido.referencia
+                          : null),
                   // Observaciones en info cliente
                   if (pedido.observaciones != null &&
                       pedido.observaciones!.isNotEmpty) ...[

@@ -222,6 +222,7 @@ class Pedido {
   final String? direccion;
   final String? ciudad;
   final String? barrio;
+  final String? referencia;
   final double? latitud;
   final double? longitud;
   final String? metodoPago;
@@ -249,6 +250,7 @@ class Pedido {
     this.direccion,
     this.ciudad,
     this.barrio,
+    this.referencia,
     this.latitud,
     this.longitud,
     this.metodoPago,
@@ -335,6 +337,7 @@ class Pedido {
     final String? direccion = dirSrc['direccion_linea']?.toString();
     final String? barrio = dirSrc['barrio']?.toString();
     final String? ciudad = dirSrc['ciudad']?.toString();
+    final String? referencia = dirSrc['referencia_direccion']?.toString();
 
     // ── fecha ────────────────────────────────────────────────────────────────
     final fechaSrc = ventaMap ?? json;
@@ -437,6 +440,7 @@ class Pedido {
         direccion: direccion,
         ciudad: ciudad,
         barrio: barrio,
+        referencia: referencia,
         latitud: json['latitud'] != null ? double.tryParse(json['latitud'].toString()) : null,
         longitud: json['longitud'] != null ? double.tryParse(json['longitud'].toString()) : null,
         metodoPago: metodoPago,
@@ -488,6 +492,7 @@ class Pedido {
     String? direccion,
     String? ciudad,
     String? barrio,
+    String? referencia,
     double? latitud,
     double? longitud,
     String? metodoPago,
@@ -514,6 +519,7 @@ class Pedido {
     direccion: direccion ?? this.direccion,
     ciudad: ciudad ?? this.ciudad,
     barrio: barrio ?? this.barrio,
+    referencia: referencia ?? this.referencia,
     latitud: latitud ?? this.latitud,
     longitud: longitud ?? this.longitud,
     metodoPago: metodoPago ?? this.metodoPago,

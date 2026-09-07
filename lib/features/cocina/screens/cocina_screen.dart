@@ -673,6 +673,10 @@ class _ModalDetalle extends StatelessWidget {
                               Expanded(child: Text(pedido.direccionCompleta, style: GoogleFonts.nunito(fontSize: 13, color: const Color(0xFF555555)))),
                             ]),
                           ],
+                          if (pedido.referencia != null && pedido.referencia!.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text('Ref: ${pedido.referencia}', style: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFF888888))),
+                          ],
                         ],
                       ),
                     ),
