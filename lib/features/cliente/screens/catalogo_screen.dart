@@ -617,11 +617,18 @@ class _CarritoBottomBarState extends State<_CarritoBottomBar> {
     if (mounted) setState(() => _cargandoPuntos = false);
   }
 
+  // El cliente solo puede usar puntos en incrementos de $1000 de descuento
+  // (antes eran 8 puntos fijos = $100 con valorPunto=$12.5). El paso en
+  // PUNTOS se recalcula segun el valor del punto vigente.
+  static const int _incrementoPuntosPesos = 1000;
+  int _pasoPuntos() => (_incrementoPuntosPesos / _valorPunto).round();
+
   int _maxPuntosUsables(double subtotal) {
     final maxPorPts = _puntos;
     final maxPorTotal = (subtotal / _valorPunto).floor();
     final raw = maxPorPts < maxPorTotal ? maxPorPts : maxPorTotal;
-    return (raw / 8).floor() * 8;
+    final paso = _pasoPuntos();
+    return (raw / paso).floor() * paso;
   }
 
   void _toggleUsarPuntos(double subtotal) {
@@ -938,10 +945,10 @@ class _CarritoBottomBarState extends State<_CarritoBottomBar> {
                                 value: _puntosAUsar.toDouble(),
                                 min: 0,
                                 max: maxUsables.toDouble(),
-                                divisions: maxUsables ~/ 8,
+                                divisions: maxUsables ~/ _pasoPuntos(),
                                 activeColor: AppColors.primary,
                                 label: '$_puntosAUsar pts',
-                                onChanged: (v) => setState(() => _puntosAUsar = ((v / 8).round() * 8).clamp(0, maxUsables)),
+                                onChanged: (v) => setState(() { final paso = _pasoPuntos(); _puntosAUsar = ((v / paso).round() * paso).clamp(0, maxUsables); }),
                               ),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),

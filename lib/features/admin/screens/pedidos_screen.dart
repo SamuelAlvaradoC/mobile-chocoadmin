@@ -2273,10 +2273,17 @@ class _CrearVentaScreenState extends State<_CrearVentaScreen> {
     setState(() => _buscando = false);
   }
 
+  // Incremento de $1000 de descuento (antes 8 puntos fijos = $100 con
+  // valorPunto=$12.5) -- el paso en puntos se recalcula segun el valor
+  // del punto vigente.
+  static const int _incrementoPuntosPesos = 1000;
+  int get _pasoPuntos => (_incrementoPuntosPesos / _valorPunto).round();
+
   int get _maxPuntos {
     final max = (_totalCarrito / _valorPunto).floor();
     final limit = max < _puntosCliente ? max : _puntosCliente;
-    return (limit ~/ 8) * 8;
+    final paso = _pasoPuntos;
+    return (limit ~/ paso) * paso;
   }
   int get _puntosAplicarEfectivo => _puntosAplicar < _maxPuntos ? _puntosAplicar : _maxPuntos;
   double get _descuentoPuntos => _usarPuntos ? _puntosAplicarEfectivo * _valorPunto : 0;
@@ -3328,33 +3335,45 @@ class _CrearVentaScreenState extends State<_CrearVentaScreen> {
                     style: const TextStyle(fontSize: 12, color: Color(0xFF1D4ED8), fontWeight: FontWeight.w600)),
               ]),
               const SizedBox(height: 8),
-              GestureDetector(
-                onTap: () => setState(() {
-                  _usarPuntos = !_usarPuntos;
-                  _puntosAplicar = _usarPuntos ? _maxPuntos : 0;
-                }),
-                child: Row(children: [
-                  Container(
-                    width: 18, height: 18,
-                    decoration: BoxDecoration(
-                      color: _usarPuntos ? const Color(0xFF1D4ED8) : Colors.white,
-                      border: Border.all(color: const Color(0xFF1D4ED8)),
-                      borderRadius: BorderRadius.circular(4),
+              Opacity(
+                opacity: _maxPuntos == 0 ? 0.5 : 1,
+                child: GestureDetector(
+                  onTap: _maxPuntos == 0 ? null : () => setState(() {
+                    _usarPuntos = !_usarPuntos;
+                    _puntosAplicar = _usarPuntos ? _maxPuntos : 0;
+                  }),
+                  child: Row(children: [
+                    Container(
+                      width: 18, height: 18,
+                      decoration: BoxDecoration(
+                        color: _usarPuntos ? const Color(0xFF1D4ED8) : Colors.white,
+                        border: Border.all(color: const Color(0xFF1D4ED8)),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: _usarPuntos ? const Icon(Icons.check_rounded, size: 13, color: Colors.white) : null,
                     ),
-                    child: _usarPuntos ? const Icon(Icons.check_rounded, size: 13, color: Colors.white) : null,
-                  ),
-                  const SizedBox(width: 8),
-                  const Text('Usar puntos en este pedido',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1D4ED8))),
-                ]),
+                    const SizedBox(width: 8),
+                    const Text('Usar puntos en este pedido',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1D4ED8))),
+                  ]),
+                ),
               ),
+              if (_maxPuntos == 0) ...[
+                const SizedBox(height: 4),
+                Text(
+                  _totalCarrito == 0
+                      ? 'Agrega productos primero para usar puntos'
+                      : 'El cliente necesita al menos $_pasoPuntos puntos (equivalen a \$$_incrementoPuntosPesos) para aplicar un descuento',
+                  style: const TextStyle(fontSize: 11, color: Color(0xFFAAAAAA)),
+                ),
+              ],
               if (_usarPuntos && _maxPuntos > 0) ...[
                 const SizedBox(height: 8),
                 Slider(
                   value: _puntosAplicar.toDouble(),
-                  min: 0, max: _maxPuntos.toDouble(), divisions: _maxPuntos ~/ 8,
+                  min: 0, max: _maxPuntos.toDouble(), divisions: _maxPuntos ~/ _pasoPuntos,
                   activeColor: AppColors.primary,
-                  onChanged: (v) => setState(() => _puntosAplicar = (v ~/ 8) * 8),
+                  onChanged: (v) => setState(() { final paso = _pasoPuntos; _puntosAplicar = (v ~/ paso) * paso; }),
                 ),
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                   Text('$_puntosAplicarEfectivo pts aplicados',
