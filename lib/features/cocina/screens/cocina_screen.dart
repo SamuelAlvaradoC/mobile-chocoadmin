@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -27,6 +28,9 @@ class _CocinaScreenState extends State<CocinaScreen> {
   int? _confirmandoId;
   Pedido? _detalleAbierto;
   Timer? _timer;
+  final _player = AudioPlayer();
+  // null = todavia no ha cargado nunca -- asi la carga inicial nunca suena
+  Set<int>? _idsAnteriores;
 
   final _fmt = NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
 
@@ -40,7 +44,17 @@ class _CocinaScreenState extends State<CocinaScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _player.dispose();
     super.dispose();
+  }
+
+  Future<void> _reproducirTimbre() async {
+    try {
+      await _player.play(AssetSource('sounds/timbre_cocina.wav'));
+    } catch (_) {
+      // No critico si el audio falla en algun dispositivo -- el pedido
+      // igual aparece en la lista.
+    }
   }
 
   Future<void> _cargar() async {
@@ -57,6 +71,13 @@ class _CocinaScreenState extends State<CocinaScreen> {
           .map((e) => Pedido.fromJson(e as Map<String, dynamic>))
           .toList()
         ..sort((a, b) => a.id.compareTo(b.id));
+
+      final idsNuevos = pedidos.map((p) => p.id).toSet();
+      if (_idsAnteriores != null && idsNuevos.any((id) => !_idsAnteriores!.contains(id))) {
+        _reproducirTimbre();
+      }
+      _idsAnteriores = idsNuevos;
+
       if (mounted) {
         final detalleIdActual = _detalleAbierto?.id;
         final confirmandoIdActual = _confirmandoId;

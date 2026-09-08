@@ -1109,7 +1109,7 @@ class _CtaFinalState extends State<_CtaFinal> {
                 Wrap(spacing: 8, runSpacing: 8, children: [
                   _ChipOpt(label: 'La Milagrosa',  selected: _sede == 'La Milagrosa', onTap: () => setState(() => _sede = 'La Milagrosa')),
                   _ChipOpt(label: 'Aranjuez',      selected: _sede == 'Aranjuez',     onTap: () => setState(() => _sede = 'Aranjuez')),
-                  _ChipOpt(label: 'Cocina Oculta', selected: _sede == 'WhatsApp',     onTap: () => setState(() => _sede = 'WhatsApp')),
+                  _ChipOpt(label: 'Domicilios Propios', selected: _sede == 'WhatsApp',     onTap: () => setState(() => _sede = 'WhatsApp')),
                 ]),
                 const SizedBox(height: 20),
 
