@@ -306,7 +306,7 @@ class _ComoFunciona extends StatelessWidget {
 
   static const _pasos = [
     _Paso(num: '01', icon: Icons.shopping_bag_outlined,  titulo: 'Elige tu antojo',    desc: 'Explora el catálogo, personaliza con toppings, untables y adiciones'),
-    _Paso(num: '02', icon: Icons.location_on_outlined,   titulo: 'Marca tu ubicación', desc: 'Pon el pin en el mapa y calculamos el domicilio automáticamente'),
+    _Paso(num: '02', icon: Icons.list_alt_outlined,      titulo: 'Elige tu barrio',    desc: 'Selecciona tu ciudad y barrio, y calculamos el domicilio automáticamente'),
     _Paso(num: '03', icon: Icons.credit_card,            titulo: 'Elige cómo pagar',   desc: 'Efectivo, transferencia o mixto. Sin complicaciones'),
     _Paso(num: '04', icon: Icons.delivery_dining,        titulo: 'Recíbelo con freseo',    desc: 'Tu pedido llega directo a tu puerta, fresquito y delicioso'),
   ];
@@ -476,11 +476,23 @@ class _ProductosEstrellaState extends State<_ProductosEstrella> {
     _fetch();
   }
 
+  // Sin acentos + minúsculas, para que "frappe" matchee "Frappé" sin
+  // depender de que el keyword copie la tilde exacta del nombre en BD.
+  static String _normalizar(String s) {
+    const conAcento = 'áéíóúÁÉÍÓÚñÑ';
+    const sinAcento = 'aeiouAEIOUnN';
+    var out = s.toLowerCase();
+    for (var i = 0; i < conAcento.length; i++) {
+      out = out.replaceAll(conAcento[i].toLowerCase(), sinAcento[i].toLowerCase());
+    }
+    return out;
+  }
+
   String? _getImg(_Estrella e) {
     for (final p in _productosDB) {
-      final nombre = (p['nombre'] as String? ?? '').toLowerCase();
+      final nombre = _normalizar(p['nombre'] as String? ?? '');
       for (final k in e.keywords) {
-        if (nombre.contains(k.toLowerCase())) {
+        if (nombre.contains(_normalizar(k))) {
           return (p['img'] ?? p['imagen_url']) as String?;
         }
       }

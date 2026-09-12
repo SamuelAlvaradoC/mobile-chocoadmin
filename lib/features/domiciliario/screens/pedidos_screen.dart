@@ -703,7 +703,8 @@ class _ModalDetalle extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Grid info — igual que React: Cliente, Hora, Dirección, Teléfono, Pago, [Desglose si mixto]
+                          // Grid info — igual que React: Cliente|Hora, bloque
+                          // Dirección+Referencia+Observación, Teléfono|Pago, [Desglose si mixto]
                           Column(
                             children: [
                               Row(
@@ -715,35 +716,37 @@ class _ModalDetalle extends StatelessWidget {
                                 ],
                               ),
                               const SizedBox(height: 8),
+                              _BloqueUbicacion(
+                                direccion: pedido.direccionCompleta.isNotEmpty ? pedido.direccionCompleta : '-',
+                                referencia: pedido.referencia,
+                                observaciones: pedido.observaciones,
+                              ),
+                              const SizedBox(height: 8),
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Expanded(child: _DetalleItem(label: 'Dirección', valor: pedido.direccionCompleta.isNotEmpty ? pedido.direccionCompleta : '-', full: true)),
-                                  const SizedBox(width: 8),
                                   Expanded(child: _DetalleItem(label: 'Teléfono', valor: pedido.clienteTelefono ?? '-', full: true)),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: (pedido.formaPago != null && pedido.formaPago!.isNotEmpty)
+                                        ? Container(
+                                            width: double.infinity,
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFFAFAFA),
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(color: const Color(0xFFF0F0F0)),
+                                            ),
+                                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                              Text('PAGO', style: GoogleFonts.nunito(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF888888))),
+                                              const SizedBox(height: 4),
+                                              _PagoBadge(formaPago: pedido.formaPago!),
+                                            ]),
+                                          )
+                                        : const SizedBox.shrink(),
+                                  ),
                                 ],
                               ),
-                              if (pedido.referencia != null && pedido.referencia!.isNotEmpty) ...[
-                                const SizedBox(height: 8),
-                                _DetalleItem(label: 'Referencia', valor: pedido.referencia!, full: true),
-                              ],
-                              if (pedido.formaPago != null && pedido.formaPago!.isNotEmpty) ...[
-                                const SizedBox(height: 8),
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFAFAFA),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: const Color(0xFFF0F0F0)),
-                                  ),
-                                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                    Text('PAGO', style: GoogleFonts.nunito(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF888888))),
-                                    const SizedBox(height: 4),
-                                    _PagoBadge(formaPago: pedido.formaPago!),
-                                  ]),
-                                ),
-                              ],
                             ],
                           ),
                           if (pedido.formaPago == 'mixto') ...[
@@ -875,6 +878,50 @@ class _DetalleItem extends StatelessWidget {
         Text(label.toUpperCase(), style: GoogleFonts.nunito(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF888888))),
         const SizedBox(height: 2),
         Text(valor, style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF1a1a1a))),
+      ]),
+    );
+  }
+}
+
+class _BloqueUbicacion extends StatelessWidget {
+  final String direccion;
+  final String? referencia;
+  final String? observaciones;
+  const _BloqueUbicacion({required this.direccion, this.referencia, this.observaciones});
+
+  @override
+  Widget build(BuildContext context) {
+    final filas = <Widget>[_fila('Dirección', direccion)];
+    if (referencia != null && referencia!.isNotEmpty) {
+      filas.add(_fila('Referencia', referencia!, conBorde: true));
+    }
+    if (observaciones != null && observaciones!.isNotEmpty) {
+      filas.add(_fila('Observación', observaciones!, conBorde: true, italica: true));
+    }
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFAFAFA),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFF0F0F0)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: filas),
+    );
+  }
+
+  Widget _fila(String label, String valor, {bool conBorde = false, bool italica = false}) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.only(top: conBorde ? 8 : 0),
+      margin: EdgeInsets.only(top: conBorde ? 8 : 0),
+      decoration: conBorde
+          ? const BoxDecoration(border: Border(top: BorderSide(color: Color(0xFFE5E7EB), width: 1)))
+          : null,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label.toUpperCase(), style: GoogleFonts.nunito(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF888888))),
+        const SizedBox(height: 2),
+        Text(valor, style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w600, fontStyle: italica ? FontStyle.italic : FontStyle.normal, color: const Color(0xFF1a1a1a))),
       ]),
     );
   }

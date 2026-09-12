@@ -163,12 +163,11 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
     if (mounted) setState(() { _procesandoId = null; _bloqueado = false; });
   }
 
-  // React: https://wa.me/57${tel}?text=Hola,%20confirmamos%20tu%20pedido%20%23${idVenta}%20de%20ChocoFreseo
   String _wppUrl(Pedido p) {
     final digits = (p.clienteTelefono ?? '').replaceAll(RegExp(r'\D'), '');
     final number = digits.startsWith('57') ? digits : '57$digits';
     final msg = Uri.encodeComponent(
-      'Hola, confirmamos tu pedido #${p.id} de ChocoFreseo',
+      'Hola ${p.clienteNombre ?? ''}, tu pedido #${p.id} de ChocoFreseo ya está confirmado y en preparación, en breves minutos será despachado hacia tu ubicación, por favor esté pendiente.\n\nCuando recibas tus productos, te invitamos a llenar este pequeño formulario, tu opinión es muy importante para nosotros:\nchocofreseo.com/#resenas',
     );
     return 'https://wa.me/$number?text=$msg';
   }

@@ -862,20 +862,65 @@ class _VentaDetalleScreenState extends State<_VentaDetalleScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Info cliente — grid compacto igual React ModalDetalle
+                  // Info cliente — grid compacto igual React ModalDetalle,
+                  // orden: Estado|Fecha, Cliente|Teléfono, Barrio|Ciudad,
+                  // Dirección|Domiciliario, Referencia, Observaciones.
                   _EstadoDetalleBadge(p.estado),
                   const SizedBox(height: 10),
                   Wrap(spacing: 8, runSpacing: 8, children: [
-                    _DetalleRow('Cliente', p.clienteNombre),
                     if (p.creadoEn != null)
                       _DetalleRow('Fecha', DateFormat('dd/MM/yyyy HH:mm', 'es_CO').format(p.creadoEn!)),
+                    _DetalleRow('Cliente', p.clienteNombre),
                     _DetalleRow('Teléfono', p.clienteTelefono),
                     _DetalleRow('Pago', p.metodoPago),
+                    if (p.barrio != null && p.barrio!.isNotEmpty)
+                      _DetalleRow('Barrio', p.barrio),
+                    if (p.ciudad != null && p.ciudad!.isNotEmpty)
+                      _DetalleRow('Ciudad', p.ciudad),
+                    if (p.direccion != null && p.direccion!.isNotEmpty)
+                      _DetalleRow('Dirección', p.direccion),
                     if (p.nombreDomiciliario != null && p.nombreDomiciliario!.isNotEmpty)
                       _DetalleRow('Domiciliario', p.nombreDomiciliario),
-                    if (p.direccionCompleta.isNotEmpty)
-                      _DetalleRow('Dirección', p.direccionCompleta, full: true),
+                    if (p.referencia != null && p.referencia!.isNotEmpty)
+                      _DetalleRow('Referencia', p.referencia, full: true),
                   ]),
+                  // Observaciones y motivo de anulación -- van justo después
+                  // del bloque de info (igual React), antes de desglose/
+                  // comprobante/productos.
+                  if (p.observaciones != null && p.observaciones!.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF3C7),
+                        border: Border.all(color: const Color(0xFFFDE68A)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        const Text('Observaciones', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFB45309))),
+                        const SizedBox(height: 4),
+                        Text(p.observaciones!, style: const TextStyle(fontSize: 13, color: Color(0xFF92400E), fontStyle: FontStyle.italic)),
+                      ]),
+                    ),
+                  ],
+                  if (p.estado == 'anulado' && p.motivoAnulacion != null && p.motivoAnulacion!.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF5F5),
+                        border: Border.all(color: AppColors.error),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        const Text('Motivo de anulación',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.error)),
+                        const SizedBox(height: 4),
+                        Text(p.motivoAnulacion!,
+                            style: const TextStyle(fontSize: 13, color: AppColors.error, fontStyle: FontStyle.italic)),
+                      ]),
+                    ),
+                  ],
                   // Desglose mixto
                   if (p.metodoPago == 'mixto') ...[
                     const SizedBox(height: 8),
@@ -920,44 +965,6 @@ class _VentaDetalleScreenState extends State<_VentaDetalleScreen> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                  ],
-
-                  // Observaciones
-                  if (p.observaciones != null && p.observaciones!.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFEF3C7),
-                        border: Border.all(color: const Color(0xFFFDE68A)),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        const Text('Observaciones', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFB45309))),
-                        const SizedBox(height: 4),
-                        Text(p.observaciones!, style: const TextStyle(fontSize: 13, color: Color(0xFF92400E), fontStyle: FontStyle.italic)),
-                      ]),
-                    ),
-                  ],
-
-                  // Motivo anulación (igual React ModalDetalle)
-                  if (p.estado == 'anulado' && p.motivoAnulacion != null && p.motivoAnulacion!.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF5F5),
-                        border: Border.all(color: AppColors.error),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        const Text('Motivo de anulación',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.error)),
-                        const SizedBox(height: 4),
-                        Text(p.motivoAnulacion!,
-                            style: const TextStyle(fontSize: 13, color: AppColors.error, fontStyle: FontStyle.italic)),
-                      ]),
-                    ),
                   ],
 
                   const SizedBox(height: AppSizes.md),
@@ -1051,7 +1058,7 @@ class _VentaDetalleScreenState extends State<_VentaDetalleScreen> {
                           final tel = p.clienteTelefono!.replaceAll(RegExp(r'\D'), '');
                           final numero = tel.startsWith('57') ? tel : '57$tel';
                           final msg = Uri.encodeComponent(
-                            'Hola ${p.clienteNombre ?? ''}, tu pedido ${p.idFormateado} de ChocoFreseo ya está confirmado y en preparación 🍫🍦',
+                            'Hola ${p.clienteNombre ?? ''}, tu pedido ${p.idFormateado} de ChocoFreseo ya está confirmado y en preparación, en breves minutos será despachado hacia tu ubicación, por favor esté pendiente.\n\nCuando recibas tus productos, te invitamos a llenar este pequeño formulario, tu opinión es muy importante para nosotros:\nchocofreseo.com/#resenas',
                           );
                           final url = Uri.parse('https://wa.me/$numero?text=$msg');
                           if (await canLaunchUrl(url)) {
