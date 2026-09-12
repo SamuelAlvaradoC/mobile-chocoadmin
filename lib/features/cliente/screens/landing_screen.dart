@@ -997,11 +997,13 @@ class _CtaFinalState extends State<_CtaFinal> {
   String? _frecuencia;
   int _calAtencion = 0;
   int _calProducto = 0;
+  int _calFacilidad = 0;
   String? _recomendaria;
   String? _tiempoAdecuado;
   final _loQueGustoCtrl      = TextEditingController();
   final _productoDeseadoCtrl = TextEditingController();
   final _mejoraCtrl          = TextEditingController();
+  final _comentarioWebCtrl   = TextEditingController();
   bool _enviando = false;
   bool _enviado  = false;
   String? _error;
@@ -1011,12 +1013,13 @@ class _CtaFinalState extends State<_CtaFinal> {
     _loQueGustoCtrl.dispose();
     _productoDeseadoCtrl.dispose();
     _mejoraCtrl.dispose();
+    _comentarioWebCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _enviar() async {
     if (_sede == null || _frecuencia == null || _calAtencion == 0 ||
-        _calProducto == 0 || _recomendaria == null || _tiempoAdecuado == null) {
+        _calProducto == 0 || _calFacilidad == 0 || _recomendaria == null || _tiempoAdecuado == null) {
       setState(() => _error = 'Por favor completa todos los campos requeridos.');
       return;
     }
@@ -1030,11 +1033,13 @@ class _CtaFinalState extends State<_CtaFinal> {
           'frecuencia':            _frecuencia,
           'calificacion_atencion': _calAtencion,
           'calificacion_producto': _calProducto,
+          'calificacion_facilidad_pedido': _calFacilidad,
           'recomendaria':          _recomendaria,
           'tiempo_adecuado':       _tiempoAdecuado,
           'lo_que_gusto':          _loQueGustoCtrl.text.trim(),
           'producto_deseado':      _productoDeseadoCtrl.text.trim(),
           'mejora':                _mejoraCtrl.text.trim(),
+          'comentario_experiencia_web': _comentarioWebCtrl.text.trim(),
         }),
       );
       if (res.statusCode == 200 || res.statusCode == 201) {
@@ -1147,6 +1152,12 @@ class _CtaFinalState extends State<_CtaFinal> {
                 _StarRow(value: _calProducto, onChanged: (v) => setState(() => _calProducto = v)),
                 const SizedBox(height: 20),
 
+                // ¿Qué tan fácil fue hacer tu pedido?
+                _FormLabel('¿Qué tan fácil fue hacer tu pedido?'),
+                const SizedBox(height: 8),
+                _StarRow(value: _calFacilidad, onChanged: (v) => setState(() => _calFacilidad = v)),
+                const SizedBox(height: 20),
+
                 // Recomienda
                 _FormLabel('¿Nos recomendarías?'),
                 const SizedBox(height: 8),
@@ -1207,6 +1218,22 @@ class _CtaFinalState extends State<_CtaFinal> {
                   maxLines: 2,
                   decoration: InputDecoration(
                     hintText: 'Tu opinión nos ayuda a crecer...',
+                    hintStyle: GoogleFonts.nunito(fontSize: 13, color: const Color(0xFF999999)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE0E0E0))),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE0E0E0))),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.primary, width: 1.5)),
+                  ),
+                  style: GoogleFonts.nunito(fontSize: 14),
+                ),
+                const SizedBox(height: 16),
+                _FormLabel('Déjanos un comentario sobre tu experiencia en nuestra página web (opcional)'),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _comentarioWebCtrl,
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    hintText: 'Cuéntanos cómo fue navegar en nuestra web...',
                     hintStyle: GoogleFonts.nunito(fontSize: 13, color: const Color(0xFF999999)),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE0E0E0))),

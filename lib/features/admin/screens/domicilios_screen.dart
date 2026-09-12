@@ -167,7 +167,7 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
     final digits = (p.clienteTelefono ?? '').replaceAll(RegExp(r'\D'), '');
     final number = digits.startsWith('57') ? digits : '57$digits';
     final msg = Uri.encodeComponent(
-      'Hola ${p.clienteNombre ?? ''}, tu pedido #${p.id} de ChocoFreseo ya está confirmado y en preparación, en breves minutos será despachado hacia tu ubicación, por favor esté pendiente.\n\nCuando recibas tus productos, te invitamos a llenar este pequeño formulario, tu opinión es muy importante para nosotros:\nchocofreseo.com/#resenas',
+      'Hola ${p.clienteNombre ?? ''} 👋, tu pedido #${p.id} de ChocoFreseo ya está confirmado y en preparación 🍫, en pocos minutos será despachado hacia tu ubicación 🛵, te agradecemos estar atento/a para recibirlo.\n\nCuando recibas tus productos, te invitamos a llenar este pequeño formulario, tu opinión es muy importante para nosotros ⭐:\nchocofreseo.com/landing#reseñas',
     );
     return 'https://wa.me/$number?text=$msg';
   }

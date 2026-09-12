@@ -1058,7 +1058,7 @@ class _VentaDetalleScreenState extends State<_VentaDetalleScreen> {
                           final tel = p.clienteTelefono!.replaceAll(RegExp(r'\D'), '');
                           final numero = tel.startsWith('57') ? tel : '57$tel';
                           final msg = Uri.encodeComponent(
-                            'Hola ${p.clienteNombre ?? ''}, tu pedido ${p.idFormateado} de ChocoFreseo ya está confirmado y en preparación, en breves minutos será despachado hacia tu ubicación, por favor esté pendiente.\n\nCuando recibas tus productos, te invitamos a llenar este pequeño formulario, tu opinión es muy importante para nosotros:\nchocofreseo.com/#resenas',
+                            'Hola ${p.clienteNombre ?? ''} 👋, tu pedido ${p.idFormateado} de ChocoFreseo ya está confirmado y en preparación 🍫, en pocos minutos será despachado hacia tu ubicación 🛵, te agradecemos estar atento/a para recibirlo.\n\nCuando recibas tus productos, te invitamos a llenar este pequeño formulario, tu opinión es muy importante para nosotros ⭐:\nchocofreseo.com/landing#reseñas',
                           );
                           final url = Uri.parse('https://wa.me/$numero?text=$msg');
                           if (await canLaunchUrl(url)) {
