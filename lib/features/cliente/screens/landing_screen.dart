@@ -997,7 +997,7 @@ class _CtaFinalState extends State<_CtaFinal> {
   String? _frecuencia;
   int _calAtencion = 0;
   int _calProducto = 0;
-  int _calFacilidad = 0;
+  String? _facilidadPedido;
   String? _recomendaria;
   String? _tiempoAdecuado;
   final _loQueGustoCtrl      = TextEditingController();
@@ -1019,7 +1019,7 @@ class _CtaFinalState extends State<_CtaFinal> {
 
   Future<void> _enviar() async {
     if (_sede == null || _frecuencia == null || _calAtencion == 0 ||
-        _calProducto == 0 || _calFacilidad == 0 || _recomendaria == null || _tiempoAdecuado == null) {
+        _calProducto == 0 || _facilidadPedido == null || _recomendaria == null || _tiempoAdecuado == null) {
       setState(() => _error = 'Por favor completa todos los campos requeridos.');
       return;
     }
@@ -1033,7 +1033,7 @@ class _CtaFinalState extends State<_CtaFinal> {
           'frecuencia':            _frecuencia,
           'calificacion_atencion': _calAtencion,
           'calificacion_producto': _calProducto,
-          'calificacion_facilidad_pedido': _calFacilidad,
+          'calificacion_facilidad_pedido': _facilidadPedido,
           'recomendaria':          _recomendaria,
           'tiempo_adecuado':       _tiempoAdecuado,
           'lo_que_gusto':          _loQueGustoCtrl.text.trim(),
@@ -1152,12 +1152,6 @@ class _CtaFinalState extends State<_CtaFinal> {
                 _StarRow(value: _calProducto, onChanged: (v) => setState(() => _calProducto = v)),
                 const SizedBox(height: 20),
 
-                // ¿Qué tan fácil fue hacer tu pedido?
-                _FormLabel('¿Qué tan fácil fue hacer tu pedido?'),
-                const SizedBox(height: 8),
-                _StarRow(value: _calFacilidad, onChanged: (v) => setState(() => _calFacilidad = v)),
-                const SizedBox(height: 20),
-
                 // Recomienda
                 _FormLabel('¿Nos recomendarías?'),
                 const SizedBox(height: 8),
@@ -1175,6 +1169,16 @@ class _CtaFinalState extends State<_CtaFinal> {
                   _ChipOpt(label: 'Sí',             selected: _tiempoAdecuado == 'si',             onTap: () => setState(() => _tiempoAdecuado = 'si')),
                   _ChipOpt(label: 'Podría mejorar', selected: _tiempoAdecuado == 'podria_mejorar', onTap: () => setState(() => _tiempoAdecuado = 'podria_mejorar')),
                   _ChipOpt(label: 'No',             selected: _tiempoAdecuado == 'no',             onTap: () => setState(() => _tiempoAdecuado = 'no')),
+                ]),
+                const SizedBox(height: 20),
+
+                // ¿Qué tan fácil fue hacer tu pedido desde nuestra web?
+                _FormLabel('¿Qué tan fácil fue hacer tu pedido desde nuestra web?'),
+                const SizedBox(height: 8),
+                Wrap(spacing: 8, children: [
+                  _ChipOpt(label: 'Muy fácil',    selected: _facilidadPedido == 'muy_facil',    onTap: () => setState(() => _facilidadPedido = 'muy_facil')),
+                  _ChipOpt(label: 'Algo confuso', selected: _facilidadPedido == 'algo_confuso', onTap: () => setState(() => _facilidadPedido = 'algo_confuso')),
+                  _ChipOpt(label: 'Difícil',      selected: _facilidadPedido == 'dificil',      onTap: () => setState(() => _facilidadPedido = 'dificil')),
                 ]),
                 const SizedBox(height: 20),
 
