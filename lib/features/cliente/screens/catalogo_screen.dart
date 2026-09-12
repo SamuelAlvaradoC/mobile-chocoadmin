@@ -16,6 +16,7 @@ import '../../../core/constants/app_config.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/services/api_service.dart';
 import '../../../shared/layouts/client_bottom_nav.dart';
+import '../../../shared/utils/refetch_on_resume.dart';
 import '../../../core/models/producto.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../providers/catalogo_provider.dart';
@@ -47,6 +48,8 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
   dynamic _horaCierre;
   int _tiempoEspera = 30;
 
+  late final RefetchOnResume _refetchOnResume;
+
   @override
   void initState() {
     super.initState();
@@ -55,11 +58,13 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
       _fetchEstadoTienda();
       _fetchTiempoEspera();
     });
+    _refetchOnResume = RefetchOnResume(callback: _refrescar);
   }
 
   @override
   void dispose() {
     _busquedaCtrl.dispose();
+    _refetchOnResume.dispose();
     super.dispose();
   }
 

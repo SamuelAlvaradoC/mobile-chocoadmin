@@ -7,6 +7,7 @@ import '../../../core/constants/app_sizes.dart';
 import '../../../core/services/api_service.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../shared/layouts/admin_layout.dart';
+import '../../../shared/utils/refetch_on_resume.dart';
 import '../widgets/cierre_caja_card.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -48,12 +49,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
       NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
   final _fmtFechaDisplay = DateFormat("EEEE d 'de' MMMM", 'es_CO');
 
+  late final RefetchOnResume _refetchOnResume;
+
   @override
   void initState() {
     super.initState();
     _filtroFecha = DateFormat('yyyy-MM-dd').format(DateTime.now().toUtc().subtract(const Duration(hours: 5)));
     _cargar();
     _cargarConfiguracion();
+    _refetchOnResume = RefetchOnResume(callback: _cargar);
+  }
+
+  @override
+  void dispose() {
+    _refetchOnResume.dispose();
+    super.dispose();
   }
 
   Future<void> _cargar() async {
@@ -202,7 +212,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       // ── Selector de fecha ──────────────────────────────────
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                         decoration: BoxDecoration(
                           color: AppColors.surface,
                           borderRadius: BorderRadius.circular(10),

@@ -19,6 +19,7 @@ import '../../../core/utils/validar_sin_html.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../features/cliente/providers/catalogo_provider.dart';
 import '../../../features/cliente/widgets/toppings_modal.dart';
+import '../../../shared/utils/refetch_on_resume.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/colombia_location_picker.dart';
 import '../../../shared/widgets/paginacion.dart';
@@ -336,17 +337,21 @@ class _AdminPedidosScreenState extends State<AdminPedidosScreen> {
 
   final _fmtFechaDisplay = DateFormat("EEEE d 'de' MMMM", 'es_CO');
 
+  late final RefetchOnResume _refetchOnResume;
+
   @override
   void initState() {
     super.initState();
     _filtroFecha = DateFormat('yyyy-MM-dd').format(DateTime.now().toUtc().subtract(const Duration(hours: 5)));
     _cargar();
     widget.onReady?.call(_cargar);
+    _refetchOnResume = RefetchOnResume(callback: _cargar);
   }
 
   @override
   void dispose() {
     _busquedaCtrl.dispose();
+    _refetchOnResume.dispose();
     super.dispose();
   }
 
