@@ -1285,11 +1285,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           errorWidget: (_, __, ___) => Container(width: 44, height: 44, decoration: const BoxDecoration(color: Color(0xFF3D1D89), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('N', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white))),
                         ),
                         const SizedBox(height: 6),
-                        const Text('009181338', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 2)),
+                        const Text('0091813388', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 2)),
                         const Text('Llave Nequi', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                         const SizedBox(height: 8),
                         GestureDetector(
-                          onTap: () => _copiar('009181338', 'Llave copiada'),
+                          onTap: () => _copiar('0091813388', 'Llave copiada'),
                           child: Container(
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(vertical: 6),
