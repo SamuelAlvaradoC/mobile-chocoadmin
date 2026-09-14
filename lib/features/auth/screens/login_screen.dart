@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/utils/debouncer.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -19,6 +20,15 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailCtrl  = TextEditingController();
   final _passCtrl   = TextEditingController();
 
+  final _emailFocus = FocusNode();
+  final _passFocus  = FocusNode();
+
+  // Un debounce por campo -- valida 400ms después de dejar de escribir
+  // (mismo criterio que Registro/React). _validarEmail/_validarPassword ya
+  // existían, solo se llamaban al enviar -- ahora también en tiempo real.
+  final _emailDebounce = Debouncer();
+  final _passDebounce  = Debouncer();
+
   String? _emailError;
   String? _passError;
   String? _generalError;
@@ -27,19 +37,40 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePass = true;
 
   @override
+  void initState() {
+    super.initState();
+    _emailFocus.addListener(() {
+      if (!_emailFocus.hasFocus) _validarEmail(_emailCtrl.text);
+    });
+    _passFocus.addListener(() {
+      if (!_passFocus.hasFocus) _validarPassword(_passCtrl.text);
+    });
+  }
+
+  @override
   void dispose() {
     _emailCtrl.dispose();
     _passCtrl.dispose();
+    _emailFocus.dispose();
+    _passFocus.dispose();
+    _emailDebounce.dispose();
+    _passDebounce.dispose();
     super.dispose();
   }
 
+  // Mismo regex estándar (WHATWG/HTML5) que Registro -- ver el comentario
+  // ahí sobre por qué sigue aceptando dominios de 1 caracter.
+  static final _emailRegex = RegExp(
+    r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$",
+  );
+
   bool _validarEmail(String email) {
-    if (email.isEmpty) {
+    final e = email.trim();
+    if (e.isEmpty) {
       setState(() => _emailError = 'Ingresa tu correo electrónico');
       return false;
     }
-    final regex = RegExp(r'^[\w\.-]+@[\w\.-]+\.\w{2,}$');
-    if (!regex.hasMatch(email)) {
+    if (!_emailRegex.hasMatch(e)) {
       setState(() => _emailError = 'El correo no tiene un formato válido\nEjemplo: usuario@gmail.com');
       return false;
     }
@@ -210,7 +241,11 @@ class _LoginScreenState extends State<LoginScreen> {
     _lbl('Correo electrónico'),
     _inputField(controller: _emailCtrl, hint: 'correo@ejemplo.com',
         type: TextInputType.emailAddress, error: _emailError,
-        onChanged: (_) => setState(() => _emailError = null)),
+        focusNode: _emailFocus,
+        onChanged: (v) {
+          setState(() => _emailError = null);
+          _emailDebounce.run(() => _validarEmail(v));
+        }),
     const SizedBox(height: 20),
 
     Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -274,9 +309,10 @@ class _LoginScreenState extends State<LoginScreen> {
     TextInputType type = TextInputType.text,
     String? error,
     ValueChanged<String>? onChanged,
+    FocusNode? focusNode,
   }) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
     TextField(
-      controller: controller, keyboardType: type, onChanged: onChanged,
+      controller: controller, keyboardType: type, onChanged: onChanged, focusNode: focusNode,
       style: GoogleFonts.nunito(fontSize: 14, color: const Color(0xFF1a1a1a)),
       decoration: _inputDec(hint, hasError: error != null),
     ),
@@ -292,8 +328,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _passInput() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
     TextField(
-      controller: _passCtrl, obscureText: _obscurePass,
-      onChanged: (_) => setState(() => _passError = null),
+      controller: _passCtrl, obscureText: _obscurePass, focusNode: _passFocus,
+      onChanged: (v) {
+        setState(() => _passError = null);
+        _passDebounce.run(() => _validarPassword(v));
+      },
       style: GoogleFonts.nunito(fontSize: 14, color: const Color(0xFF1a1a1a)),
       decoration: _inputDec('••••••••', hasError: _passError != null).copyWith(
         suffixIcon: IconButton(

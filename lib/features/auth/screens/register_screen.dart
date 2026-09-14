@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
-import '../../../core/utils/validar_sin_html.dart';
+import '../../../core/utils/debouncer.dart';
 import '../providers/auth_provider.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -21,6 +21,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passCtrl    = TextEditingController();
   final _confirmCtrl = TextEditingController();
 
+  final _nombreFocus  = FocusNode();
+  final _emailFocus   = FocusNode();
+  final _passFocus    = FocusNode();
+  final _confirmFocus = FocusNode();
+
+  // Un debounce por campo -- cada uno valida 400ms después de que el
+  // usuario deja de escribir EN ESE campo (mismo criterio que React).
+  final _nombreDebounce  = Debouncer();
+  final _emailDebounce   = Debouncer();
+  final _passDebounce    = Debouncer();
+  final _confirmDebounce = Debouncer();
+
   String? _nombreError;
   String? _emailError;
   String? _passError;
@@ -32,38 +44,82 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscureConf = true;
 
   @override
+  void initState() {
+    super.initState();
+    // Además del debounce, validar de inmediato al perder el foco -- para
+    // que el error aparezca ya si el usuario pasa rápido al siguiente
+    // campo sin esperar los 400ms.
+    _nombreFocus.addListener(() {
+      if (!_nombreFocus.hasFocus) _validarNombre(_nombreCtrl.text);
+    });
+    _emailFocus.addListener(() {
+      if (!_emailFocus.hasFocus) _validarEmail(_emailCtrl.text);
+    });
+    _passFocus.addListener(() {
+      if (!_passFocus.hasFocus) {
+        _validarPassword(_passCtrl.text);
+        if (_confirmCtrl.text.isNotEmpty) _validarConfirm(_passCtrl.text, _confirmCtrl.text);
+      }
+    });
+    _confirmFocus.addListener(() {
+      if (!_confirmFocus.hasFocus) _validarConfirm(_passCtrl.text, _confirmCtrl.text);
+    });
+  }
+
+  @override
   void dispose() {
     _nombreCtrl.dispose();
     _emailCtrl.dispose();
     _passCtrl.dispose();
     _confirmCtrl.dispose();
+    _nombreFocus.dispose();
+    _emailFocus.dispose();
+    _passFocus.dispose();
+    _confirmFocus.dispose();
+    _nombreDebounce.dispose();
+    _emailDebounce.dispose();
+    _passDebounce.dispose();
+    _confirmDebounce.dispose();
     super.dispose();
   }
 
+  // Una cadena que solo tenga letras/espacios/tildes nunca puede contener
+  // una etiqueta HTML, así que ese chequeo (contieneEtiquetaHtml) queda
+  // cubierto por esta regla -- no hace falta repetirlo.
   bool _validarNombre(String nombre) {
-    if (nombre.isEmpty) {
+    final n = nombre.trim();
+    if (n.isEmpty) {
       setState(() => _nombreError = 'Ingresa tu nombre completo');
       return false;
     }
-    if (nombre.length < 2) {
-      setState(() => _nombreError = 'El nombre debe tener al menos 2 caracteres');
+    if (n.length < 3) {
+      setState(() => _nombreError = 'El nombre debe tener al menos 3 caracteres');
       return false;
     }
-    if (contieneEtiquetaHtml(nombre)) {
-      setState(() => _nombreError = mensajeHtml);
+    if (!RegExp(r'^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]+$').hasMatch(n)) {
+      setState(() => _nombreError = 'El nombre solo puede contener letras y espacios');
       return false;
     }
     setState(() => _nombreError = null);
     return true;
   }
 
+  // Mismo regex estándar (WHATWG/HTML5) que en React -- más estricto que el
+  // anterior (\w+@\w+\.\w{2,}), pero sigue aceptando dominios con una
+  // etiqueta de 1 caracter (ej. samuel@M.gamil.com) por ser sintácticamente
+  // válidos -- no hay forma de detectar ese typo sin una lista de dominios
+  // conocidos.
+  static final _emailRegex = RegExp(
+    r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$",
+  );
+
   bool _validarEmail(String email) {
-    if (email.isEmpty) {
+    final e = email.trim();
+    if (e.isEmpty) {
       setState(() => _emailError = 'Ingresa tu correo electrónico');
       return false;
     }
-    final regex = RegExp(r'^[\w\.-]+@[\w\.-]+\.\w{2,}$');
-    if (!regex.hasMatch(email)) {
+    if (!_emailRegex.hasMatch(e)) {
       setState(() => _emailError = 'El correo no tiene un formato válido\nEjemplo: usuario@gmail.com');
       return false;
     }
@@ -226,25 +282,42 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     _lbl('Nombre completo'),
     _inputField(controller: _nombreCtrl, hint: 'Ej: Ana Gómez', error: _nombreError,
-        onChanged: (_) => setState(() => _nombreError = null)),
+        focusNode: _nombreFocus,
+        onChanged: (v) {
+          setState(() => _nombreError = null);
+          _nombreDebounce.run(() => _validarNombre(v));
+        }),
     const SizedBox(height: 20),
 
     _lbl('Correo electrónico'),
     _inputField(controller: _emailCtrl, hint: 'correo@ejemplo.com',
         type: TextInputType.emailAddress, error: _emailError,
-        onChanged: (_) => setState(() => _emailError = null)),
+        focusNode: _emailFocus,
+        onChanged: (v) {
+          setState(() => _emailError = null);
+          _emailDebounce.run(() => _validarEmail(v));
+        }),
     const SizedBox(height: 20),
 
     _lbl('Contraseña'),
     _passField(_passCtrl, 'Mínimo 8 caracteres', _obscurePass, _passError,
         () => setState(() => _obscurePass = !_obscurePass),
-        (_) => setState(() => _passError = null)),
+        (v) {
+          setState(() => _passError = null);
+          _passDebounce.run(() {
+            _validarPassword(v);
+            if (_confirmCtrl.text.isNotEmpty) _validarConfirm(v, _confirmCtrl.text);
+          });
+        }, focusNode: _passFocus),
     const SizedBox(height: 20),
 
     _lbl('Confirmar contraseña'),
     _passField(_confirmCtrl, 'Repite tu contraseña', _obscureConf, _confirmError,
         () => setState(() => _obscureConf = !_obscureConf),
-        (_) => setState(() => _confirmError = null)),
+        (v) {
+          setState(() => _confirmError = null);
+          _confirmDebounce.run(() => _validarConfirm(_passCtrl.text, v));
+        }, focusNode: _confirmFocus),
 
     if (_generalError != null) ...[const SizedBox(height: 16), _err(_generalError!)],
     const SizedBox(height: 20),
@@ -288,9 +361,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     TextInputType type = TextInputType.text,
     String? error,
     ValueChanged<String>? onChanged,
+    FocusNode? focusNode,
   }) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
     TextField(
-      controller: controller, keyboardType: type, onChanged: onChanged,
+      controller: controller, keyboardType: type, onChanged: onChanged, focusNode: focusNode,
       style: GoogleFonts.nunito(fontSize: 14, color: const Color(0xFF1a1a1a)),
       decoration: _inputDec(hint, hasError: error != null),
     ),
@@ -305,10 +379,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   ]);
 
   Widget _passField(TextEditingController c, String hint, bool obscure, String? error,
-      VoidCallback toggle, ValueChanged<String> onChanged) =>
+      VoidCallback toggle, ValueChanged<String> onChanged, {FocusNode? focusNode}) =>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
     TextField(
-      controller: c, obscureText: obscure, onChanged: onChanged,
+      controller: c, obscureText: obscure, onChanged: onChanged, focusNode: focusNode,
       style: GoogleFonts.nunito(fontSize: 14, color: const Color(0xFF1a1a1a)),
       decoration: _inputDec(hint, hasError: error != null).copyWith(
         suffixIcon: IconButton(
