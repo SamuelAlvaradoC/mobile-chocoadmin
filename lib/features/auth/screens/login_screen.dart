@@ -78,8 +78,10 @@ class _LoginScreenState extends State<LoginScreen> {
     return true;
   }
 
+  // .trim() solo decide "¿está vacía?" -- ver el mismo comentario en
+  // register_screen.dart. El valor real de la contraseña nunca se recorta.
   bool _validarPassword(String pass) {
-    if (pass.isEmpty) {
+    if (pass.trim().isEmpty) {
       setState(() => _passError = 'Ingresa tu contraseña');
       return false;
     }
@@ -107,7 +109,9 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleLogin() async {
     setState(() { _generalError = null; _emailError = null; _passError = null; });
     final email = _emailCtrl.text.trim();
-    final pass  = _passCtrl.text.trim();
+    // La contraseña nunca se recorta al enviarla -- mismo criterio que
+    // register_screen.dart.
+    final pass  = _passCtrl.text;
     final emailOk = _validarEmail(email);
     final passOk  = _validarPassword(pass);
     if (!emailOk || !passOk) return;

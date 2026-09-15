@@ -127,8 +127,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return true;
   }
 
+  // .trim() solo se usa para decidir "¿está vacía?" -- el valor comparado
+  // contra la longitud/coincidencia sigue siendo el crudo, igual que React
+  // (validarContrasena/validarConfirmar), para que un espacio de puro
+  // relleno se detecte en tiempo real igual que al presionar enviar.
   bool _validarPassword(String pass) {
-    if (pass.isEmpty) {
+    if (pass.trim().isEmpty) {
       setState(() => _passError = 'Ingresa una contraseña');
       return false;
     }
@@ -141,7 +145,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   bool _validarConfirm(String pass, String confirm) {
-    if (confirm.isEmpty) {
+    if (confirm.trim().isEmpty) {
       setState(() => _confirmError = 'Repite tu contraseña');
       return false;
     }
@@ -168,8 +172,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() { _generalError = null; _nombreError = null; _emailError = null; _passError = null; _confirmError = null; });
     final n = _nombreCtrl.text.trim();
     final e = _emailCtrl.text.trim();
-    final p = _passCtrl.text.trim();
-    final c = _confirmCtrl.text.trim();
+    // La contraseña NUNCA se recorta -- un espacio al inicio/final es parte
+    // válida de una contraseña real (algunos gestores de contraseñas lo
+    // respetan). trim() solo se usa DENTRO de los validadores para decidir
+    // si está vacía, nunca sobre el valor que se envía o se guarda.
+    final p = _passCtrl.text;
+    final c = _confirmCtrl.text;
     final nombreOk  = _validarNombre(n);
     final emailOk   = _validarEmail(e);
     final passOk    = _validarPassword(p);
