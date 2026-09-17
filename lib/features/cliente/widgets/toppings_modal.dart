@@ -897,7 +897,7 @@ class _ToppingsModalState extends State<ToppingsModal> {
                           maxLines: 2,
                           onChanged: (_) => setState(() => _errorObservacion = null),
                           decoration: InputDecoration(
-                            hintText: 'Ej: sin azúcar, extra caliente...',
+                            hintText: 'Ej: poco arequipe, sin mermelada...',
                             isDense: true,
                             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: _errorObservacion != null ? const Color(0xFFF87171) : const Color(0xFFE5E7EB))),
@@ -943,7 +943,7 @@ class _ToppingsModalState extends State<ToppingsModal> {
                 autofocus: true,
                 onChanged: (_) => setState(() => _errorObservacion = null),
                 decoration: InputDecoration(
-                  hintText: 'Ej: sin azúcar, extra caliente...',
+                  hintText: 'Ej: poco arequipe, sin mermelada...',
                   contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _errorObservacion != null ? const Color(0xFFF87171) : const Color(0xFFE5E7EB))),
                   enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _errorObservacion != null ? const Color(0xFFF87171) : const Color(0xFFE5E7EB))),
