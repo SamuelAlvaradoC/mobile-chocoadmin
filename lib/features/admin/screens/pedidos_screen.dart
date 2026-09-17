@@ -2268,6 +2268,12 @@ class _CrearVentaScreenState extends State<_CrearVentaScreen> {
   final _efMixtoCtrl = TextEditingController();
   final _trMixtoCtrl = TextEditingController();
   final _observacionesCtrl = TextEditingController();
+  // null = todavía no responde -- sin default: cuando aplica, es obligatorio
+  // elegir Sí o No para poder crear la venta (mismo criterio que el checkout
+  // del cliente).
+  bool? _aguaCortesia;
+  bool get _mostrarPreguntaAgua =>
+      _carritoItems.any((i) => !RegExp('frapp', caseSensitive: false).hasMatch(i.nombre));
 
   // Puntos fidelidad (igual React Ventas.jsx paso 3)
   int  _puntosCliente = 0;
@@ -2484,6 +2490,16 @@ class _CrearVentaScreenState extends State<_CrearVentaScreen> {
         return;
       }
 
+      if (_mostrarPreguntaAgua && _aguaCortesia == null) {
+        if (mounted) {
+          setState(() {
+            _errorCrear = 'Indica si el cliente desea agua de cortesía para continuar';
+            _guardando = false;
+          });
+        }
+        return;
+      }
+
       final totalFinal = _totalCarrito + _costoDomicilio - _descuentoPuntos;
       final body = <String, dynamic>{
         'id_cliente': _clienteId,
@@ -2492,6 +2508,7 @@ class _CrearVentaScreenState extends State<_CrearVentaScreen> {
         'items': items,
         'puntos_usados': _usarPuntos ? _puntosAplicarEfectivo : 0,
         'metodo_pago': _metodoPago,
+        'agua_cortesia': _mostrarPreguntaAgua && (_aguaCortesia ?? false),
       };
       // Payment amounts — match React crearVenta payload
       if (_metodoPago == 'efectivo') {
@@ -3687,6 +3704,34 @@ class _CrearVentaScreenState extends State<_CrearVentaScreen> {
               ),
             ]);
           }),
+        ],
+
+        // ── Agua de cortesía -- obligatorio responder cuando aplica ──────────
+        if (_mostrarPreguntaAgua) ...[
+          const SizedBox(height: 12),
+          const Text('¿Desea agua de cortesía?',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+          const SizedBox(height: 6),
+          Row(children: [
+            for (final op in [(true, 'Sí'), (false, 'No')]) ...[
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _aguaCortesia = op.$1),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: _aguaCortesia == op.$1 ? AppColors.primary : AppColors.border, width: _aguaCortesia == op.$1 ? 2 : 1),
+                      color: _aguaCortesia == op.$1 ? AppColors.primary.withValues(alpha: 0.05) : Colors.white,
+                    ),
+                    child: Text(op.$2, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: _aguaCortesia == op.$1 ? AppColors.primary : const Color(0xFF555555))),
+                  ),
+                ),
+              ),
+              if (op.$1) const SizedBox(width: 8),
+            ],
+          ]),
         ],
 
         // ── Observaciones (igual React paso 3) ───────────────────────────────

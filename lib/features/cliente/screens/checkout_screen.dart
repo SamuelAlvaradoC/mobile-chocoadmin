@@ -108,7 +108,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _observacionesCtrl = TextEditingController();
 
   // ── Agua de cortesía ────────────────────────────────────
-  bool _aguaCortesia = false;
+  // null = todavía no responde -- sin default: cuando aplica, es obligatorio
+  // elegir Sí o No para poder confirmar el pedido (igual que en web).
+  bool? _aguaCortesia;
 
   final _fmt = NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
 
@@ -300,6 +302,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
 
     final carrito = context.read<CarritoProvider>();
+
+    // Agua de cortesía: obligatorio responder cuando la pregunta aplica
+    // (mismo criterio de visibilidad que el bloque de UI más abajo).
+    final mostrarPreguntaAguaCheck = carrito.items.any((i) => !RegExp('frapp', caseSensitive: false).hasMatch(i.producto.nombre));
+    if (mostrarPreguntaAguaCheck && _aguaCortesia == null) {
+      setState(() => _errorEnvio = 'Indica si deseas agua de cortesía para continuar');
+      return;
+    }
     final descuentoSend = _puntosUsados * _valorPorPunto;
     final totalSend = (carrito.total - descuentoSend + _costoDomicilio).clamp(0.0, double.infinity);
 
@@ -348,7 +358,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         'monto_efectivo': montoEf,
         'monto_transferencia': montoTr,
         'puntos_a_usar': _puntosUsados,
-        'agua_cortesia': mostrarPreguntaAgua && _aguaCortesia,
+        'agua_cortesia': mostrarPreguntaAgua && (_aguaCortesia ?? false),
         'items': items,
         if (_comprobanteUrl != null && _comprobanteUrl!.isNotEmpty)
           'comprobante_url': _comprobanteUrl,
