@@ -18,18 +18,41 @@ import 'package:go_router/go_router.dart';
 class RootShellScaffold extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
   final Widget Function(StatefulNavigationShell shell) bottomNavBuilder;
+  final Widget? floatingActionButton;
+  /// Franja opcional fija arriba de todos los tabs (ej. ResenaPendienteBanner
+  /// en el shell Cliente). Se reserva su altura real -- envuelta en
+  /// SafeArea propia -- y se le quita el padding superior de MediaQuery al
+  /// navigationShell para que el AppBar de cada branch no vuelva a sumar el
+  /// alto de la status bar por su cuenta (quedaría un doble espacio).
+  final Widget? banner;
 
   const RootShellScaffold({
     super.key,
     required this.navigationShell,
     required this.bottomNavBuilder,
+    this.floatingActionButton,
+    this.banner,
   });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: navigationShell,
+      body: banner == null
+          ? navigationShell
+          : Column(
+              children: [
+                SafeArea(bottom: false, child: banner!),
+                Expanded(
+                  child: MediaQuery.removePadding(
+                    context: context,
+                    removeTop: true,
+                    child: navigationShell,
+                  ),
+                ),
+              ],
+            ),
       bottomNavigationBar: bottomNavBuilder(navigationShell),
+      floatingActionButton: floatingActionButton,
     );
   }
 }

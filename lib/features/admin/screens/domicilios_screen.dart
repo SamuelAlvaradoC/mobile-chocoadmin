@@ -634,7 +634,7 @@ class _DomicilioCard extends StatelessWidget {
                             border: Border.all(color: AppColors.border),
                           ),
                           child: Text(
-                            '${l.cantidad}x ${l.nombreProducto}',
+                            '${l.cantidad}x ${l.nombreCompleto}',
                             style: const TextStyle(
                                 fontSize: 11,
                                 color: AppColors.textSecondary),
@@ -1027,6 +1027,24 @@ class _DetalleAdminModalState extends State<_DetalleAdminModal> {
                       value: pedido.referencia?.isNotEmpty == true
                           ? pedido.referencia
                           : null),
+                  // Agua de cortesía
+                  if (pedido.aguaCortesia) ...[
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        border: Border.all(color: const Color(0xFFBFDBFE)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text('💧 Incluir agua de cortesía',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF1D4ED8),
+                              fontWeight: FontWeight.w700)),
+                    ),
+                  ],
+
                   // Observaciones en info cliente
                   if (pedido.observaciones != null &&
                       pedido.observaciones!.isNotEmpty) ...[
@@ -1083,7 +1101,7 @@ class _DetalleAdminModalState extends State<_DetalleAdminModal> {
                                 children: [
                                   Expanded(
                                       child: Text(
-                                          '${l.cantidad}x ${l.nombreProducto}',
+                                          '${l.cantidad}x ${l.nombreCompleto}',
                                           style: const TextStyle(
                                               fontSize: 13,
                                               fontWeight:
@@ -1138,6 +1156,11 @@ class _DetalleAdminModalState extends State<_DetalleAdminModal> {
                                             fg: Colors.white,
                                           )),
                                     ]),
+                              ],
+                              if (l.observacion != null && l.observacion!.isNotEmpty) ...[
+                                const SizedBox(height: 5),
+                                Text('📝 ${l.observacion}',
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
                               ],
                             ]),
                       );

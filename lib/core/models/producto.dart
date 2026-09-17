@@ -7,6 +7,7 @@ class Producto {
   final int maxToppings;
   final bool permiteSalsas;
   final bool permiteChocolate;
+  final bool permiteFrutas;
   final bool esBowl;
   final int? idCategoria;
   final String? imagen;
@@ -21,6 +22,7 @@ class Producto {
     this.maxToppings = 0,
     this.permiteSalsas = false,
     this.permiteChocolate = false,
+    this.permiteFrutas = false,
     this.esBowl = false,
     this.idCategoria,
     this.imagen,
@@ -39,6 +41,8 @@ class Producto {
             json['permite_salsas'] == 1 || json['permite_salsas'] == true,
         permiteChocolate:
             json['permite_chocolate'] == 1 || json['permite_chocolate'] == true,
+        permiteFrutas:
+            json['permite_frutas'] == 1 || json['permite_frutas'] == true,
         esBowl: json['es_bowl'] == 1 || json['es_bowl'] == true,
         idCategoria: json['id_categoria'],
         imagen: json['img'] ?? json['imagen'] ?? json['foto'],

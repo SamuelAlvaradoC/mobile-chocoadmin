@@ -21,6 +21,7 @@ import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/colombia_location_picker.dart';
 import '../../../shared/widgets/double_back_to_exit.dart' show CheckoutBackController;
+import '../../../shared/widgets/whatsapp_fab.dart';
 import '../providers/carrito_provider.dart';
 
 // Pago mixto (igual React handleEfectivoMixto/handleTransferMixto): al
@@ -81,6 +82,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   String _metodoPago = 'efectivo';
   double? _montoEfectivo;
   double? _montoTransferencia;
+  bool _datafonoHabilitado = false;
   final _efectivoCtrl = TextEditingController();
   final _transferenciaCtrl = TextEditingController();
   // Comprobante de pago (transferencia / mixto)
@@ -105,6 +107,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   // ── Observaciones ──────────────────────────────────────
   final _observacionesCtrl = TextEditingController();
 
+  // ── Agua de cortesía ────────────────────────────────────
+  bool _aguaCortesia = false;
+
   final _fmt = NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
 
   @override
@@ -121,6 +126,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       _cargarPerfil();
     });
     _cargarValorPunto();
+    _cargarDatafono();
   }
 
   Future<void> _cargarValorPunto() async {
@@ -129,6 +135,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       final inner = data is Map && data['data'] is Map ? data['data'] as Map : (data is Map ? data : <String, dynamic>{});
       final valor = double.tryParse(inner['valor_punto_pesos']?.toString() ?? '');
       if (valor != null && mounted) setState(() => _valorPorPunto = valor);
+    } catch (_) {}
+  }
+
+  Future<void> _cargarDatafono() async {
+    try {
+      final data = await ApiService.get('/api/configuracion/datafono');
+      final inner = data is Map && data['data'] is Map ? data['data'] as Map : (data is Map ? data : <String, dynamic>{});
+      if (mounted) setState(() => _datafonoHabilitado = inner['habilitado'] == true);
     } catch (_) {}
   }
 
@@ -322,15 +336,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 'adiciones': item.adiciones.map((a) => {'id_adicion': a.id, 'cantidad': 1}).toList(),
                 'salsas': item.salsas.map((s) => s['id'] ?? s['nombre']).toList(),
                 'chocolate': item.tipoChocolate,
+                'frutas': item.tipoFrutas,
+                'observacion': item.observacion,
               })
           .toList();
 
+      final mostrarPreguntaAgua = carrito.items.any((i) => !RegExp('frapp', caseSensitive: false).hasMatch(i.producto.nombre));
       final body = <String, dynamic>{
         'costo_domicilio': _costoDomicilio.round(),
         'metodo_pago': _metodoPago,
         'monto_efectivo': montoEf,
         'monto_transferencia': montoTr,
         'puntos_a_usar': _puntosUsados,
+        'agua_cortesia': mostrarPreguntaAgua && _aguaCortesia,
         'items': items,
         if (_comprobanteUrl != null && _comprobanteUrl!.isNotEmpty)
           'comprobante_url': _comprobanteUrl,
@@ -408,6 +426,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       return Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new_rounded), onPressed: () => context.go('/catalogo'))),
+        floatingActionButton: const WhatsAppFab(),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(32),
@@ -441,6 +460,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           onPressed: _handleBack,
         ),
       ),
+      floatingActionButton: const WhatsAppFab(),
       body: Column(
         children: [
           _buildIndicadorPasos(),
@@ -892,6 +912,27 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
         ],
 
+        // 5b. Monto pre-llenado datafono (readonly, igual React)
+        if (_metodoPago == 'datafono') ...[
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9FAFB),
+              borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                const Expanded(child: Text('Monto con datafono (total pre-llenado)',
+                    style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w600, fontSize: 13))),
+                const SizedBox(width: 12),
+                Text(_fmt.format(totalConDescuento), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+              ],
+            ),
+          ),
+        ],
+
         // 6. Transferencia: monto readonly + comprobante
         if (_metodoPago == 'transferencia') ...[
           const SizedBox(height: 16),
@@ -920,6 +961,34 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ..._buildCamposMixto(totalConDescuento),
           const SizedBox(height: 12),
           _buildComprobanteSection(),
+        ],
+
+        // 7b. Agua de cortesía -- oculta por completo si el carrito es SOLO
+        // Choco Frappé (ya es una bebida, no aplica).
+        if (carrito.items.any((i) => !RegExp('frapp', caseSensitive: false).hasMatch(i.producto.nombre))) ...[
+          const SizedBox(height: 16),
+          Text('¿Deseas agua de cortesía?', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 6),
+          Row(children: [
+            for (final op in [(true, 'Sí'), (false, 'No')]) ...[
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _aguaCortesia = op.$1),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: _aguaCortesia == op.$1 ? AppColors.primary : AppColors.border, width: _aguaCortesia == op.$1 ? 2 : 1),
+                      color: _aguaCortesia == op.$1 ? AppColors.primary.withValues(alpha: 0.05) : Colors.white,
+                    ),
+                    child: Text(op.$2, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: _aguaCortesia == op.$1 ? AppColors.primary : const Color(0xFF555555))),
+                  ),
+                ),
+              ),
+              if (op.$1) const SizedBox(width: 8),
+            ],
+          ]),
         ],
 
         // 8. Observaciones
@@ -970,57 +1039,103 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  // 2 filas: [Efectivo | Transferencia] / [Ef. + Transfer. full width]
+  // Sin datafono: [Efectivo | Transferencia | Ef. + Transfer.] en una sola fila
+  // Con datafono: grid 2x2 -- [Efectivo | Transferencia] / [Ef. + Transfer. | Datafono]
   Widget _buildOpcionesPago() {
-    return Column(children: [
-      Row(children: [
-        Expanded(child: _pagoCard(
-          value: 'efectivo',
-          logo: const Icon(Icons.payments_outlined, size: 24, color: Color(0xFF16A34A)),
-          label: 'Efectivo',
-        )),
-        const SizedBox(width: 8),
-        Expanded(child: _pagoCard(
-          value: 'transferencia',
-          logo: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CachedNetworkImage(
-                imageUrl: 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1779736112/bancolombia_wiytke.png',
-                width: 22, height: 22, fit: BoxFit.contain,
-                placeholder: (_, __) => Container(width: 22, height: 22, decoration: const BoxDecoration(color: Color(0xFFFFCC00), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('B', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFF1A3C5E)))),
-                errorWidget: (_, __, ___) => Container(width: 22, height: 22, decoration: const BoxDecoration(color: Color(0xFFFFCC00), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('B', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFF1A3C5E)))),
-              ),
-              const SizedBox(width: 4),
-              CachedNetworkImage(
-                imageUrl: 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1779736049/nequi_pfgazy.png',
-                width: 18, height: 18, fit: BoxFit.contain,
-                placeholder: (_, __) => Container(width: 18, height: 18, decoration: const BoxDecoration(color: Color(0xFF3D1D89), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('N', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.white))),
-                errorWidget: (_, __, ___) => Container(width: 18, height: 18, decoration: const BoxDecoration(color: Color(0xFF3D1D89), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('N', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.white))),
-              ),
-            ],
+    final mixtoCard = _pagoCard(
+      value: 'mixto',
+      logo: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.payments_outlined, size: 18, color: Color(0xFF16A34A)),
+          const Text(' + ', style: TextStyle(fontSize: 9, color: Color(0xFFCCCCCC))),
+          CachedNetworkImage(
+            imageUrl: 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1779736112/bancolombia_wiytke.png',
+            width: 18, height: 18, fit: BoxFit.contain,
+            placeholder: (_, __) => Container(width: 18, height: 18, decoration: const BoxDecoration(color: Color(0xFFFFCC00), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('B', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Color(0xFF1A3C5E)))),
+            errorWidget: (_, __, ___) => Container(width: 18, height: 18, decoration: const BoxDecoration(color: Color(0xFFFFCC00), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('B', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Color(0xFF1A3C5E)))),
           ),
-          label: 'Transferencia',
-        )),
-      ]),
-      const SizedBox(height: 8),
-      _pagoCard(
-        value: 'mixto',
+        ],
+      ),
+      label: 'Ef. + Transfer.',
+    );
+
+    if (_datafonoHabilitado) {
+      return Column(children: [
+        Row(children: [
+          Expanded(child: _pagoCard(
+            value: 'efectivo',
+            logo: const Icon(Icons.payments_outlined, size: 24, color: Color(0xFF16A34A)),
+            label: 'Efectivo',
+          )),
+          const SizedBox(width: 8),
+          Expanded(child: _pagoCard(
+            value: 'transferencia',
+            logo: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CachedNetworkImage(
+                  imageUrl: 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1779736112/bancolombia_wiytke.png',
+                  width: 22, height: 22, fit: BoxFit.contain,
+                  placeholder: (_, __) => Container(width: 22, height: 22, decoration: const BoxDecoration(color: Color(0xFFFFCC00), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('B', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFF1A3C5E)))),
+                  errorWidget: (_, __, ___) => Container(width: 22, height: 22, decoration: const BoxDecoration(color: Color(0xFFFFCC00), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('B', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFF1A3C5E)))),
+                ),
+                const SizedBox(width: 4),
+                CachedNetworkImage(
+                  imageUrl: 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1779736049/nequi_pfgazy.png',
+                  width: 18, height: 18, fit: BoxFit.contain,
+                  placeholder: (_, __) => Container(width: 18, height: 18, decoration: const BoxDecoration(color: Color(0xFF3D1D89), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('N', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.white))),
+                  errorWidget: (_, __, ___) => Container(width: 18, height: 18, decoration: const BoxDecoration(color: Color(0xFF3D1D89), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('N', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.white))),
+                ),
+              ],
+            ),
+            label: 'Transferencia',
+          )),
+        ]),
+        const SizedBox(height: 8),
+        Row(children: [
+          Expanded(child: mixtoCard),
+          const SizedBox(width: 8),
+          Expanded(child: _pagoCard(
+            value: 'datafono',
+            logo: const Icon(Icons.credit_card, size: 24, color: Color(0xFF555555)),
+            label: 'Datafono',
+          )),
+        ]),
+      ]);
+    }
+
+    return Row(children: [
+      Expanded(child: _pagoCard(
+        value: 'efectivo',
+        logo: const Icon(Icons.payments_outlined, size: 24, color: Color(0xFF16A34A)),
+        label: 'Efectivo',
+      )),
+      const SizedBox(width: 8),
+      Expanded(child: _pagoCard(
+        value: 'transferencia',
         logo: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.payments_outlined, size: 18, color: Color(0xFF16A34A)),
-            const Text(' + ', style: TextStyle(fontSize: 9, color: Color(0xFFCCCCCC))),
             CachedNetworkImage(
               imageUrl: 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1779736112/bancolombia_wiytke.png',
+              width: 22, height: 22, fit: BoxFit.contain,
+              placeholder: (_, __) => Container(width: 22, height: 22, decoration: const BoxDecoration(color: Color(0xFFFFCC00), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('B', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFF1A3C5E)))),
+              errorWidget: (_, __, ___) => Container(width: 22, height: 22, decoration: const BoxDecoration(color: Color(0xFFFFCC00), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('B', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFF1A3C5E)))),
+            ),
+            const SizedBox(width: 4),
+            CachedNetworkImage(
+              imageUrl: 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1779736049/nequi_pfgazy.png',
               width: 18, height: 18, fit: BoxFit.contain,
-              placeholder: (_, __) => Container(width: 18, height: 18, decoration: const BoxDecoration(color: Color(0xFFFFCC00), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('B', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Color(0xFF1A3C5E)))),
-              errorWidget: (_, __, ___) => Container(width: 18, height: 18, decoration: const BoxDecoration(color: Color(0xFFFFCC00), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('B', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Color(0xFF1A3C5E)))),
+              placeholder: (_, __) => Container(width: 18, height: 18, decoration: const BoxDecoration(color: Color(0xFF3D1D89), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('N', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.white))),
+              errorWidget: (_, __, ___) => Container(width: 18, height: 18, decoration: const BoxDecoration(color: Color(0xFF3D1D89), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('N', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.white))),
             ),
           ],
         ),
-        label: 'Ef. + Transfer.',
-      ),
+        label: 'Transferencia',
+      )),
+      const SizedBox(width: 8),
+      Expanded(child: mixtoCard),
     ]);
   }
 
@@ -1467,7 +1582,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         children: [
                           Row(
                             children: [
-                              Text('${item.cantidad}x ${item.producto.nombre}',
+                              Text('${item.cantidad}x ${item.nombreCompleto}',
                                   style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                               if (item.tipoChocolate != null) ...[
                                 const SizedBox(width: 6),
@@ -1554,6 +1669,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                     style: const TextStyle(fontSize: 10, color: Color(0xFFD97706), fontWeight: FontWeight.w600)),
                               )).toList(),
                             ),
+                          ],
+                          if (item.observacion != null && item.observacion!.isNotEmpty) ...[
+                            const SizedBox(height: 3),
+                            Text('"${item.observacion}"',
+                                style: const TextStyle(fontSize: 11, color: Color(0xFF666666), fontStyle: FontStyle.italic)),
                           ],
                         ],
                       ),

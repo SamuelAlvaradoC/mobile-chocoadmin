@@ -16,6 +16,7 @@ import '../../../core/models/pedido.dart';
 import '../../../core/models/producto.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/utils/validar_sin_html.dart';
+import '../../../core/utils/nombre_producto.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../features/cliente/providers/catalogo_provider.dart';
 import '../../../features/cliente/widgets/toppings_modal.dart';
@@ -892,6 +893,18 @@ class _VentaDetalleScreenState extends State<_VentaDetalleScreen> {
                   // Observaciones y motivo de anulación -- van justo después
                   // del bloque de info (igual React), antes de desglose/
                   // comprobante/productos.
+                  if (p.aguaCortesia) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        border: Border.all(color: const Color(0xFFBFDBFE)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text('💧 Incluir agua de cortesía', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1D4ED8))),
+                    ),
+                  ],
                   if (p.observaciones != null && p.observaciones!.isNotEmpty) ...[
                     const SizedBox(height: 10),
                     Container(
@@ -991,7 +1004,7 @@ class _VentaDetalleScreenState extends State<_VentaDetalleScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Expanded(child: Text('${l.cantidad}x ${l.nombreProducto}',
+                              Expanded(child: Text('${l.cantidad}x ${l.nombreCompleto}',
                                   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
                               Text(fmt.format(l.subtotal),
                                   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF16A34A))),
@@ -1014,6 +1027,10 @@ class _VentaDetalleScreenState extends State<_VentaDetalleScreen> {
                               ...l.toppings.map((t) => _VentaChip(label: t, bg: const Color(0xFF1A1A1A), fg: Colors.white)),
                               ...l.adiciones.map((a) => _VentaChip(label: a, bg: const Color(0xFFD97706), fg: Colors.white)),
                             ]),
+                          ],
+                          if (l.observacion != null && l.observacion!.isNotEmpty) ...[
+                            const SizedBox(height: 5),
+                            Text('"${l.observacion}"', style: const TextStyle(fontSize: 12, color: Color(0xFF666666), fontStyle: FontStyle.italic)),
                           ],
                         ]),
                       );
@@ -1195,6 +1212,8 @@ class _ItemEdit {
   final List<Map<String, dynamic>> rawAdiciones;
   final List<String> salsas;
   final String? chocolate;
+  final String? frutas;
+  final String? observacion;
   final bool esBowl;
   final int maxToppings;
 
@@ -1208,11 +1227,15 @@ class _ItemEdit {
     List<Map<String, dynamic>>? rawAdiciones,
     List<String>? salsas,
     this.chocolate,
+    this.frutas,
+    this.observacion,
     this.esBowl = false,
     this.maxToppings = 0,
   })  : rawToppings  = rawToppings  ?? const [],
         rawAdiciones = rawAdiciones ?? const [],
         salsas       = salsas       ?? const [];
+
+  String get nombreCompleto => nombreConFrutas(nombre, frutas);
 }
 
 class _EditarVentaScreen extends StatefulWidget {
@@ -1232,6 +1255,7 @@ class _EditarVentaScreenState extends State<_EditarVentaScreen> {
   late List<_ItemEdit> _items;
   bool _guardando = false;
   String? _error;
+  bool _datafonoHabilitado = false;
 
   final _costoCtrl  = TextEditingController();
   final _efCtrl     = TextEditingController();
@@ -1271,6 +1295,7 @@ class _EditarVentaScreenState extends State<_EditarVentaScreen> {
       final prodActual = productoActual(l.idProducto);
       final permiteChoc = prodActual?.permiteChocolate ?? true;
       final permiteSal  = prodActual?.permiteSalsas ?? true;
+      final permiteFru  = prodActual?.permiteFrutas ?? true;
       return _ItemEdit(
         idProducto: l.idProducto,
         nombre: l.nombreProducto,
@@ -1281,10 +1306,21 @@ class _EditarVentaScreenState extends State<_EditarVentaScreen> {
         rawAdiciones: List.from(l.rawAdiciones),
         salsas: permiteSal ? l.salsas : [],
         chocolate: permiteChoc ? l.chocolate : null,
+        frutas: permiteFru ? l.frutas : null,
+        observacion: l.observacion,
         esBowl: l.esBowl,
         maxToppings: l.maxToppings,
       );
     }).toList();
+    _cargarDatafono();
+  }
+
+  Future<void> _cargarDatafono() async {
+    try {
+      final data = await ApiService.get('/api/configuracion/datafono');
+      final inner = data is Map && data['data'] is Map ? data['data'] as Map : (data is Map ? data : <String, dynamic>{});
+      if (mounted) setState(() => _datafonoHabilitado = inner['habilitado'] == true);
+    } catch (_) {}
   }
 
   @override
@@ -1297,6 +1333,26 @@ class _EditarVentaScreenState extends State<_EditarVentaScreen> {
   // Igual que React calcItemEdit: (precio_unitario + adicionPerUnit) × cantidad
   double get _subtotalItems => _items.fold(0.0, (s, i) => s + (i.precioUnitario + i.costoAdiciones) * i.cantidad);
   double get _total => _subtotalItems + _costoDomicilio;
+
+  Widget _metodoChip({required String value, required Widget logo, required String label, required VoidCallback onTap}) {
+    final sel = _metodoPago == value;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: sel ? AppColors.primary : const Color(0xFFE5E7EB), width: sel ? 2 : 1),
+          color: sel ? const Color(0xFFFFF5F5) : Colors.white,
+        ),
+        child: Column(children: [
+          logo,
+          const SizedBox(height: 2),
+          Text(label, textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: sel ? AppColors.primary : const Color(0xFF555555))),
+        ]),
+      ),
+    );
+  }
 
   bool get _mixtoOk => _metodoPago != 'mixto' ||
       (_montoEfectivo > 0 && _montoTransfer > 0 &&
@@ -1326,6 +1382,8 @@ class _EditarVentaScreenState extends State<_EditarVentaScreen> {
         'adiciones':    item.rawAdiciones.map((a) => {'id_adicion': a['id_adicion'], 'cantidad': a['cantidad'] ?? 1}).toList(),
         'salsas':       item.salsas,
         'chocolate':    item.chocolate,
+        'frutas':       item.frutas,
+        'observacion':  item.observacion,
       }).toList();
       final esEntregada = widget.pedido.estado == 'entregado';
       final body = <String, dynamic>{
@@ -1443,7 +1501,7 @@ class _EditarVentaScreenState extends State<_EditarVentaScreen> {
                     ),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Row(children: [
-                        Expanded(child: Text(item.nombre, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13))),
+                        Expanded(child: Text(item.nombreCompleto, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13))),
                         GestureDetector(
                           onTap: () => setState(() {
                             if (item.cantidad > 1) {
@@ -1479,23 +1537,31 @@ class _EditarVentaScreenState extends State<_EditarVentaScreen> {
                           final adic = a['adicion'];
                           return (adic is Map ? adic['nombre'] : a['nombre'])?.toString() ?? '';
                         }).where((n) => n.isNotEmpty).toList();
-                        if (item.chocolate == null && item.salsas.isEmpty && toppingNames.isEmpty && adicionNames.isEmpty) {
+                        final tieneObs = item.observacion != null && item.observacion!.isNotEmpty;
+                        if (item.chocolate == null && item.salsas.isEmpty && toppingNames.isEmpty && adicionNames.isEmpty && !tieneObs) {
                           return const SizedBox.shrink();
                         }
                         return Padding(
                           padding: const EdgeInsets.only(top: 6),
-                          child: Wrap(spacing: 4, runSpacing: 4, children: [
-                            if (item.chocolate != null)
-                              _VentaChip(
-                                label: 'Chocolate ${item.chocolate!}',
-                                bg: item.chocolate!.toLowerCase().contains('negro') ? const Color(0xFF1E3A5F) : const Color(0xFFF0F0F0),
-                                fg: item.chocolate!.toLowerCase().contains('negro') ? Colors.white : const Color(0xFF555555),
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Wrap(spacing: 4, runSpacing: 4, children: [
+                              if (item.chocolate != null)
+                                _VentaChip(
+                                  label: 'Chocolate ${item.chocolate!}',
+                                  bg: item.chocolate!.toLowerCase().contains('negro') ? const Color(0xFF1E3A5F) : const Color(0xFFF0F0F0),
+                                  fg: item.chocolate!.toLowerCase().contains('negro') ? Colors.white : const Color(0xFF555555),
+                                ),
+                              ...(item.esBowl && item.salsas.isNotEmpty
+                                  ? [_VentaChip(label: 'Cobertura: ${_nombreSalsa(item.salsas.first)}', bg: const Color(0xFFFEF3C7), fg: const Color(0xFF92400E), outlined: true, outlineColor: const Color(0xFFD97706))]
+                                  : item.salsas.map((s) => _VentaChip(label: _nombreSalsa(s), outlined: true, outlineColor: const Color(0xFFEA580C), fg: const Color(0xFFEA580C), bg: const Color(0xFFFFF7ED))).toList()),
+                              ...toppingNames.map((t) => _VentaChip(label: t, bg: const Color(0xFF1A1A1A), fg: Colors.white)),
+                              ...adicionNames.map((a) => _VentaChip(label: a, bg: const Color(0xFFD97706), fg: Colors.white)),
+                            ]),
+                            if (tieneObs)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text('"${item.observacion}"', style: const TextStyle(fontSize: 11, color: Color(0xFF666666), fontStyle: FontStyle.italic)),
                               ),
-                            ...(item.esBowl && item.salsas.isNotEmpty
-                                ? [_VentaChip(label: 'Cobertura: ${_nombreSalsa(item.salsas.first)}', bg: const Color(0xFFFEF3C7), fg: const Color(0xFF92400E), outlined: true, outlineColor: const Color(0xFFD97706))]
-                                : item.salsas.map((s) => _VentaChip(label: _nombreSalsa(s), outlined: true, outlineColor: const Color(0xFFEA580C), fg: const Color(0xFFEA580C), bg: const Color(0xFFFFF7ED))).toList()),
-                            ...toppingNames.map((t) => _VentaChip(label: t, bg: const Color(0xFF1A1A1A), fg: Colors.white)),
-                            ...adicionNames.map((a) => _VentaChip(label: a, bg: const Color(0xFFD97706), fg: Colors.white)),
                           ]),
                         );
                       }),
@@ -1609,6 +1675,8 @@ class _EditarVentaScreenState extends State<_EditarVentaScreen> {
                                   rawAdiciones: result.adiciones.map((a) => <String, dynamic>{'id_adicion': a.id, 'cantidad': 1}).toList(),
                                   salsas: result.salsas.map((s) => (s['nombre'] ?? s['id'] ?? '').toString()).where((s) => s.isNotEmpty).toList(),
                                   chocolate: result.tipoChocolate,
+                                  frutas: result.tipoFrutas,
+                                  observacion: result.observacion,
                                   esBowl: prod.esBowl,
                                   maxToppings: prod.maxToppings,
                                 )));
@@ -1708,87 +1776,74 @@ class _EditarVentaScreenState extends State<_EditarVentaScreen> {
               // Método de pago
               const Text('Método de pago', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF555555))),
               const SizedBox(height: 8),
-              Row(children: [
-                // Efectivo
-                Expanded(child: GestureDetector(
+              Builder(builder: (context) {
+                final efectivoChip = _metodoChip(
+                  value: 'efectivo',
+                  logo: Icon(Icons.payments_outlined, size: 18, color: _metodoPago == 'efectivo' ? AppColors.primary : const Color(0xFF555555)),
+                  label: 'Efectivo',
                   onTap: () => setState(() {
                     _metodoPago = 'efectivo';
                     _montoEfectivo = _total; _montoTransfer = 0;
                     _efCtrl.text = _montoEfectivo.round().toString();
                     _trCtrl.text = '0';
                   }),
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: _metodoPago == 'efectivo' ? AppColors.primary : const Color(0xFFE5E7EB), width: _metodoPago == 'efectivo' ? 2 : 1),
-                      color: _metodoPago == 'efectivo' ? const Color(0xFFFFF5F5) : Colors.white,
+                );
+                final transferenciaChip = _metodoChip(
+                  value: 'transferencia',
+                  logo: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    CachedNetworkImage(
+                      imageUrl: 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1779736112/bancolombia_wiytke.png',
+                      width: 16, height: 16, fit: BoxFit.contain,
+                      errorWidget: (_, __, ___) => const Icon(Icons.account_balance_outlined, size: 16),
                     ),
-                    child: Column(children: [
-                      Icon(Icons.payments_outlined, size: 18, color: _metodoPago == 'efectivo' ? AppColors.primary : const Color(0xFF555555)),
-                      const SizedBox(height: 2),
-                      Text('Efectivo', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _metodoPago == 'efectivo' ? AppColors.primary : const Color(0xFF555555))),
-                    ]),
-                  ),
-                )),
-                // Transferencia
-                Expanded(child: GestureDetector(
+                    const SizedBox(width: 3),
+                    CachedNetworkImage(
+                      imageUrl: 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1779736049/nequi_pfgazy.png',
+                      width: 16, height: 16, fit: BoxFit.contain,
+                      errorWidget: (_, __, ___) => const Icon(Icons.phone_android_rounded, size: 16),
+                    ),
+                  ]),
+                  label: 'Transferencia',
                   onTap: () => setState(() {
                     _metodoPago = 'transferencia';
                     _montoTransfer = _total; _montoEfectivo = 0;
                     _trCtrl.text = _montoTransfer.round().toString();
                     _efCtrl.text = '0';
                   }),
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: _metodoPago == 'transferencia' ? AppColors.primary : const Color(0xFFE5E7EB), width: _metodoPago == 'transferencia' ? 2 : 1),
-                      color: _metodoPago == 'transferencia' ? const Color(0xFFFFF5F5) : Colors.white,
-                    ),
-                    child: Column(children: [
-                      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        CachedNetworkImage(
-                          imageUrl: 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1779736112/bancolombia_wiytke.png',
-                          width: 16, height: 16, fit: BoxFit.contain,
-                          errorWidget: (_, __, ___) => const Icon(Icons.account_balance_outlined, size: 16),
-                        ),
-                        const SizedBox(width: 3),
-                        CachedNetworkImage(
-                          imageUrl: 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1779736049/nequi_pfgazy.png',
-                          width: 16, height: 16, fit: BoxFit.contain,
-                          errorWidget: (_, __, ___) => const Icon(Icons.phone_android_rounded, size: 16),
-                        ),
-                      ]),
-                      const SizedBox(height: 2),
-                      Text('Transferencia', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _metodoPago == 'transferencia' ? AppColors.primary : const Color(0xFF555555))),
-                    ]),
-                  ),
-                )),
-                // Mixto
-                Expanded(child: GestureDetector(
+                );
+                final mixtoChip = _metodoChip(
+                  value: 'mixto',
+                  logo: Icon(Icons.sync_alt_rounded, size: 18, color: _metodoPago == 'mixto' ? AppColors.primary : const Color(0xFF555555)),
+                  label: 'Mixto',
                   onTap: () => setState(() {
                     _metodoPago = 'mixto';
                     _montoEfectivo = 0; _montoTransfer = 0;
                     _efCtrl.text = '0'; _trCtrl.text = '0';
                   }),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: _metodoPago == 'mixto' ? AppColors.primary : const Color(0xFFE5E7EB), width: _metodoPago == 'mixto' ? 2 : 1),
-                      color: _metodoPago == 'mixto' ? const Color(0xFFFFF5F5) : Colors.white,
-                    ),
-                    child: Column(children: [
-                      Icon(Icons.sync_alt_rounded, size: 18, color: _metodoPago == 'mixto' ? AppColors.primary : const Color(0xFF555555)),
-                      const SizedBox(height: 2),
-                      Text('Mixto', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _metodoPago == 'mixto' ? AppColors.primary : const Color(0xFF555555))),
-                    ]),
-                  ),
-                )),
-              ]),
+                );
+                final datafonoChip = _metodoChip(
+                  value: 'datafono',
+                  logo: Icon(Icons.credit_card, size: 18, color: _metodoPago == 'datafono' ? AppColors.primary : const Color(0xFF555555)),
+                  label: 'Datafono',
+                  onTap: () => setState(() {
+                    _metodoPago = 'datafono';
+                    _montoEfectivo = 0; _montoTransfer = 0;
+                    _efCtrl.text = '0'; _trCtrl.text = '0';
+                  }),
+                );
+                if (_datafonoHabilitado) {
+                  return Column(children: [
+                    Row(children: [Expanded(child: efectivoChip), const SizedBox(width: 8), Expanded(child: transferenciaChip)]),
+                    const SizedBox(height: 8),
+                    Row(children: [Expanded(child: mixtoChip), const SizedBox(width: 8), Expanded(child: datafonoChip)]),
+                  ]);
+                }
+                return Row(children: [
+                  Expanded(child: efectivoChip), const SizedBox(width: 8),
+                  Expanded(child: transferenciaChip), const SizedBox(width: 8),
+                  Expanded(child: mixtoChip),
+                ]);
+              }),
               if (_metodoPago == 'mixto') ...[
                 const SizedBox(height: 12),
                 Row(children: [

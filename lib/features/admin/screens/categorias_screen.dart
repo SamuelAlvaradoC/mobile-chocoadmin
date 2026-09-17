@@ -146,7 +146,7 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
           // Header
           Container(
             color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
             child: Row(
               children: [
                 Expanded(
@@ -156,7 +156,7 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
                       Text(
                         'Categorías',
                         style: GoogleFonts.nunito(
-                          fontSize: 20,
+                          fontSize: 18,
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFF1a1a1a),
                         ),
@@ -164,7 +164,7 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
                       Text(
                         '${_categorias.length} categorías registradas',
                         style: GoogleFonts.nunito(
-                          fontSize: 12,
+                          fontSize: 11,
                           color: const Color(0xFF888888),
                         ),
                       ),
@@ -173,26 +173,33 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
                 ),
                 GestureDetector(
                   onTap: _abrirCrear,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.add_rounded, color: Colors.white, size: 16),
-                        const SizedBox(width: 4),
-                        Text(
-                          '+ Añadir categoría',
-                          style: GoogleFonts.nunito(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                          ),
+                  behavior: HitTestBehavior.opaque,
+                  child: SizedBox(
+                    height: 44,
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                      ],
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.add_rounded, color: Colors.white, size: 14),
+                            const SizedBox(width: 4),
+                            Text(
+                              '+ Añadir categoría',
+                              style: GoogleFonts.nunito(
+                                color: Colors.white,
+                                fontSize: 12,
+                                height: 1.0,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -203,17 +210,17 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
           // Buscador
           Container(
             color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
             child: TextField(
               controller: _busquedaCtrl,
               onChanged: (_) => setState(() => _pagina = 1),
-              style: GoogleFonts.nunito(fontSize: 13),
+              style: GoogleFonts.nunito(fontSize: 12, height: 1.0),
               decoration: InputDecoration(
                 hintText: 'Buscar categoría...',
-                hintStyle: GoogleFonts.nunito(fontSize: 13, color: const Color(0xFFAAAAAA)),
-                prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Color(0xFF888888)),
+                hintStyle: GoogleFonts.nunito(fontSize: 12, color: const Color(0xFFAAAAAA)),
+                prefixIcon: const Icon(Icons.search_rounded, size: 16, color: Color(0xFF888888)),
                 isDense: true,
-                contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                contentPadding: const EdgeInsets.symmetric(vertical: 6),
                 filled: true,
                 fillColor: const Color(0xFFF7F8FD),
                 border: OutlineInputBorder(

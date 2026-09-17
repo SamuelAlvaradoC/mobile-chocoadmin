@@ -39,11 +39,14 @@ class _PerfilScreenState extends State<PerfilScreen>
   // ver _PuntosTab/_ValorPuntoCard) -- 12.5 es solo el default mientras
   // carga o si la llamada falla. Endpoint de lectura público (como /horario).
   double _valorPunto = 12.5;
+  late final bool _esAdmin;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _esAdmin = context.read<AuthProvider>().user?.role == UserRole.admin;
+    // Pestaña "Configuración" extra al final, solo para admin.
+    _tabController = TabController(length: _esAdmin ? 6 : 5, vsync: this);
     _cargarPuntos();
     _cargarValorPunto();
   }
@@ -149,7 +152,7 @@ class _PerfilScreenState extends State<PerfilScreen>
           _PuntosBanner(puntos: _puntos, saldo: _saldoPuntos, loading: _puntosLoading),
 
           // ── Selector de secciones (segmented pills, no TabBar subrayado) ──
-          _PerfilSegmentedControl(controller: _tabController),
+          _PerfilSegmentedControl(controller: _tabController, mostrarConfiguracion: _esAdmin),
 
           Expanded(
             child: TabBarView(
@@ -165,8 +168,12 @@ class _PerfilScreenState extends State<PerfilScreen>
                   loading: _puntosLoading,
                   valorPunto: _valorPunto,
                   onRefresh: _cargarPuntos,
-                  onGuardarValorPunto: user?.role == UserRole.admin ? _guardarValorPunto : null,
                 ),
+                if (_esAdmin)
+                  _ConfiguracionTab(
+                    valorPunto: _valorPunto,
+                    onGuardarValorPunto: _guardarValorPunto,
+                  ),
               ],
             ),
           ),
@@ -234,18 +241,24 @@ class _PuntosBanner extends StatelessWidget {
 
 class _PerfilSegmentedControl extends StatelessWidget {
   final TabController controller;
-  const _PerfilSegmentedControl({required this.controller});
+  final bool mostrarConfiguracion;
+  const _PerfilSegmentedControl({required this.controller, this.mostrarConfiguracion = false});
 
-  static const _secciones = [
+  static const _seccionesBase = [
     (icon: Icons.person_outline_rounded, label: 'Datos'),
     (icon: Icons.receipt_long_rounded, label: 'Historial'),
     (icon: Icons.lock_outline_rounded, label: 'Contraseña'),
     (icon: Icons.location_on_outlined, label: 'Direcciones'),
     (icon: Icons.stars_rounded, label: 'Puntos'),
   ];
+  static const _seccionConfiguracion = (icon: Icons.settings_outlined, label: 'Configuración');
 
   @override
   Widget build(BuildContext context) {
+    final secciones = [
+      ..._seccionesBase,
+      if (mostrarConfiguracion) _seccionConfiguracion,
+    ];
     return Container(
       color: AppColors.surface,
       padding: const EdgeInsets.fromLTRB(AppSizes.md, 4, AppSizes.md, 12),
@@ -256,12 +269,12 @@ class _PerfilSegmentedControl extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                for (int i = 0; i < _secciones.length; i++)
+                for (int i = 0; i < secciones.length; i++)
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: _SegmentPill(
-                      icon: _secciones[i].icon,
-                      label: _secciones[i].label,
+                      icon: secciones[i].icon,
+                      label: secciones[i].label,
                       active: controller.index == i,
                       onTap: () => controller.animateTo(i),
                     ),
@@ -873,7 +886,7 @@ class _DetallePedidoModal extends StatelessWidget {
                                     crossAxisAlignment: WrapCrossAlignment.center,
                                     spacing: 6,
                                     children: [
-                                      Text('${l.cantidad}× ${l.nombreProducto}',
+                                      Text('${l.cantidad}× ${l.nombreCompleto}',
                                           style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                                       if (l.chocolate != null && l.chocolate!.isNotEmpty)
                                         Container(
@@ -932,6 +945,11 @@ class _DetallePedidoModal extends StatelessWidget {
                                   )),
                                 ],
                               ),
+                            ],
+                            if (l.observacion != null && l.observacion!.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text('"${l.observacion}"',
+                                  style: const TextStyle(fontSize: 11, color: Color(0xFF666666), fontStyle: FontStyle.italic)),
                             ],
                           ],
                         ),
@@ -1534,16 +1552,12 @@ class _PuntosTab extends StatelessWidget {
   final bool loading;
   final double valorPunto;
   final Future<void> Function() onRefresh;
-  // Solo admin: control para editar el valor del punto (movido aquí desde
-  // Dashboard) -- null cuando el usuario no es admin.
-  final Future<void> Function(double)? onGuardarValorPunto;
   const _PuntosTab({
     required this.puntos,
     required this.saldo,
     required this.loading,
     required this.valorPunto,
     required this.onRefresh,
-    this.onGuardarValorPunto,
   });
 
   @override
@@ -1633,12 +1647,115 @@ class _PuntosTab extends StatelessWidget {
               ],
             ),
           ),
-          if (onGuardarValorPunto != null) ...[
-            const SizedBox(height: AppSizes.md),
-            _ValorPuntoCard(valorPunto: valorPunto, onSaved: onGuardarValorPunto!),
-          ],
         ],
       ),
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Tab Configuración (solo admin) -- equivalente a SeccionConfiguracionSistema
+// en React web: reúne los ajustes generales del sistema que antes estaban
+// dispersos (el toggle de datafono no existía en mobile como control editable,
+// solo se leía; el valor del punto vivía dentro de la pestaña "Puntos").
+// ────────────────────────────────────────────────────────────────────────────
+
+class _ConfiguracionTab extends StatefulWidget {
+  final double valorPunto;
+  final Future<void> Function(double) onGuardarValorPunto;
+  const _ConfiguracionTab({required this.valorPunto, required this.onGuardarValorPunto});
+
+  @override
+  State<_ConfiguracionTab> createState() => _ConfiguracionTabState();
+}
+
+class _ConfiguracionTabState extends State<_ConfiguracionTab> {
+  bool _datafonoHabilitado = false;
+  bool _datafonoCargando = true;
+  bool _datafonoGuardando = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarDatafono();
+  }
+
+  Future<void> _cargarDatafono() async {
+    try {
+      final data = await ApiService.get('/api/configuracion/datafono');
+      final inner = data is Map && data['data'] is Map ? data['data'] as Map : (data is Map ? data : <String, dynamic>{});
+      if (mounted) setState(() { _datafonoHabilitado = inner['habilitado'] == true; _datafonoCargando = false; });
+    } catch (_) {
+      if (mounted) setState(() => _datafonoCargando = false);
+    }
+  }
+
+  Future<void> _toggleDatafono() async {
+    if (_datafonoGuardando) return;
+    final nuevo = !_datafonoHabilitado;
+    setState(() => _datafonoGuardando = true);
+    try {
+      await ApiService.patch('/api/configuracion/datafono', {'habilitado': nuevo});
+      if (mounted) setState(() => _datafonoHabilitado = nuevo);
+    } catch (_) {
+      // Silencioso -- el switch simplemente no cambia de estado visualmente.
+    } finally {
+      if (mounted) setState(() => _datafonoGuardando = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(AppSizes.md),
+      children: [
+        const Text('Ajustes generales del sistema — solo administrador',
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+        const SizedBox(height: AppSizes.md),
+        Container(
+          padding: const EdgeInsets.all(AppSizes.md),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+            boxShadow: const [BoxShadow(color: AppColors.shadow, blurRadius: 6, offset: Offset(0, 2))],
+          ),
+          child: _datafonoCargando
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+                  ),
+                )
+              : Row(
+                  children: [
+                    Switch(
+                      value: _datafonoHabilitado,
+                      onChanged: _datafonoGuardando ? null : (_) => _toggleDatafono(),
+                      activeColor: AppColors.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Habilitar pago con datafono',
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 2),
+                          Text(
+                            _datafonoHabilitado
+                                ? 'Los clientes y el panel de ventas pueden usar "Datafono" como método de pago.'
+                                : 'La opción de datafono está oculta en el checkout y en los paneles de venta.',
+                            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.3),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+        const SizedBox(height: AppSizes.md),
+        _ValorPuntoCard(valorPunto: widget.valorPunto, onSaved: widget.onGuardarValorPunto),
+      ],
     );
   }
 }

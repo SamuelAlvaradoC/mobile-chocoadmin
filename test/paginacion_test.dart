@@ -60,13 +60,15 @@ void main() {
     testWidgets('resalta la página actual y no las demás', (tester) async {
       await tester.pumpWidget(_wrap(Paginacion(pagina: 6, totalPaginas: 26, onCambiarPagina: (_) {})));
 
-      final activo = tester.widget<Material>(
-        find.ancestor(of: find.text('6'), matching: find.byType(Material)).first,
+      final activo = tester.widget<Container>(
+        find.ancestor(of: find.text('6'), matching: find.byType(Container)).first,
       );
-      final inactivo = tester.widget<Material>(
-        find.ancestor(of: find.text('7'), matching: find.byType(Material)).first,
+      final inactivo = tester.widget<Container>(
+        find.ancestor(of: find.text('7'), matching: find.byType(Container)).first,
       );
-      expect(activo.color, isNot(equals(inactivo.color)));
+      final colorActivo = (activo.decoration as BoxDecoration).color;
+      final colorInactivo = (inactivo.decoration as BoxDecoration).color;
+      expect(colorActivo, isNot(equals(colorInactivo)));
     });
 
     testWidgets('los "..." se renderizan como texto no clicable', (tester) async {
@@ -139,6 +141,29 @@ void main() {
     testWidgets('sin porPagina/onCambiarPorPagina, no renderiza el selector "Mostrar"', (tester) async {
       await tester.pumpWidget(_wrap(Paginacion(pagina: 6, totalPaginas: 26, onCambiarPagina: (_) {})));
       expect(find.text('Mostrar:'), findsNothing);
+    });
+
+    testWidgets('el footer es de ancho completo, igual con 1 página que con 47 (no una tarjeta flotante que cambia de forma)', (tester) async {
+      await tester.pumpWidget(_wrap(Paginacion(pagina: 1, totalPaginas: 1, onCambiarPagina: (_) {})));
+      final anchoPocasPaginas = tester.getSize(find.byType(Paginacion)).width;
+
+      await tester.pumpWidget(_wrap(Paginacion(pagina: 6, totalPaginas: 47, onCambiarPagina: (_) {})));
+      final anchoMuchasPaginas = tester.getSize(find.byType(Paginacion)).width;
+
+      expect(anchoPocasPaginas, anchoMuchasPaginas);
+    });
+
+    testWidgets('el footer tiene el mismo alto con o sin el selector "Mostrar" (fila de alto fijo)', (tester) async {
+      await tester.pumpWidget(_wrap(Paginacion(pagina: 1, totalPaginas: 5, onCambiarPagina: (_) {})));
+      final altoSinSelector = tester.getSize(find.byType(Paginacion)).height;
+
+      await tester.pumpWidget(_wrap(Paginacion(
+        pagina: 1, totalPaginas: 5, onCambiarPagina: (_) {},
+        porPagina: 10, onCambiarPorPagina: (_) {},
+      )));
+      final altoConSelector = tester.getSize(find.byType(Paginacion)).height;
+
+      expect(altoSinSelector, altoConSelector);
     });
 
     testWidgets('cambiar el selector "Mostrar" a "Todos" llama a onCambiarPorPagina', (tester) async {

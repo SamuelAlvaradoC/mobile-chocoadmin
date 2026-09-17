@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 
@@ -14,6 +15,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_config.dart';
 import '../../../shared/layouts/client_layout.dart';
 import '../../../shared/widgets/brand_icons.dart';
+import '../providers/resena_flow_provider.dart';
 
 class LandingScreen extends StatelessWidget {
   const LandingScreen({super.key});
@@ -21,6 +23,10 @@ class LandingScreen extends StatelessWidget {
   // Ancla para el scroll del botón "Conócenos" del hero, igual que el
   // href="#nosotros" de React (Hero.jsx:51).
   static final GlobalKey nosotrosKey = GlobalKey();
+
+  // Ancla para el scroll cuando ResenaPendienteBanner navega acá desde otro
+  // tab -- mismo propósito que el hash #reseñas + ?pendiente_resena de React.
+  static final GlobalKey resenasKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +38,7 @@ class LandingScreen extends StatelessWidget {
           const _ProductosEstrella(),
           const _ComoFunciona(),
           _Conocenos(key: nosotrosKey),
-          const _CtaFinal(),
+          _CtaFinal(key: resenasKey),
         ],
       ),
     );
@@ -987,7 +993,7 @@ class _SocialLinkBtn extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _CtaFinal extends StatefulWidget {
-  const _CtaFinal();
+  const _CtaFinal({super.key});
   @override
   State<_CtaFinal> createState() => _CtaFinalState();
 }
@@ -1023,6 +1029,10 @@ class _CtaFinalState extends State<_CtaFinal> {
       setState(() => _error = 'Por favor completa todos los campos requeridos.');
       return;
     }
+    // Presente cuando se llegó acá desde ResenaPendienteBanner -- vincula
+    // esta reseña puntual a ESE pedido específico (equivalente al query
+    // param ?pendiente_resena de React web).
+    final idVentaPendiente = context.read<ResenaFlowProvider>().idVentaPendienteEnFormulario;
     setState(() { _enviando = true; _error = null; });
     try {
       final res = await http.post(
@@ -1040,10 +1050,16 @@ class _CtaFinalState extends State<_CtaFinal> {
           'producto_deseado':      _productoDeseadoCtrl.text.trim(),
           'mejora':                _mejoraCtrl.text.trim(),
           'comentario_experiencia_web': _comentarioWebCtrl.text.trim(),
+          if (idVentaPendiente != null) 'id_venta': idVentaPendiente,
         }),
       );
       if (res.statusCode == 200 || res.statusCode == 201) {
-        if (mounted) setState(() { _enviado = true; _enviando = false; });
+        if (mounted) {
+          setState(() { _enviado = true; _enviando = false; });
+          if (idVentaPendiente != null) {
+            context.read<ResenaFlowProvider>().marcarEnviada(idVentaPendiente);
+          }
+        }
       } else {
         if (mounted) setState(() { _error = 'Error al enviar. Intenta de nuevo.'; _enviando = false; });
       }

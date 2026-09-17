@@ -402,6 +402,17 @@ class _PedidoCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (pedido.aguaCortesia)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      border: Border.all(color: const Color(0xFFBFDBFE)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text('💧 Incluir agua de cortesía', style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF1D4ED8))),
+                  ),
                 if (pedido.observaciones != null && pedido.observaciones!.isNotEmpty)
                   Container(
                     margin: const EdgeInsets.only(bottom: 10),
@@ -485,7 +496,7 @@ class _ProductRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('${linea.cantidad}× ${linea.nombreProducto}',
+        Text('${linea.cantidad}× ${linea.nombreCompleto}',
             style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w700, color: const Color(0xFF1a1a1a))),
         if (linea.chocolate != null) ...[
           const SizedBox(height: 4),
@@ -507,6 +518,11 @@ class _ProductRow extends StatelessWidget {
             ...linea.toppings.map((t) => _Chip(label: t, bg: const Color(0xFF1A1A1A), fg: Colors.white)),
             ...linea.adiciones.map((a) => _Chip(label: _adicionLabel(a), bg: const Color(0xFFD97706), fg: Colors.white)),
           ]),
+        ],
+        if (linea.observacion != null && linea.observacion!.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text('📝 ${linea.observacion}',
+              style: GoogleFonts.nunito(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFFCA0B0B))),
         ],
       ],
     );
@@ -554,6 +570,7 @@ const Map<String, Color> _colorCategoria = {
   'Toppings': Color(0xFF1A1A1A),
   'Adiciones': Color(0xFFD97706),
   'Untables': Color(0xFFEA580C),
+  'Nota': Color(0xFFCA0B0B),
 };
 
 class _PersonalizacionCompacta extends StatelessWidget {
@@ -567,6 +584,7 @@ class _PersonalizacionCompacta extends StatelessWidget {
     final chocolate = linea.chocolate;
     final toppings = linea.toppings.isNotEmpty ? linea.toppings.join(', ') : null;
     final adiciones = linea.adiciones.isNotEmpty ? linea.adiciones.map(_adicionLabel).join(', ') : null;
+    final nota = linea.observacion;
 
     final lineas = <Widget>[
       if (cobertura != null) _lineaCompacta('Cobertura', cobertura),
@@ -574,6 +592,7 @@ class _PersonalizacionCompacta extends StatelessWidget {
       if (toppings != null) _lineaCompacta('Toppings', toppings),
       if (adiciones != null) _lineaCompacta('Adiciones', adiciones),
       if (untables != null) _lineaCompacta('Untables', untables),
+      if (nota != null && nota.isNotEmpty) _lineaCompacta('Nota', nota),
     ];
     if (lineas.isEmpty) return const SizedBox.shrink();
     return Padding(
@@ -702,6 +721,20 @@ class _ModalDetalle extends StatelessWidget {
                       ),
                     ),
 
+                    // Agua de cortesía
+                    if (pedido.aguaCortesia) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          border: Border.all(color: const Color(0xFFBFDBFE)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text('💧 Incluir agua de cortesía', style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF1D4ED8))),
+                      ),
+                    ],
+
                     // Observaciones
                     if (pedido.observaciones != null && pedido.observaciones!.isNotEmpty) ...[
                       const SizedBox(height: 12),
@@ -735,7 +768,7 @@ class _ModalDetalle extends StatelessWidget {
                             : null,
                         margin: const EdgeInsets.only(bottom: 14),
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text('${l.cantidad}× ${l.nombreProducto}',
+                          Text('${l.cantidad}× ${l.nombreCompleto}',
                               style: GoogleFonts.nunito(fontSize: 15, fontWeight: FontWeight.w800, color: const Color(0xFF1a1a1a))),
                           _PersonalizacionCompacta(linea: l),
                         ]),

@@ -783,7 +783,7 @@ class _ModalDetalle extends StatelessWidget {
                               decoration: BoxDecoration(color: const Color(0xFFF7F8FD), borderRadius: BorderRadius.circular(8)),
                               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                                 Row(children: [
-                                  Expanded(child: Text('${l.cantidad}× ${l.nombreProducto}',
+                                  Expanded(child: Text('${l.cantidad}× ${l.nombreCompleto}',
                                       style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w700))),
                                   Text(fmt.format(l.subtotal),
                                       style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.primary)),

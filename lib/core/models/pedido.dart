@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import '../utils/nombre_producto.dart';
+
 /// Una línea del pedido tal como llega de la API en el detalle (nombres ya resueltos)
 class LineaDetalle {
   final int idProducto;
@@ -10,6 +12,8 @@ class LineaDetalle {
   final List<String> adiciones;
   final List<String> salsas;    // salsa names (o cobertura de bowl, ver esBowl)
   final String? chocolate;       // 'Negro' or 'Blanco' or null
+  final String? frutas;          // 'fresa_cereza' | 'fresa_durazno' | 'cereza_durazno' or null
+  final String? observacion;     // nota de preparación libre por producto, o null
   final bool esBowl;             // true si el producto es bowl (entonces 'salsas' es realmente la cobertura)
   final List<Map<String, dynamic>> rawToppings;  // [{id_topping, cantidad}] para edición
   final List<Map<String, dynamic>> rawAdiciones; // [{id_adicion, cantidad}] para edición
@@ -25,6 +29,8 @@ class LineaDetalle {
     required this.adiciones,
     this.salsas = const [],
     this.chocolate,
+    this.frutas,
+    this.observacion,
     this.esBowl = false,
     this.rawToppings = const [],
     this.rawAdiciones = const [],
@@ -129,6 +135,8 @@ class LineaDetalle {
       } catch (_) {}
     }
     String? chocolate = json['chocolate']?.toString();
+    String? frutas = json['frutas']?.toString();
+    String? observacion = json['observacion']?.toString();
 
     // ── es_bowl: viene del producto anidado (detalleVentas.producto.es_bowl) ──
     bool esBowl = false;
@@ -170,6 +178,8 @@ class LineaDetalle {
       adiciones: adiciones,
       salsas: salsas,
       chocolate: chocolate,
+      frutas: frutas,
+      observacion: observacion,
       esBowl: esBowl,
       rawToppings: rawToppings,
       rawAdiciones: rawAdiciones,
@@ -180,6 +190,8 @@ class LineaDetalle {
 
   // Igual que React calcularDesglose/calcItemEdit: (precio_unitario + adicionPerUnit) × cantidad
   double get subtotal => (precioUnitario + costoAdiciones) * cantidad;
+
+  String get nombreCompleto => nombreConFrutas(nombreProducto, frutas);
 }
 
 /// Línea usada al crear pedidos (IDs, no nombres)
@@ -236,8 +248,10 @@ class Pedido {
   final int puntosUsados;
   final int puntosGanados;
   final String? observaciones;
+  final bool aguaCortesia;
   final String? motivoAnulacion;
   final String? nombreDomiciliario;
+  final bool tieneResena;
 
   const Pedido({
     required this.id,
@@ -264,8 +278,10 @@ class Pedido {
     this.puntosUsados = 0,
     this.puntosGanados = 0,
     this.observaciones,
+    this.aguaCortesia = false,
     this.motivoAnulacion,
     this.nombreDomiciliario,
+    this.tieneResena = false,
   });
 
   factory Pedido.fromJson(Map<String, dynamic> json) {
@@ -407,6 +423,11 @@ class Pedido {
 
     // ── observaciones ────────────────────────────────────────────────────────
     String? observaciones = (ventaMap ?? json)['observaciones']?.toString();
+    bool aguaCortesia = (ventaMap ?? json)['agua_cortesia'] == true;
+
+    // ── reseña — solo el id viaja en el include (ver comentario en
+    // ventas/service.js), alcanza para saber "ya reseñé este pedido".
+    bool tieneResena = (ventaMap ?? json)['resena'] != null;
 
     // ── motivo anulación ─────────────────────────────────────────────────────
     String? motivoAnulacion = (ventaMap ?? json)['motivo_anulacion']?.toString();
@@ -454,8 +475,10 @@ class Pedido {
         puntosUsados: puntosUsados,
         puntosGanados: puntosGanados,
         observaciones: observaciones,
+        aguaCortesia: aguaCortesia,
         motivoAnulacion: motivoAnulacion,
         nombreDomiciliario: json['nombreDomiciliario']?.toString(),
+        tieneResena: tieneResena,
       );
   }
 
@@ -506,8 +529,10 @@ class Pedido {
     int? puntosUsados,
     int? puntosGanados,
     String? observaciones,
+    bool? aguaCortesia,
     String? motivoAnulacion,
     String? nombreDomiciliario,
+    bool? tieneResena,
   }) => Pedido(
     id: id ?? this.id,
     ventaId: ventaId ?? this.ventaId,
@@ -533,8 +558,10 @@ class Pedido {
     puntosUsados: puntosUsados ?? this.puntosUsados,
     puntosGanados: puntosGanados ?? this.puntosGanados,
     observaciones: observaciones ?? this.observaciones,
+    aguaCortesia: aguaCortesia ?? this.aguaCortesia,
     motivoAnulacion: motivoAnulacion ?? this.motivoAnulacion,
     nombreDomiciliario: nombreDomiciliario ?? this.nombreDomiciliario,
+    tieneResena: tieneResena ?? this.tieneResena,
   );
 
   /// Dirección completa legible

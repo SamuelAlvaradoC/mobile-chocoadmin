@@ -7,6 +7,8 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/models/topping.dart';
 import '../../../core/models/adicion.dart';
 import '../../../core/models/producto.dart';
+import '../../../core/utils/nombre_producto.dart';
+import '../../../core/utils/validar_sin_html.dart';
 
 // ── Salsas disponibles (idénticas a React) ───────────────────────────────────
 const _kSalsas = <Map<String, String>>[
@@ -25,6 +27,8 @@ class ModalProductoResult {
   final List<Adicion> adiciones;
   final List<Map<String, dynamic>> salsas;
   final String? tipoChocolate;
+  final String? tipoFrutas;
+  final String? observacion;
   final double cargoExtra;
 
   const ModalProductoResult({
@@ -32,6 +36,8 @@ class ModalProductoResult {
     required this.adiciones,
     required this.salsas,
     this.tipoChocolate,
+    this.tipoFrutas,
+    this.observacion,
     required this.cargoExtra,
   });
 }
@@ -44,12 +50,20 @@ class ToppingsModal extends StatefulWidget {
   final List<Topping> allToppings;
   final List<Adicion> allAdiciones;
   final Producto producto;
+  /// Muestra la nota de preparación como su propio paso final (pantalla
+  /// completa, justo antes de "Agregar al carrito") en vez de como un campo
+  /// enterrado al fondo del paso "Adiciones" -- ahí quedaba prácticamente
+  /// invisible. Solo lo activa el catálogo de cliente; el configurador de
+  /// admin (Pedidos/Ventas, que reusa este mismo widget) sigue con el campo
+  /// inline sin cambios.
+  final bool notaComoPasoFinal;
 
   const ToppingsModal({
     super.key,
     required this.allToppings,
     required this.allAdiciones,
     required this.producto,
+    this.notaComoPasoFinal = false,
   });
 
   @override
@@ -60,11 +74,20 @@ class _ToppingsModalState extends State<ToppingsModal> {
   int _pasoIdx = 0;
   String? _tipoChocolate;
   String? _coberturaElegida;
+  String? _tipoFrutas;
   final Map<int, int> _toppingQty   = {}; // id -> cantidad
   final Set<String>   _salsasSel    = {}; // salsa id strings
   final Map<int, int> _adicionQty   = {}; // id -> cantidad
+  final _observacionCtrl = TextEditingController();
+  String? _errorObservacion;
 
   final _fmt = NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
+
+  @override
+  void dispose() {
+    _observacionCtrl.dispose();
+    super.dispose();
+  }
 
   // Computed
   List<Topping> get _toppings => widget.allToppings.where((t) => !t.esSalsa).toList();
@@ -87,13 +110,17 @@ class _ToppingsModalState extends State<ToppingsModal> {
   double get _total    => widget.producto.precio + _topExtra + _salsasExtra + _adicionTotal;
   double get _cargoExtra => _topExtra + _salsasExtra;
 
+  String get _nombreActual => nombreConFrutas(widget.producto.nombre, _tipoFrutas);
+
   List<String> get _pasos {
     final p = <String>[];
+    if (widget.producto.permiteFrutas)    p.add('frutas');
     if (widget.producto.esBowl)           p.add('bowl');
     if (widget.producto.permiteChocolate) p.add('chocolate');
     if (widget.producto.permiteSalsas)    p.add('salsas');
     if (widget.producto.permiteToppings && _toppings.isNotEmpty) p.add('toppings');
     p.add('adiciones');
+    if (widget.notaComoPasoFinal) p.add('nota');
     return p;
   }
 
@@ -104,6 +131,11 @@ class _ToppingsModalState extends State<ToppingsModal> {
   void _avanzar() {
     if (_pasoActual == 'chocolate' && _tipoChocolate == null) return;
     if (_pasoActual == 'bowl' && _coberturaElegida == null) return;
+    if (_pasoActual == 'frutas' && _tipoFrutas == null) return;
+    if (_esUltimo && contieneEtiquetaHtml(_observacionCtrl.text)) {
+      setState(() => _errorObservacion = mensajeHtml);
+      return;
+    }
     if (_esUltimo) {
       final tFlat = <Topping>[];
       for (final e in _toppingQty.entries) {
@@ -125,6 +157,8 @@ class _ToppingsModalState extends State<ToppingsModal> {
         adiciones: aFlat,
         salsas: sList,
         tipoChocolate: _tipoChocolate,
+        tipoFrutas: _tipoFrutas,
+        observacion: _observacionCtrl.text.trim().isEmpty ? null : _observacionCtrl.text.trim(),
         cargoExtra: _cargoExtra,
       ));
     } else {
@@ -163,10 +197,12 @@ class _ToppingsModalState extends State<ToppingsModal> {
 
   Widget _buildContenido() {
     switch (_pasoActual) {
+      case 'frutas':    return _buildFrutas();
       case 'bowl':      return _buildBowl();
       case 'chocolate': return _buildChocolate();
       case 'salsas':    return _buildSalsas();
       case 'toppings':  return _buildToppings();
+      case 'nota':      return _buildNota();
       default:          return _buildAdiciones();
     }
   }
@@ -179,6 +215,112 @@ class _ToppingsModalState extends State<ToppingsModal> {
       case 'Arequipe':         return const Color(0xFFC8860A);
       default:                 return const Color(0xFFE5E7EB);
     }
+  }
+
+  // ── Paso Frutas ──────────────────────────────────────────────────────────
+  Widget _buildFrutas() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (widget.producto.imagen != null && widget.producto.imagen!.isNotEmpty)
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                child: CachedNetworkImage(
+                  imageUrl: widget.producto.imagen!,
+                  height: 160,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              Positioned(
+                top: 10, right: 10,
+                child: GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    width: 34, height: 34,
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(17)),
+                    alignment: Alignment.center,
+                    child: const Icon(Icons.close, size: 18),
+                  ),
+                ),
+              ),
+            ],
+          )
+        else
+          _header('¿Qué frutas prefieres?', onClose: () => Navigator.pop(context)),
+
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(child: Text(_nombreActual, style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.w800, color: const Color(0xFF1a1a1a)))),
+              Text(_fmt.format(widget.producto.precio), style: GoogleFonts.nunito(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.primary)),
+            ],
+          ),
+        ),
+
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+          child: Text('¿Qué combinación de frutas prefieres?',
+              style: GoogleFonts.nunito(fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFF999999), letterSpacing: 0.8)),
+        ),
+
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+          child: Row(
+            children: combosFrutas.map((op) {
+              final sel = _tipoFrutas == op.id;
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: GestureDetector(
+                    onTap: () => setState(() => _tipoFrutas = op.id),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      height: 130,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: sel ? AppColors.primary : Colors.transparent, width: sel ? 2.5 : 0),
+                        boxShadow: [BoxShadow(color: sel ? const Color(0x55CA0B0B) : const Color(0x1F000000), blurRadius: sel ? 20 : 8, offset: const Offset(0, 4))],
+                      ),
+                      clipBehavior: Clip.hardEdge,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          CachedNetworkImage(
+                            imageUrl: op.img,
+                            fit: BoxFit.cover,
+                            errorWidget: (_, __, ___) => Container(color: const Color(0xFFE5E7EB)),
+                          ),
+                          Container(
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter, colors: [Color(0xB3000000), Colors.transparent]),
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 8, left: 0, right: 0,
+                            child: Column(
+                              children: [
+                                Text(op.etiqueta, textAlign: TextAlign.center,
+                                    style: GoogleFonts.nunito(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
+                                if (sel) Text('Seleccionado ✓', style: GoogleFonts.nunito(fontSize: 10, fontWeight: FontWeight.w600, color: const Color(0xFFfca5a5))),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
   }
 
   // ── Paso Bowl (cobertura) ────────────────────────────────────────────────
@@ -226,7 +368,7 @@ class _ToppingsModalState extends State<ToppingsModal> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(child: Text(widget.producto.nombre, style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.w800, color: const Color(0xFF1a1a1a)))),
+              Expanded(child: Text(_nombreActual, style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.w800, color: const Color(0xFF1a1a1a)))),
               Text(_fmt.format(widget.producto.precio), style: GoogleFonts.nunito(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.primary)),
             ],
           ),
@@ -338,7 +480,7 @@ class _ToppingsModalState extends State<ToppingsModal> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(child: Text(widget.producto.nombre, style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.w800, color: const Color(0xFF1a1a1a)))),
+              Expanded(child: Text(_nombreActual, style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.w800, color: const Color(0xFF1a1a1a)))),
               Text(_fmt.format(widget.producto.precio), style: GoogleFonts.nunito(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.primary)),
             ],
           ),
@@ -415,7 +557,7 @@ class _ToppingsModalState extends State<ToppingsModal> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(widget.producto.nombre, style: GoogleFonts.nunito(fontSize: 15, fontWeight: FontWeight.w800, color: const Color(0xFF1a1a1a))),
+              Text(_nombreActual, style: GoogleFonts.nunito(fontSize: 15, fontWeight: FontWeight.w800, color: const Color(0xFF1a1a1a))),
               Text(_fmt.format(widget.producto.precio), style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.primary)),
             ],
           ),
@@ -732,8 +874,87 @@ class _ToppingsModalState extends State<ToppingsModal> {
                   ),
                 if (sinToppings && widget.allAdiciones.isEmpty)
                   const SizedBox(height: 8),
+                // Cuando notaComoPasoFinal=true (catálogo de cliente), la
+                // nota vive en su propio paso final (_buildNota) en vez de
+                // aquí -- ver comentario en el campo `notaComoPasoFinal`.
+                if (!widget.notaComoPasoFinal)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          Text('Nota de preparación',
+                              style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF1a1a1a))),
+                          const SizedBox(width: 4),
+                          Text('— Opcional',
+                              style: GoogleFonts.nunito(fontSize: 13, color: const Color(0xFFAAAAAA))),
+                        ]),
+                        const SizedBox(height: 6),
+                        TextField(
+                          controller: _observacionCtrl,
+                          maxLength: 255,
+                          maxLines: 2,
+                          onChanged: (_) => setState(() => _errorObservacion = null),
+                          decoration: InputDecoration(
+                            hintText: 'Ej: sin azúcar, extra caliente...',
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: _errorObservacion != null ? const Color(0xFFF87171) : const Color(0xFFE5E7EB))),
+                            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: _errorObservacion != null ? const Color(0xFFF87171) : const Color(0xFFE5E7EB))),
+                          ),
+                        ),
+                        if (_errorObservacion != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(_errorObservacion!, style: const TextStyle(color: Color(0xFFCA0B0B), fontSize: 11)),
+                          ),
+                      ],
+                    ),
+                  ),
               ],
             ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Paso Nota de preparación (solo cuando notaComoPasoFinal=true) ────────
+  Widget _buildNota() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _header('¿Alguna nota de preparación?', subtitle: 'Último paso — opcional', onClose: () => Navigator.pop(context)),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Cuéntanos si necesitas algo especial en la preparación de este producto.',
+                style: GoogleFonts.nunito(fontSize: 13, color: const Color(0xFF888888)),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _observacionCtrl,
+                maxLength: 255,
+                maxLines: 4,
+                autofocus: true,
+                onChanged: (_) => setState(() => _errorObservacion = null),
+                decoration: InputDecoration(
+                  hintText: 'Ej: sin azúcar, extra caliente...',
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _errorObservacion != null ? const Color(0xFFF87171) : const Color(0xFFE5E7EB))),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _errorObservacion != null ? const Color(0xFFF87171) : const Color(0xFFE5E7EB))),
+                ),
+              ),
+              if (_errorObservacion != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(_errorObservacion!, style: const TextStyle(color: Color(0xFFCA0B0B), fontSize: 11)),
+                ),
+            ],
           ),
         ),
       ],
@@ -816,7 +1037,8 @@ class _ToppingsModalState extends State<ToppingsModal> {
   // ── Footer con precio y navegación ──────────────────────────────────────
   Widget _buildFooter() {
     final puedeAvanzar = (_pasoActual != 'chocolate' || _tipoChocolate != null)
-        && (_pasoActual != 'bowl' || _coberturaElegida != null);
+        && (_pasoActual != 'bowl' || _coberturaElegida != null)
+        && (_pasoActual != 'frutas' || _tipoFrutas != null);
     final base = widget.producto.precio;
 
     return Container(

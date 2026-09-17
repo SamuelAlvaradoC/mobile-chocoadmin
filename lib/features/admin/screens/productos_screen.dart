@@ -415,11 +415,12 @@ class _ProductoFormScreenState extends State<_ProductoFormScreen> {
   late final TextEditingController _descCtrl;
   late final TextEditingController _precioCtrl;
   dynamic _idCategoria;
-  String _tamano = 'Mediano (12oz)';
+  String _tamano = 'Mediano (12 Onz)';
   int _maxToppings = 1;
   bool _permiteToppings = false;
   bool _permiteChocolate = false;
   bool _permiteSalsas = false;
+  bool _permiteFrutas = false;
   bool _esBowl = false;
   bool _estado = true;
   String? _imgUrl;
@@ -449,6 +450,7 @@ class _ProductoFormScreenState extends State<_ProductoFormScreen> {
     _maxToppings     = (mt == 2 || mt == '2') ? 2 : 1;
     _permiteChocolate = p?['permite_chocolate'] == true || p?['permite_chocolate'] == 1;
     _permiteSalsas   = p?['permite_salsas'] == true || p?['permite_salsas'] == 1;
+    _permiteFrutas   = p?['permite_frutas'] == true || p?['permite_frutas'] == 1;
     _esBowl          = p?['es_bowl'] == true || p?['es_bowl'] == 1;
     _estado          = _esEditar ? (p!['estado'] == true || p['estado'] == 1) : true;
     _imgUrl          = p?['img']?.toString();
@@ -509,6 +511,7 @@ class _ProductoFormScreenState extends State<_ProductoFormScreen> {
         'max_toppings': _permiteToppings ? _maxToppings : 0,
         'permite_chocolate': _esBowl ? 0 : (_permiteChocolate ? 1 : 0),
         'permite_salsas': _esBowl ? false : _permiteSalsas,
+        'permite_frutas': _permiteFrutas,
         'es_bowl': _esBowl,
         if (_esEditar) 'estado': _estado ? 1 : 0,
         if (_imgUrl != null && _imgUrl!.isNotEmpty) 'img': _imgUrl,
@@ -584,7 +587,11 @@ class _ProductoFormScreenState extends State<_ProductoFormScreen> {
                 const SizedBox(height: 8),
                 _DropdownField(
                   value: _tamano,
-                  items: <String>{'', 'Pequeño (9oz)', 'Mediano (12oz)', 'Grande (16oz)', _tamano}.map((t) => DropdownMenuItem(
+                  // Máximo 20 caracteres -- columna `tamano` es VARCHAR(20)
+                  // en la BD, "Extra pequeño/grande" no caben (21).
+                  items: <String>{
+                    '', 'Mini (6 Onz)', 'Pequeño (9 Onz)', 'Mediano (12 Onz)', 'Grande (16 Onz)', 'Familiar (25 Onz)', _tamano,
+                  }.map((t) => DropdownMenuItem(
                     value: t,
                     child: Text(t.isEmpty ? '(Sin tamaño)' : t, style: GoogleFonts.nunito(fontSize: 13)),
                   )).toList(),
@@ -664,6 +671,13 @@ class _ProductoFormScreenState extends State<_ProductoFormScreen> {
                       onTap: () => setState(() => _permiteSalsas = !_permiteSalsas),
                     ),
                   ),
+                ),
+                const SizedBox(height: 10),
+                _ToggleRow(
+                  activo: _permiteFrutas,
+                  labelActivo: '🍓 Con combinación de frutas',
+                  labelInactivo: 'Sin frutas',
+                  onTap: () => setState(() => _permiteFrutas = !_permiteFrutas),
                 ),
                 const SizedBox(height: 10),
                 _ToggleRow(
@@ -782,6 +796,7 @@ class _ProductoDetalleDialog extends StatelessWidget {
     final toppings = producto['permite_toppings'] == true || producto['permite_toppings'] == 1;
     final chocolate = producto['permite_chocolate'] == true || producto['permite_chocolate'] == 1;
     final salsas = producto['permite_salsas'] == true || producto['permite_salsas'] == 1;
+    final frutas = producto['permite_frutas'] == true || producto['permite_frutas'] == 1;
     final esBowl = producto['es_bowl'] == true || producto['es_bowl'] == 1;
     final precio = (producto['precio'] is num) ? (producto['precio'] as num).toDouble() : 0.0;
     final imgUrl = producto['img']?.toString();
@@ -848,6 +863,13 @@ class _ProductoDetalleDialog extends StatelessWidget {
               ]),
               const SizedBox(height: 8),
               Row(children: [
+                Expanded(child: _DetalleRow(
+                  label: 'Frutas',
+                  value: frutas ? '🍓 Sí' : '✗ No',
+                  valueColor: frutas ? const Color(0xFF1a1a1a) : const Color(0xFF999999),
+                  valueBg: const Color(0xFFF5F5F5),
+                )),
+                const SizedBox(width: 12),
                 Expanded(child: _DetalleRow(
                   label: 'Untables',
                   value: salsas ? '✓ Sí' : '✗ No',
@@ -1076,9 +1098,13 @@ class _DetalleRowFull extends StatelessWidget {
 }
 
 String _normTamano(String t) {
-  if (t == 'Pequeño') return 'Pequeño (9oz)';
-  if (t == 'Mediano') return 'Mediano (12oz)';
-  if (t == 'Grande')  return 'Grande (16oz)';
+  if (t == 'Pequeño') return 'Pequeño (9 Onz)';
+  if (t == 'Mediano') return 'Mediano (12 Onz)';
+  if (t == 'Grande')  return 'Grande (16 Onz)';
+  // Valores legacy con "oz" sin espacio, de antes de la corrección de formato.
+  if (t == 'Pequeño (9oz)')  return 'Pequeño (9 Onz)';
+  if (t == 'Mediano (12oz)') return 'Mediano (12 Onz)';
+  if (t == 'Grande (16oz)')  return 'Grande (16 Onz)';
   return t;
 }
 

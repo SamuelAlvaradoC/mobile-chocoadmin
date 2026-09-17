@@ -67,6 +67,8 @@ class CarritoProvider extends ChangeNotifier {
     required List<Adicion> adiciones,
     List<Map<String, dynamic>> salsas = const [],
     String? tipoChocolate,
+    String? tipoFrutas,
+    String? observacion,
     double cargoExtra = 0,
   }) {
     final lineaId = CarritoItem.generarLineaId(
@@ -75,6 +77,8 @@ class CarritoProvider extends ChangeNotifier {
       adicionIds: adiciones.map((a) => a.id).toList(),
       salsaIds: salsas.map((s) => (s['id'] ?? s['nombre'])?.toString() ?? '').toList(),
       tipoChocolate: tipoChocolate,
+      tipoFrutas: tipoFrutas,
+      observacion: observacion,
     );
 
     final idx = _items.indexWhere((i) => i.lineaId == lineaId);
@@ -88,6 +92,8 @@ class CarritoProvider extends ChangeNotifier {
         adiciones: adiciones,
         salsas: salsas,
         tipoChocolate: tipoChocolate,
+        tipoFrutas: tipoFrutas,
+        observacion: observacion,
         cargoExtra: cargoExtra,
       ));
     }
@@ -138,6 +144,8 @@ class CarritoProvider extends ChangeNotifier {
         'cantidad': i.cantidad,
         'cargoExtra': i.cargoExtra,
         'tipoChocolate': i.tipoChocolate,
+        'tipoFrutas': i.tipoFrutas,
+        'observacion': i.observacion,
         'salsas': i.salsas,
         'producto': {
           'id': i.producto.id,
@@ -148,6 +156,7 @@ class CarritoProvider extends ChangeNotifier {
           'maxToppings': i.producto.maxToppings,
           'permiteSalsas': i.producto.permiteSalsas,
           'permiteChocolate': i.producto.permiteChocolate,
+          'permiteFrutas': i.producto.permiteFrutas,
           'esBowl': i.producto.esBowl,
           'idCategoria': i.producto.idCategoria,
           'imagen': i.producto.imagen,
@@ -173,6 +182,7 @@ class CarritoProvider extends ChangeNotifier {
         maxToppings: p['maxToppings'] as int,
         permiteSalsas: p['permiteSalsas'] as bool,
         permiteChocolate: p['permiteChocolate'] as bool,
+        permiteFrutas: p['permiteFrutas'] as bool? ?? false,
         esBowl: p['esBowl'] as bool,
         idCategoria: p['idCategoria'] as int?,
         imagen: p['imagen'] as String?,
@@ -205,6 +215,8 @@ class CarritoProvider extends ChangeNotifier {
         adiciones: adiciones,
         salsas: salsas,
         tipoChocolate: json['tipoChocolate'] as String?,
+        tipoFrutas: json['tipoFrutas'] as String?,
+        observacion: json['observacion'] as String?,
         cargoExtra: (json['cargoExtra'] as num?)?.toDouble() ?? 0,
         cantidad: json['cantidad'] as int? ?? 1,
       );

@@ -230,6 +230,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
         allToppings:  catalogo.toppings,
         allAdiciones: catalogo.adiciones,
         producto:     producto,
+        notaComoPasoFinal: true,
       ),
     );
     if (result == null || !mounted) return;
@@ -240,6 +241,8 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
       adiciones:     result.adiciones,
       salsas:        result.salsas,
       tipoChocolate: result.tipoChocolate,
+      tipoFrutas:    result.tipoFrutas,
+      observacion:   result.observacion,
       cargoExtra:    result.cargoExtra,
     );
   }
@@ -741,9 +744,9 @@ class _CarritoBottomBarState extends State<_CarritoBottomBar> {
                                       imageUrl: item.producto.imagen!,
                                       fit: BoxFit.cover,
                                       placeholder: (_, __) => Container(color: AppColors.surfaceVariant),
-                                      errorWidget: (_, __, ___) => _thumbFallback(item.producto.nombre),
+                                      errorWidget: (_, __, ___) => _thumbFallback(item.nombreCompleto),
                                     )
-                                  : _thumbFallback(item.producto.nombre),
+                                  : _thumbFallback(item.nombreCompleto),
                             ),
                           ),
                           const SizedBox(width: 14),
@@ -752,7 +755,7 @@ class _CarritoBottomBarState extends State<_CarritoBottomBar> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(item.producto.nombre,
+                                Text(item.nombreCompleto,
                                     style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w800),
                                     maxLines: 1, overflow: TextOverflow.ellipsis),
                                 if (item.tipoChocolate != null || item.toppings.isNotEmpty || item.adiciones.isNotEmpty || item.salsas.isNotEmpty) ...[
@@ -813,6 +816,11 @@ class _CarritoBottomBarState extends State<_CarritoBottomBar> {
                                         )),
                                     ],
                                   ),
+                                ],
+                                if (item.observacion != null && item.observacion!.isNotEmpty) ...[
+                                  const SizedBox(height: 3),
+                                  Text('"${item.observacion}"',
+                                      style: GoogleFonts.nunito(fontSize: 10, color: const Color(0xFF666666), fontStyle: FontStyle.italic)),
                                 ],
                                 const SizedBox(height: 3),
                                 Text('${fmt.format(item.precioUnitario)} c/u',
@@ -1053,7 +1061,7 @@ class _CarritoBottomBarState extends State<_CarritoBottomBar> {
                                 margin: const EdgeInsets.only(right: 6),
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                 decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(20)),
-                                child: Text('${item.cantidad}× ${item.producto.nombre}',
+                                child: Text('${item.cantidad}× ${item.nombreCompleto}',
                                     style: GoogleFonts.nunito(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
                               )),
                               if (carrito.items.length > 2)
@@ -1124,7 +1132,15 @@ class _ProductoCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppSizes.radiusLg),
         border: Border.all(color: AppColors.border),
       ),
-      child: Column(
+      child: Flex(
+        direction: Axis.vertical,
+        // Red de seguridad igual que el Flex interno de más abajo: si el
+        // aspect ratio fijo del grid (childAspectRatio) queda corto en un
+        // dispositivo con letra del sistema más grande, esto recorta limpio
+        // en vez de mostrar el aviso de debug "A RenderFlex overflowed" —
+        // visto en vivo en un Huawei/Honor real, no reproducible en todos
+        // los celulares porque depende del textScaleFactor de cada uno.
+        clipBehavior: Clip.hardEdge,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Imagen — tamaño fijo, no se expande

@@ -13,6 +13,8 @@ import 'core/services/auth_service.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/cliente/providers/catalogo_provider.dart';
 import 'features/cliente/providers/carrito_provider.dart';
+import 'features/cliente/providers/resena_flow_provider.dart';
+import 'features/cliente/widgets/resena_pendiente_banner.dart';
 
 // Auth
 import 'features/auth/screens/login_screen.dart';
@@ -30,6 +32,7 @@ import 'features/cliente/screens/perfil_screen.dart';
 import 'shared/layouts/client_bottom_nav.dart';
 import 'shared/layouts/root_shell_scaffold.dart';
 import 'shared/widgets/double_back_to_exit.dart';
+import 'shared/widgets/whatsapp_fab.dart';
 
 // Domiciliario
 import 'features/domiciliario/screens/pedidos_screen.dart';
@@ -90,6 +93,14 @@ class ChocAdminApp extends StatelessWidget {
           create: (_) => CarritoProvider(),
           update: (_, auth, carrito) =>
               (carrito ?? CarritoProvider())..sincronizarUsuario(auth.user?.id),
+        ),
+        // Mismo patrón que CarritoProvider: se resincroniza cada vez que
+        // cambia el usuario logueado (login/logout), así el banner de
+        // reseña pendiente nunca muestra el pedido de otra sesión.
+        ChangeNotifierProxyProvider<AuthProvider, ResenaFlowProvider>(
+          create: (_) => ResenaFlowProvider(),
+          update: (_, auth, flow) =>
+              (flow ?? ResenaFlowProvider())..sincronizarUsuario(auth.user?.id),
         ),
       ],
       child: const _AppRouter(),
@@ -168,10 +179,42 @@ class _AppRouterState extends State<_AppRouter> {
         // completo en double_back_to_exit.dart y root_shell_scaffold.dart
         // sobre por qué ninguno de los dos funciona en la raíz de un branch.
         StatefulShellRoute.indexedStack(
-          builder: (context, state, navigationShell) => RootShellScaffold(
-            navigationShell: navigationShell,
-            bottomNavBuilder: (shell) => ClientBottomNav(navigationShell: shell),
-          ),
+          builder: (context, state, navigationShell) {
+            final resenaFlow = context.watch<ResenaFlowProvider>();
+            return RootShellScaffold(
+              navigationShell: navigationShell,
+              bottomNavBuilder: (shell) => ClientBottomNav(navigationShell: shell),
+              // Catálogo (branch 0) tiene su propia barra de carrito fija abajo
+              // (Positioned bottom:0 dentro de su propio Scaffold anidado) que
+              // taparía el FAB si quedara en la posición default -- se sube
+              // para despejarla, igual que el ajuste que se hizo en la web.
+              floatingActionButton: Padding(
+                padding: EdgeInsets.only(bottom: navigationShell.currentIndex == 0 ? 64 : 0),
+                child: const WhatsAppFab(),
+              ),
+              // null (no solo widget invisible) cuando no hay pendientes, para
+              // que RootShellScaffold NO le quite presupuesto de MediaQuery.
+              // padding.top al navigationShell si no hay nada que mostrar --
+              // ver comentario en root_shell_scaffold.dart.
+              banner: resenaFlow.hayPendientes
+                  ? ResenaPendienteBanner(
+                      onDejarResena: (idVenta) {
+                        resenaFlow.seleccionarParaFormulario(idVenta);
+                        navigationShell.goBranch(1);
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          Future.delayed(const Duration(milliseconds: 150), () {
+                            final ctx = LandingScreen.resenasKey.currentContext;
+                            if (ctx != null) {
+                              Scrollable.ensureVisible(ctx,
+                                  duration: const Duration(milliseconds: 450), curve: Curves.easeInOut);
+                            }
+                          });
+                        });
+                      },
+                    )
+                  : null,
+            );
+          },
           branches: [
             StatefulShellBranch(routes: [
               GoRoute(
