@@ -437,6 +437,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       Wrap(spacing: 6, runSpacing: 6, children: [
                                         _DomiciliarioChip(label: 'Efectivo', valor: _fmt.format(_toDouble(d['efectivo'] ?? 0)), color: const Color(0xFF16A34A)),
                                         _DomiciliarioChip(label: 'Transferencia', valor: _fmt.format(_toDouble(d['transferencia'] ?? 0)), color: const Color(0xFF7C3AED)),
+                                        _DomiciliarioChip(label: 'Datáfono', valor: _fmt.format(_toDouble(d['datafono'] ?? 0)), color: const Color(0xFFC2410C)),
                                         _DomiciliarioChip(label: 'Total envíos', valor: _fmt.format(_toDouble(d['total_domicilios'] ?? 0)), color: const Color(0xFF0369A1)),
                                       ]),
                                     ]),

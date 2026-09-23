@@ -219,7 +219,7 @@ class _VentasScreenState extends State<VentasScreen> {
       NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
   final _fmtFecha = DateFormat('dd/MM/yy HH:mm', 'es_CO');
 
-  static const _metodosPago = ['efectivo', 'transferencia', 'mixto'];
+  static const _metodosPago = ['efectivo', 'transferencia', 'mixto', 'datafono'];
 
   final _fmtFechaDisplay = DateFormat("EEEE d 'de' MMMM", 'es_CO');
 

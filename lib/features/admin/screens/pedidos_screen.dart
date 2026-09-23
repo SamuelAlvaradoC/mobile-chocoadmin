@@ -334,7 +334,7 @@ class _AdminPedidosScreenState extends State<AdminPedidosScreen> {
     'anulado',
   ];
 
-  static const _metodosPago = ['efectivo', 'transferencia', 'mixto'];
+  static const _metodosPago = ['efectivo', 'transferencia', 'mixto', 'datafono'];
 
   final _fmtFechaDisplay = DateFormat("EEEE d 'de' MMMM", 'es_CO');
 
