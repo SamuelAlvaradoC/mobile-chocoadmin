@@ -30,7 +30,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   double _totalEfectivo      = 0;
   double _totalTransferencia = 0;
   double _totalDomicilios    = 0;
-  int    _domiciliosActivos  = 0;
+  double _totalDatafono      = 0;
+  int    _countDatafono      = 0;
 
   // Tiempo estimado editable
   int _tiempoEspera = 30;
@@ -77,11 +78,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ApiService.get('/api/dashboard/total-dia',            queryParams: qp.isNotEmpty ? qp : null).catchError((_) => null),
         ApiService.get('/api/dashboard/productos-mas-vendidos').catchError((_) => null),
         ApiService.get('/api/dashboard/domiciliarios-dia',    queryParams: qp.isNotEmpty ? qp : null).catchError((_) => null),
-        // Igual que React: "domicilios activos" = ventas actualmente despachadas (en camino), no un campo de total-dia
-        ApiService.get('/api/ventas', queryParams: {'estado': 'despachado', ...qp}).catchError((_) => null),
       ]);
 
-      // Total día — { data: { total_ventas, monto_total, total_efectivo, total_transferencia, total_domicilios, domicilios_activos } }
+      // Total día — { data: { total_ventas, monto_total, total_efectivo, total_transferencia, total_domicilios, total_datafono, count_datafono } }
       final td = results[0];
       if (td is Map) {
         final inner = td['data'] is Map ? td['data'] as Map : td;
@@ -92,12 +91,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _totalEfectivo      = _toDouble(inner['total_efectivo']      ?? 0);
         _totalTransferencia = _toDouble(inner['total_transferencia'] ?? 0);
         _totalDomicilios    = _toDouble(inner['total_domicilios']    ?? 0);
+        _totalDatafono      = _toDouble(inner['total_datafono']      ?? 0);
+        _countDatafono      = (inner['count_datafono'] ?? 0) is int
+            ? inner['count_datafono'] ?? 0
+            : int.tryParse((inner['count_datafono'] ?? 0).toString()) ?? 0;
       }
-
-      // Domicilios activos = ventas actualmente despachadas (igual que React: api.js getDashboard)
-      final desp = results[3];
-      List rawDesp = desp is List ? desp : (desp is Map && desp['data'] is List ? desp['data'] as List : []);
-      _domiciliosActivos = rawDesp.length;
 
       // Productos más vendidos
       final pm = results[1];
@@ -261,9 +259,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         children: [
-                          _StatCard(icono: Icons.payments_outlined,       titulo: 'Ingresos hoy',       valor: _fmt.format(_totalDia), sub: 'Efectivo neto + transferencia', color: AppColors.success),
+                          _StatCard(icono: Icons.payments_outlined,       titulo: 'Ingresos hoy',       valor: _fmt.format(_totalDia), sub: 'Efectivo neto + transferencia + datáfono', color: AppColors.success),
                           _StatCard(icono: Icons.shopping_cart_outlined,   titulo: 'Ventas hoy',         valor: '$_ventasHoy',          sub: 'Pedidos del día',    color: const Color(0xFF3B82F6)),
-                          _StatCard(icono: Icons.delivery_dining_rounded,  titulo: 'Domicilios activos', valor: '$_domiciliosActivos',  sub: 'En camino',          color: const Color(0xFF7C3AED)),
+                          _StatCard(icono: Icons.credit_card,              titulo: 'Pagos con datáfono', valor: _fmt.format(_totalDatafono), sub: '$_countDatafono pagos del día', color: const Color(0xFFC2410C)),
                           _TiempoEstimadoCard(tiempoInicial: _tiempoEspera, onSaved: _guardarTiempoEspera),
                         ],
                       ); }),

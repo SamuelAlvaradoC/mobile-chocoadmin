@@ -772,6 +772,7 @@ class _AdminPedidosScreenState extends State<AdminPedidosScreen> {
       case 'efectivo':     return 'Efectivo';
       case 'transferencia': return 'Transferencia';
       case 'mixto':        return 'Mixto';
+      case 'datafono':     return 'Datáfono';
       default:             return m;
     }
   }
@@ -1033,9 +1034,10 @@ class _MetodoBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final isEf = metodo == 'efectivo';
     final isMx = metodo == 'mixto';
-    final color = isEf ? const Color(0xFFCA8A04) : isMx ? const Color(0xFF7C3AED) : const Color(0xFF3B82F6);
-    final bg    = isEf ? const Color(0xFFFEFCE8) : isMx ? const Color(0xFFF5F3FF) : const Color(0xFFEFF6FF);
-    final label = isEf ? 'Efectivo' : isMx ? 'Mixto' : 'Transferencia';
+    final isDf = metodo == 'datafono';
+    final color = isEf ? const Color(0xFFCA8A04) : isMx ? const Color(0xFF7C3AED) : isDf ? const Color(0xFFC2410C) : const Color(0xFF3B82F6);
+    final bg    = isEf ? const Color(0xFFFEFCE8) : isMx ? const Color(0xFFF5F3FF) : isDf ? const Color(0xFFFFF7ED) : const Color(0xFFEFF6FF);
+    final label = isEf ? 'Efectivo' : isMx ? 'Mixto' : isDf ? 'Datáfono' : 'Transferencia';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(

@@ -632,14 +632,17 @@ class _PagoBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final isEf = formaPago == 'efectivo';
     final isMx = formaPago == 'mixto';
-    final color = isEf ? const Color(0xFFCA8A04) : isMx ? const Color(0xFF7C3AED) : const Color(0xFF3B82F6);
-    final bg    = isEf ? const Color(0xFFFEFCE8) : isMx ? const Color(0xFFF5F3FF) : const Color(0xFFEFF6FF);
-    final label = isEf ? 'Efectivo' : isMx ? 'Mixto' : 'Transferencia';
+    final isDf = formaPago == 'datafono';
+    final color = isEf ? const Color(0xFFCA8A04) : isMx ? const Color(0xFF7C3AED) : isDf ? const Color(0xFFC2410C) : const Color(0xFF3B82F6);
+    final bg    = isEf ? const Color(0xFFFEFCE8) : isMx ? const Color(0xFFF5F3FF) : isDf ? const Color(0xFFFFF7ED) : const Color(0xFFEFF6FF);
+    final label = isEf ? 'Efectivo' : isMx ? 'Mixto' : isDf ? 'Datáfono' : 'Transferencia';
     final icon  = isEf
         ? Icon(Icons.payments_outlined, size: 11, color: color)
         : isMx
             ? Icon(Icons.sync_alt_rounded, size: 11, color: color)
-            : Icon(Icons.phone_android_rounded, size: 11, color: color);
+            : isDf
+                ? Icon(Icons.credit_card, size: 11, color: color)
+                : Icon(Icons.phone_android_rounded, size: 11, color: color);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(

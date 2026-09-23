@@ -1587,18 +1587,23 @@ class _PagoBadgeAdmin extends StatelessWidget {
   Widget build(BuildContext context) {
     final isEf = formaPago == 'efectivo';
     final isMx = formaPago == 'mixto';
+    final isDf = formaPago == 'datafono';
     final Color bg = isEf
         ? const Color(0xFFFFF3CD)
         : isMx
             ? const Color(0xFFF5F3FF)
-            : const Color(0xFFD1ECF1);
+            : isDf
+                ? const Color(0xFFFFF7ED)
+                : const Color(0xFFD1ECF1);
     final Color color = isEf
         ? const Color(0xFF856404)
         : isMx
             ? const Color(0xFF7C3AED)
-            : const Color(0xFF0C5460);
+            : isDf
+                ? const Color(0xFFC2410C)
+                : const Color(0xFF0C5460);
     final String label =
-        isEf ? 'Efectivo' : isMx ? 'Mixto' : 'Transferencia';
+        isEf ? 'Efectivo' : isMx ? 'Mixto' : isDf ? 'Datáfono' : 'Transferencia';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration:
