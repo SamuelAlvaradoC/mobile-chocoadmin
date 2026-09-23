@@ -479,37 +479,71 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
             onRefresh: _refrescar,
             child: filtrados.isEmpty
                 ? const Center(child: Text('No se encontraron productos'))
-                : GridView.builder(
+                : ListView.builder(
+                    key: const Key('catalogo_grid'),
                     padding: const EdgeInsets.fromLTRB(
                       AppSizes.screenPadding, AppSizes.screenPadding,
                       AppSizes.screenPadding, 80, // espacio para bottom bar
                     ),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                      // 0.545 en vez de 0.62 -- alto real necesario para que
-                      // nombre (2 líneas) + descripción (4 líneas, ver
-                      // maxLines en _ProductoCard) + el SizedBox(6) de
-                      // separación antes del precio/botón quepan sin
-                      // desbordarse (probado en dispositivo real: un valor
-                      // menor generaba "A RenderFlex overflowed by X pixels"
-                      // en productos con descripción larga). El bloque de
-                      // texto sigue siendo Expanded (no Flexible) a
-                      // propósito: así el precio/botón queda alineado en la
-                      // misma fila en toda la grilla -- el costo es un hueco
-                      // debajo de descripciones cortas, trade-off normal en
-                      // grillas de tarjetas (Rappi, UberEats, etc).
-                      childAspectRatio: 0.545,
-                    ),
-                    itemCount: filtrados.length,
-                    itemBuilder: (_, i) => _ProductoCard(
-                      key: ValueKey('producto_card_${filtrados[i].id}'),
-                      producto: filtrados[i],
-                      fmt: fmt,
-                      destacado: rankMasPedidos.containsKey(filtrados[i].id),
-                      onAgregar: () => _agregarProducto(filtrados[i]),
-                    ),
+                    // Antes era GridView.builder con childAspectRatio fijo --
+                    // SliverGridDelegateWithFixedCrossAxisCount le da un solo
+                    // aspect ratio a TODA la grilla (no por fila, a
+                    // diferencia de CSS Grid en React), así que tenía que
+                    // calibrarse para la descripción MÁS LARGA de todo el
+                    // catálogo ("Choco Spaguettis Mix") -- cualquier tarjeta
+                    // con descripción corta (ej. Bowl Fresa) quedaba con un
+                    // hueco enorme, sin relación con su propia fila.
+                    //
+                    // Ahora la grilla se arma a mano: una fila (Row) por
+                    // cada 2 productos, envuelta en IntrinsicHeight. Row por
+                    // defecto no estira sus hijos a la misma altura
+                    // (crossAxisAlignment.center) -- con
+                    // crossAxisAlignment.stretch SÍ lo hace, pero solo puede
+                    // calcular cuánto estirar si el Row tiene una altura
+                    // definida, y dentro de un ListView cada item tiene alto
+                    // NO acotado por defecto. IntrinsicHeight resuelve eso:
+                    // mide la altura natural de la tarjeta más alta de ESA
+                    // fila y se la da al Row como alto fijo, que luego
+                    // stretch reparte entre las 2 tarjetas -- exactamente el
+                    // mismo resultado que el align-items:stretch por fila
+                    // que ya usa CSS Grid en React, sin arrastrar la altura
+                    // de una fila a otra.
+                    itemCount: (filtrados.length / 2).ceil(),
+                    itemBuilder: (_, fila) {
+                      final i1 = fila * 2;
+                      final i2 = i1 + 1;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                child: _ProductoCard(
+                                  key: ValueKey('producto_card_${filtrados[i1].id}'),
+                                  producto: filtrados[i1],
+                                  fmt: fmt,
+                                  destacado: rankMasPedidos.containsKey(filtrados[i1].id),
+                                  onAgregar: () => _agregarProducto(filtrados[i1]),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: i2 < filtrados.length
+                                    ? _ProductoCard(
+                                        key: ValueKey('producto_card_${filtrados[i2].id}'),
+                                        producto: filtrados[i2],
+                                        fmt: fmt,
+                                        destacado: rankMasPedidos.containsKey(filtrados[i2].id),
+                                        onAgregar: () => _agregarProducto(filtrados[i2]),
+                                      )
+                                    : const SizedBox(),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
           ),
         ),
@@ -1134,12 +1168,14 @@ class _ProductoCard extends StatelessWidget {
       ),
       child: Flex(
         direction: Axis.vertical,
-        // Red de seguridad igual que el Flex interno de más abajo: si el
-        // aspect ratio fijo del grid (childAspectRatio) queda corto en un
-        // dispositivo con letra del sistema más grande, esto recorta limpio
-        // en vez de mostrar el aviso de debug "A RenderFlex overflowed" —
-        // visto en vivo en un Huawei/Honor real, no reproducible en todos
-        // los celulares porque depende del textScaleFactor de cada uno.
+        // Red de seguridad igual que el Flex interno de más abajo: la altura
+        // de esta tarjeta la fija IntrinsicHeight en el widget padre (la
+        // más alta de su fila de 2) -- si en algún dispositivo con letra del
+        // sistema más grande el contenido no alcanza a caber en ese alto,
+        // esto recorta limpio en vez de mostrar el aviso de debug "A
+        // RenderFlex overflowed" -- visto en vivo en un Huawei/Honor real,
+        // no reproducible en todos los celulares porque depende del
+        // textScaleFactor de cada uno.
         clipBehavior: Clip.hardEdge,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1175,16 +1211,20 @@ class _ProductoCard extends StatelessWidget {
             ),
           ),
 
-          // Nombre + descripción — absorbe el espacio variable.
+          // Nombre + descripción — absorbe el espacio variable (Expanded):
+          // dentro de la altura que IntrinsicHeight le dio a la tarjeta,
+          // este bloque toma lo que sobra después de imagen y footer, así
+          // el precio/botón queda pegado al fondo igual en las 2 tarjetas
+          // de la fila, sea cual sea la longitud real de cada descripción.
           // clipBehavior: Clip.hardEdge es la red de seguridad: si en algún
-          // dispositivo el cálculo de arriba (childAspectRatio del grid)
-          // queda corto por unos pocos px, esto recorta limpio en vez de
-          // desbordarse y mostrar el aviso de debug "A RenderFlex
-          // overflowed by X pixels" (lo que se vio como "bottom overflowed"
-          // en el celular real). Column (el widget de conveniencia) no
-          // expone clipBehavior en esta versión de Flutter -- Flex sí, y
-          // Column es literalmente Flex con direction: Axis.vertical fijo,
-          // así que se usa Flex directo acá para poder pasarlo.
+          // dispositivo el contenido no alcanza a caber, esto recorta
+          // limpio en vez de desbordarse y mostrar el aviso de debug "A
+          // RenderFlex overflowed by X pixels" (lo que se vio como "bottom
+          // overflowed" en el celular real). Column (el widget de
+          // conveniencia) no expone clipBehavior en esta versión de Flutter
+          // -- Flex sí, y Column es literalmente Flex con direction:
+          // Axis.vertical fijo, así que se usa Flex directo acá para poder
+          // pasarlo.
           Expanded(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
@@ -1211,15 +1251,13 @@ class _ProductoCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       producto.descripcion ?? '',
-                      // 4 líneas: la mayoría de descripciones reales del
-                      // catálogo (revisadas en la BD) tiene 40-90 caracteres
-                      // (2-3 líneas a este tamaño de letra); unas pocas
-                      // llegan a 100-145 caracteres (p.ej. "Krispi Bowl") y
-                      // esas siguen truncando con "...", que es el
-                      // comportamiento esperado/normal.
+                      // Sin maxLines/overflow -- la descripción se muestra
+                      // completa siempre, nunca se corta. Ya no depende de
+                      // calibrar ningún aspect ratio: la tarjeta simplemente
+                      // crece lo que su propio contenido necesite, y
+                      // IntrinsicHeight (ver el grid arriba) empareja esa
+                      // altura con la de su vecina en la misma fila.
                       style: Theme.of(context).textTheme.bodySmall,
-                      maxLines: 4,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ],

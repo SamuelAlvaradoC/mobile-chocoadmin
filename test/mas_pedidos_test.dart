@@ -132,8 +132,11 @@ void main() {
     expect(find.text('🔥 Más Pedidos'), findsNothing);
     expect(find.text('Más Pedidos'), findsNothing);
     expect(find.byKey(const Key('mas_pedidos_list')), findsNothing);
-    // Un solo GridView en toda la pantalla -- no dos listas paralelas.
-    expect(find.byType(GridView), findsOneWidget);
+    // Una sola lista de productos en toda la pantalla -- no dos listas
+    // paralelas. Se busca por Key (no por tipo de widget) porque la
+    // pantalla ya tiene otro ListView (el selector horizontal de
+    // categorías) -- find.byType(ListView) encontraría ambos.
+    expect(find.byKey(const Key('catalogo_grid')), findsOneWidget);
   });
 
   testWidgets('en "Todos": los 6 más pedidos aparecen primero, en orden, seguidos del resto', (tester) async {
