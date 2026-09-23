@@ -142,6 +142,13 @@ class _CierreCajaScreenState extends State<CierreCajaScreen> {
     if (forma == 'mixto') return a + (v['monto_transf'] as double);
     return a;
   });
+  // Datáfono no reparte en mixto (no existe esa combinación) -- monto bruto,
+  // igual que el resto del proyecto: el domicilio de una venta con datáfono
+  // se paga en efectivo, no se resta de este bucket.
+  double get _totalDatafono => _ventas.fold(0.0, (a, v) {
+    final forma = v['forma_pago'] as String;
+    return forma == 'datafono' ? a + (v['total'] as double) : a;
+  });
   double get _totalDomicilios => _ventas.fold(0, (a, v) => a + (v['costo_domicilio'] as double));
   double get _totalEntregar  => _totalEfectivo - _totalDomicilios;
 
@@ -166,6 +173,7 @@ class _CierreCajaScreenState extends State<CierreCajaScreen> {
       _Tarjeta(titulo: 'Total día',                   valor: _totalDia,        border: const Color(0xFF22C55E), bg: const Color(0xFFF0FDF4), iconData: Icons.payments_outlined),
       _Tarjeta(titulo: 'Total ventas en efectivo',    valor: _totalEfectivo,   border: const Color(0xFF3B82F6), bg: const Color(0xFFEFF6FF), iconData: Icons.account_balance_wallet_outlined),
       _Tarjeta(titulo: 'Total ventas transferencia',  valor: _totalTransf,     border: const Color(0xFFF97316), bg: const Color(0xFFFFF7ED), iconData: Icons.smartphone_outlined),
+      _Tarjeta(titulo: 'Total ventas datáfono',       valor: _totalDatafono,   border: const Color(0xFFC2410C), bg: const Color(0xFFFFF7ED), iconData: Icons.credit_card),
       _Tarjeta(titulo: 'Total en domicilios',         valor: _totalDomicilios, border: const Color(0xFF6B7280), bg: const Color(0xFFF9FAFB), iconData: Icons.delivery_dining_rounded),
       _Tarjeta(titulo: 'Total efectivo a entregar',   valor: _totalEntregar,   border: AppColors.primary,      bg: const Color(0xFFFFF5F5), iconData: Icons.check_circle_outlined),
     ];
@@ -431,9 +439,10 @@ class _PagoBadgeCaja extends StatelessWidget {
   Widget build(BuildContext context) {
     final isEf    = formaPago == 'efectivo';
     final isTr    = formaPago == 'transferencia';
-    final color   = isEf ? const Color(0xFFCA8A04) : isTr ? const Color(0xFF3B82F6) : const Color(0xFF7C3AED);
-    final bg      = isEf ? const Color(0xFFFEFCE8) : isTr ? const Color(0xFFEFF6FF) : const Color(0xFFF5F3FF);
-    final label   = isEf ? 'Efectivo' : isTr ? 'Transf.' : 'Mixto';
+    final isDf    = formaPago == 'datafono';
+    final color   = isEf ? const Color(0xFFCA8A04) : isTr ? const Color(0xFF3B82F6) : isDf ? const Color(0xFFC2410C) : const Color(0xFF7C3AED);
+    final bg      = isEf ? const Color(0xFFFEFCE8) : isTr ? const Color(0xFFEFF6FF) : isDf ? const Color(0xFFFFF7ED) : const Color(0xFFF5F3FF);
+    final label   = isEf ? 'Efectivo' : isTr ? 'Transf.' : isDf ? 'Datáfono' : 'Mixto';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(

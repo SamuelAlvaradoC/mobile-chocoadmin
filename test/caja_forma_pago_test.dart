@@ -38,11 +38,27 @@ void main() {
     SharedPreferences.setMockInitialValues({'token': 'un-token-cualquiera'});
   });
 
+  // La pantalla real es un solo ListView con header + tarjetas + listado +
+  // resumen -- ListView solo monta (como Elements) los hijos que caben en el
+  // viewport + cache extent, igual que .builder(). Con 6 tarjetas (antes 5,
+  // desde que se agregó Datáfono) el contenido ya no cabe en el tamaño de
+  // superficie por defecto del test (~800x600), así que "Total efectivo a
+  // entregar" y todo lo que sigue quedaba sin montar y find.text() no lo
+  // encontraba -- no era un bug de la pantalla, era el viewport del test.
+  // Se agranda la superficie de cada test para que todo el contenido quepa.
+  void agrandarSuperficie(WidgetTester tester) {
+    tester.view.physicalSize = const Size(1080, 4000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+  }
+
   tearDown(() {
     ApiService.client = MockClient((_) async => http.Response('No mockeado', 400));
   });
 
   testWidgets('el total de efectivo y transferencia se calculan filtrando por forma_pago, no sumando todo', (tester) async {
+    agrandarSuperficie(tester);
     ApiService.client = MockClient((req) async {
       if (req.url.path.contains('/api/ventas/mis-despachos')) {
         final ventas = [
@@ -90,11 +106,15 @@ void main() {
     //   transferencia = 20000 (B, puro) + 9000 (C, parte mixta) = 29000
     //   domicilios = 1500 (A) + 0 (B) + 500 (C) = 2000
     //   a entregar = 16000 - 2000 = 14000
-    expect(find.text(_fmt.format(16000)), findsOneWidget,
+    // 16000 y 14000 aparecen 2 veces cada uno: en su tarjeta y de nuevo en
+    // la fila correspondiente del resumen final ("Total recaudado en
+    // efectivo" / "Efectivo a entregar"). 29000 (transferencia) no tiene
+    // fila propia en el resumen final, así que se queda en 1.
+    expect(find.text(_fmt.format(16000)), findsNWidgets(2),
         reason: 'total efectivo correcto: A completo + parte efectivo de C, sin el señuelo de B');
     expect(find.text(_fmt.format(29000)), findsOneWidget,
         reason: 'total transferencia correcto: B completo + parte transferencia de C, sin el señuelo de A');
-    expect(find.text(_fmt.format(14000)), findsOneWidget,
+    expect(find.text(_fmt.format(14000)), findsNWidgets(2),
         reason: 'total a entregar = efectivo correcto (16000) - domicilios (2000)');
 
     // Si el bug de "sumar todo sin filtrar" siguiera presente, los señuelos
@@ -106,6 +126,7 @@ void main() {
   });
 
   testWidgets('con una sola venta en efectivo, el total de transferencia es cero (no arrastra el total)', (tester) async {
+    agrandarSuperficie(tester);
     ApiService.client = MockClient((req) async {
       if (req.url.path.contains('/api/ventas/mis-despachos')) {
         return http.Response(jsonEncode({'data': [
@@ -124,8 +145,11 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    expect(find.text(_fmt.format(8000)), findsNWidgets(2)); // total día == total efectivo (misma cifra, 2 tarjetas)
-    expect(find.text(_fmt.format(0)), findsOneWidget); // total transferencia
-    expect(find.text(_fmt.format(7000)), findsOneWidget); // a entregar = 8000 - 1000
+    // 8.000: tarjeta "Total día" + tarjeta "Total ventas en efectivo" +
+    // fila del listado + "Total recaudado en efectivo" del resumen final.
+    expect(find.text(_fmt.format(8000)), findsNWidgets(4));
+    expect(find.text(_fmt.format(0)), findsNWidgets(2)); // total transferencia + total datafono (ambos en cero)
+    // 7.000: tarjeta "a entregar" + fila "Efectivo a entregar" del resumen final.
+    expect(find.text(_fmt.format(7000)), findsNWidgets(2)); // a entregar = 8000 - 1000
   });
 }
