@@ -1553,7 +1553,18 @@ class _EditarVentaScreenState extends State<_EditarVentaScreen> {
 
   // Igual que React calcItemEdit: (precio_unitario + adicionPerUnit) × cantidad
   double get _subtotalItems => _items.fold(0.0, (s, i) => s + (i.precioUnitario + i.costoAdiciones) * i.cantidad);
-  double get _total => _subtotalItems + _costoDomicilio;
+  // Mismo cálculo que la API (ventas/service.js editar): el descuento por
+  // puntos ya aplicado a la venta se resta del subtotal (sin pasarlo) y el
+  // domicilio va aparte. Sin esto, el mixto de una venta con puntos se
+  // repartía sobre un total mayor y la API rechazaba la edición.
+  double get _descuentoPuntos {
+    final d = widget.pedido.descuentoPuntos;
+    return d < _subtotalItems ? d : _subtotalItems;
+  }
+  double get _total {
+    final neto = _subtotalItems - _descuentoPuntos;
+    return (neto < 0 ? 0 : neto) + _costoDomicilio;
+  }
 
   Widget _metodoChip({required String value, required Widget logo, required String label, required VoidCallback onTap}) {
     final sel = _metodoPago == value;
@@ -1927,6 +1938,16 @@ class _EditarVentaScreenState extends State<_EditarVentaScreen> {
                   ]);
                 }),
                 const SizedBox(height: 4),
+                if (_descuentoPuntos > 0)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+                    child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                      Text('Descuento por puntos (${widget.pedido.puntosUsados} pts)',
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF7C3AED))),
+                      Text('−${_fmt.format(_descuentoPuntos)}',
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF7C3AED))),
+                    ]),
+                  ),
                 // Total
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),

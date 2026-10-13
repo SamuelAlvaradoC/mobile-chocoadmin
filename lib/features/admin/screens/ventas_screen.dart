@@ -1332,7 +1332,16 @@ class _EditarVentaScreenState extends State<_EditarVentaScreen> {
 
   // Igual que React calcItemEdit: (precio_unitario + adicionPerUnit) × cantidad
   double get _subtotalItems => _items.fold(0.0, (s, i) => s + (i.precioUnitario + i.costoAdiciones) * i.cantidad);
-  double get _total => _subtotalItems + _costoDomicilio;
+  // Mismo cálculo que la API (ventas/service.js editar): descuento por puntos
+  // ya aplicado se resta del subtotal (sin pasarlo); el domicilio va aparte.
+  double get _descuentoPuntos {
+    final d = widget.pedido.descuentoPuntos;
+    return d < _subtotalItems ? d : _subtotalItems;
+  }
+  double get _total {
+    final neto = _subtotalItems - _descuentoPuntos;
+    return (neto < 0 ? 0 : neto) + _costoDomicilio;
+  }
 
   Widget _metodoChip({required String value, required Widget logo, required String label, required VoidCallback onTap}) {
     final sel = _metodoPago == value;
@@ -1706,6 +1715,16 @@ class _EditarVentaScreenState extends State<_EditarVentaScreen> {
                   ]);
                 }),
                 const SizedBox(height: 4),
+                if (_descuentoPuntos > 0)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+                    child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                      Text('Descuento por puntos (${widget.pedido.puntosUsados} pts)',
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF7C3AED))),
+                      Text('−${_fmt.format(_descuentoPuntos)}',
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF7C3AED))),
+                    ]),
+                  ),
                 // Total
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
