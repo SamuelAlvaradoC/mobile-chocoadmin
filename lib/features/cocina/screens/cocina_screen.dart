@@ -13,6 +13,7 @@ import '../../../core/services/api_service.dart';
 import '../../../core/services/auth_service.dart' show UserRole;
 import '../../../shared/layouts/admin_bottom_nav.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../../core/utils/formato.dart';
 
 class CocinaScreen extends StatefulWidget {
   const CocinaScreen({super.key});
@@ -32,7 +33,7 @@ class _CocinaScreenState extends State<CocinaScreen> {
   // null = todavia no ha cargado nunca -- asi la carga inicial nunca suena
   Set<int>? _idsAnteriores;
 
-  final _fmt = NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
+  final _fmt = fmtCop;
 
   @override
   void initState() {
@@ -656,7 +657,7 @@ class _ModalDetalle extends StatelessWidget {
                       if (pedido.creadoEn != null) ...[
                         const SizedBox(height: 2),
                         Text(
-                          '${DateFormat('dd MMM', 'es_CO').format(pedido.creadoEn!)} · ${pedido.hora ?? ''}',
+                          '${fechaColombia(pedido.creadoEn!, 'dd MMM')} · ${pedido.hora ?? ''}',
                           style: GoogleFonts.nunito(fontSize: 13, color: Colors.white.withValues(alpha: 0.85)),
                         ),
                       ],

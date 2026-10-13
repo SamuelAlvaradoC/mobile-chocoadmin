@@ -22,6 +22,7 @@ import '../../../features/auth/providers/auth_provider.dart';
 import '../providers/catalogo_provider.dart';
 import '../providers/carrito_provider.dart';
 import '../widgets/toppings_modal.dart';
+import '../../../core/utils/formato.dart';
 
 class CatalogoScreen extends StatefulWidget {
   const CatalogoScreen({super.key});
@@ -252,7 +253,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     final catalogo = context.watch<CatalogoProvider>();
     final carrito = context.watch<CarritoProvider>();
     final auth = context.watch<AuthProvider>();
-    final fmt = NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
+    final fmt = fmtCop;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -366,7 +367,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                 Text('Estamos cerrados por el momento',
                     style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.primary)),
                 Text(
-                    'Todos los días · ${_formatHora12(_horaApertura)} - ${_formatHora12(_horaCierre)}',
+                    'Domicilios: Todos los días · ${_formatHora12(_horaApertura)} - ${_formatHora12(_horaCierre)}',
                     style: GoogleFonts.nunito(fontSize: 12, color: AppColors.primary)),
               ])),
             ]),

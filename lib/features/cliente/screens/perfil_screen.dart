@@ -14,8 +14,9 @@ import '../../../shared/layouts/client_bottom_nav.dart' show ClientLogoutAction;
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/colombia_location_picker.dart';
+import '../../../core/utils/formato.dart';
 
-final _fmtMonedaPuntos = NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
+final _fmtMonedaPuntos = fmtCop;
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
@@ -564,7 +565,7 @@ class _HistorialTabState extends State<_HistorialTab> {
   static const int _porPagina = 5;
 
   final _fmt =
-      NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
+      fmtCop;
 
   @override
   void initState() {
@@ -690,8 +691,7 @@ class _HistorialTabState extends State<_HistorialTab> {
                           ),
                           if (p.creadoEn != null)
                             Text(
-                              DateFormat('dd/MM/yyyy HH:mm', 'es_CO')
-                                  .format(p.creadoEn!),
+                              fechaHoraColombia(p.creadoEn!),
                               style: const TextStyle(
                                   fontSize: 12,
                                   color: AppColors.textSecondary),
@@ -825,7 +825,7 @@ class _DetallePedidoModal extends StatelessWidget {
                       _EstadoBadge(estado: p.estado),
                       const SizedBox(width: 10),
                       if (p.creadoEn != null)
-                        Text(DateFormat('dd/MM/yyyy HH:mm', 'es_CO').format(p.creadoEn!),
+                        Text(fechaHoraColombia(p.creadoEn!),
                             style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                     ]),
                     // Tiempo estimado

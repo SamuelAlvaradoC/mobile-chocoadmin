@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/api_service.dart';
 import '../../../shared/layouts/domiciliario_layout.dart';
+import '../../../core/utils/formato.dart';
 
 class CierreCajaScreen extends StatefulWidget {
   const CierreCajaScreen({super.key});
@@ -18,14 +19,14 @@ class _CierreCajaScreenState extends State<CierreCajaScreen> {
   late String _fecha;
   List<Map<String, dynamic>> _ventas = [];
 
-  final _fmt      = NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
+  final _fmt      = fmtCop;
   final _fmtFecha = DateFormat("EEEE d 'de' MMMM", 'es_CO');
 
   @override
   void initState() {
     super.initState();
     // Fecha de hoy en Colombia (UTC-5), igual que React (hoyISO)
-    _fecha = DateFormat('yyyy-MM-dd').format(DateTime.now().toUtc().subtract(const Duration(hours: 5)));
+    _fecha = hoyColombiaIso();
     _cargar(_fecha);
   }
 
@@ -38,10 +39,8 @@ class _CierreCajaScreenState extends State<CierreCajaScreen> {
     final fechaStr = v['fecha']?.toString() ?? '';
     String hora = '—';
     if (fechaStr.isNotEmpty) {
-      final dt = DateTime.tryParse(fechaStr);
-      if (dt != null) {
-        hora = '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-      }
+      final dt = parseFechaApi(fechaStr);
+      if (dt != null) hora = horaColombia(dt);
     }
     // cliente
     final clienteMap = v['cliente'];
@@ -157,7 +156,7 @@ class _CierreCajaScreenState extends State<CierreCajaScreen> {
       context: context,
       initialDate: DateTime.tryParse(_fecha) ?? DateTime.now(),
       firstDate: DateTime(2024),
-      lastDate: DateTime.now(),
+      lastDate: ahoraColombia(),
       locale: const Locale('es', 'CO'),
     );
     if (picked != null) {

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/models/adicion.dart';
 import '../../../core/models/topping.dart';
+import '../../../core/utils/formato.dart';
 
 class AdicionesModal extends StatefulWidget {
   final List<Adicion> adiciones;
@@ -25,7 +25,7 @@ class AdicionesModal extends StatefulWidget {
 
 class _AdicionesModalState extends State<AdicionesModal> {
   final Set<int> _seleccionados = {};
-  final _fmt = NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
+  final _fmt = fmtCop;
 
   void _toggle(Adicion a) {
     setState(() {

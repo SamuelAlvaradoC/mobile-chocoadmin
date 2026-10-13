@@ -177,7 +177,8 @@ class _Footer extends StatelessWidget {
                           child: _FooterCol(
                             titulo: 'Horario y contacto',
                             children: [
-                              const _FooterHorario(dia: 'Todos los días', hora: '1:00 PM — 8:00 PM'),
+                              const _FooterHorario(dia: 'Sedes · Todos los días', hora: '3:00 PM — 9:00 PM'),
+                              const _FooterHorario(dia: 'Domicilios · Todos los días', hora: '1:00 PM — 8:00 PM'),
                               _FooterContactItem(
                                 iconWidget: const LogoWhatsApp(size: 14, color: Color(0xFF25D366)),
                                 text: '315-991-46-24',

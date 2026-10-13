@@ -22,6 +22,7 @@ import '../../../features/cliente/providers/catalogo_provider.dart';
 import '../../../features/cliente/widgets/toppings_modal.dart';
 import '../../../shared/utils/refetch_on_resume.dart';
 import '../../../shared/widgets/paginacion.dart';
+import '../../../core/utils/formato.dart';
 
 // Pago mixto (igual React handleEfMixto/handleEfectivoMixto): al escribir en
 // un campo se recorta al rango [0,total] y el otro campo se autocompleta con
@@ -216,8 +217,7 @@ class _VentasScreenState extends State<VentasScreen> {
   Object _porPagina = 10;
 
   final _fmt =
-      NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
-  final _fmtFecha = DateFormat('dd/MM/yy HH:mm', 'es_CO');
+      fmtCop;
 
   static const _metodosPago = ['efectivo', 'transferencia', 'mixto', 'datafono'];
 
@@ -228,7 +228,7 @@ class _VentasScreenState extends State<VentasScreen> {
   @override
   void initState() {
     super.initState();
-    _filtroFecha = DateFormat('yyyy-MM-dd').format(DateTime.now().toUtc().subtract(const Duration(hours: 5)));
+    _filtroFecha = hoyColombiaIso();
     _cargar();
     widget.onReady?.call(_cargar);
     _refetchOnResume = RefetchOnResume(callback: _cargar);
@@ -422,7 +422,7 @@ class _VentasScreenState extends State<VentasScreen> {
                             ? (DateTime.tryParse(_filtroFecha!) ?? DateTime.now())
                             : DateTime.now(),
                         firstDate: DateTime(2024),
-                        lastDate: DateTime.now(),
+                        lastDate: ahoraColombia(),
                         locale: const Locale('es', 'CO'),
                       );
                       if (picked != null) {
@@ -546,7 +546,6 @@ class _VentasScreenState extends State<VentasScreen> {
                                       return _VentaRow(
                                         venta: v,
                                         fmt: _fmt,
-                                        fmtFecha: _fmtFecha,
                                         onRefresh: _cargar,
                                       );
                                     },
@@ -587,11 +586,10 @@ class _VentasScreenState extends State<VentasScreen> {
 class _VentaRow extends StatelessWidget {
   final Pedido venta;
   final NumberFormat fmt;
-  final DateFormat fmtFecha;
   final VoidCallback onRefresh;
 
   const _VentaRow(
-      {required this.venta, required this.fmt, required this.fmtFecha, required this.onRefresh});
+      {required this.venta, required this.fmt, required this.onRefresh});
 
   static _EstadoStyle _estadoStyle(String estado) {
     switch (estado) {
@@ -635,7 +633,7 @@ class _VentaRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final estStyle = _estadoStyle(venta.estado);
-    final fecha = venta.creadoEn != null ? fmtFecha.format(venta.creadoEn!) : '--';
+    final fecha = venta.creadoEn != null ? fechaHoraColombia(venta.creadoEn!, patronFecha: 'dd/MM/yy') : '--';
     // Igual que React Ventas.jsx: esta pantalla solo muestra entregados, así
     // que "anular" queda fuera (ya no aplica a una venta cerrada). "Devolver
     // a listo" SÍ aplica -- un pedido puede marcarse entregado por error (el
@@ -877,7 +875,7 @@ class _VentaDetalleScreenState extends State<_VentaDetalleScreen> {
                   const SizedBox(height: 10),
                   Wrap(spacing: 8, runSpacing: 8, children: [
                     if (p.creadoEn != null)
-                      _DetalleRow('Fecha', DateFormat('dd/MM/yyyy HH:mm', 'es_CO').format(p.creadoEn!)),
+                      _DetalleRow('Fecha', fechaHoraColombia(p.creadoEn!)),
                     _DetalleRow('Cliente', p.clienteNombre),
                     _DetalleRow('Teléfono', p.clienteTelefono),
                     _DetalleRow('Pago', p.metodoPago),
@@ -1267,7 +1265,7 @@ class _EditarVentaScreenState extends State<_EditarVentaScreen> {
   final _telCtrl    = TextEditingController();
   int? _filtroCat;
   String _busqProd = '';
-  final _fmt = NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
+  final _fmt = fmtCop;
 
   @override
   void initState() {

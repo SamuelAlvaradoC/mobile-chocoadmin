@@ -180,8 +180,8 @@ class _HeroContenido extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   tiendaAbierta!
-                      ? 'Abierto ahora'
-                      : 'Cerrado · ${estadoTienda == 'closed' ? 'Temporalmente' : (horaApertura != null ? 'Abrimos ${_formatHora12(horaApertura!)}' : 'ahora')}',
+                      ? 'Domicilios abiertos'
+                      : 'Domicilios cerrados · ${estadoTienda == 'closed' ? 'Temporalmente' : (horaApertura != null ? 'Abrimos ${_formatHora12(horaApertura!)}' : 'ahora')}',
                   style: GoogleFonts.nunito(
                     fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white,
                   ),
@@ -716,7 +716,24 @@ class _Conocenos extends StatelessWidget {
           Expanded(
             child: Text.rich(TextSpan(children: [
               TextSpan(
-                text: 'Horario: ',
+                text: 'Horario de atención: ',
+                style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w700, color: const Color(0xFF555555)),
+              ),
+              TextSpan(
+                text: 'Todos los días · 3:00 PM – 9:00 PM',
+                style: GoogleFonts.nunito(fontSize: 14, color: const Color(0xFF555555)),
+              ),
+            ])),
+          ),
+        ]),
+        const SizedBox(height: 6),
+        Row(children: [
+          const Icon(Icons.access_time_rounded, size: 16, color: AppColors.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text.rich(TextSpan(children: [
+              TextSpan(
+                text: 'Domicilios: ',
                 style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w700, color: const Color(0xFF555555)),
               ),
               TextSpan(

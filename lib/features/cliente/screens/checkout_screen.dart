@@ -8,7 +8,6 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_config.dart';
@@ -23,6 +22,7 @@ import '../../../shared/widgets/colombia_location_picker.dart';
 import '../../../shared/widgets/double_back_to_exit.dart' show CheckoutBackController;
 import '../../../shared/widgets/whatsapp_fab.dart';
 import '../providers/carrito_provider.dart';
+import '../../../core/utils/formato.dart';
 
 // Pago mixto (igual React handleEfectivoMixto/handleTransferMixto): al
 // escribir en un campo se recorta al rango [0,total] y el otro campo se
@@ -112,7 +112,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   // elegir Sí o No para poder confirmar el pedido (igual que en web).
   bool? _aguaCortesia;
 
-  final _fmt = NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
+  final _fmt = fmtCop;
 
   @override
   void initState() {

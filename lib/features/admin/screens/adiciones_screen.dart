@@ -9,6 +9,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/cloudinary_service.dart';
 import '../../../shared/widgets/paginacion.dart';
+import '../../../core/utils/formato.dart';
 
 class AdicionesScreen extends StatefulWidget {
   const AdicionesScreen({super.key});
@@ -26,7 +27,7 @@ class _AdicionesScreenState extends State<AdicionesScreen> {
   Object _porPagina = 10;
 
   final _fmt =
-      NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
+      fmtCop;
 
   @override
   void initState() {

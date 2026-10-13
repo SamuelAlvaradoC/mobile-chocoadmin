@@ -16,6 +16,7 @@ import '../../../core/utils/validar_sin_html.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../shared/layouts/admin_bottom_nav.dart';
 import '../../../shared/widgets/brand_icons.dart';
+import '../../../core/utils/formato.dart';
 
 class DomiciliosScreen extends StatefulWidget {
   const DomiciliosScreen({super.key});
@@ -42,7 +43,7 @@ class _DomiciliosScreenState extends State<DomiciliosScreen> {
   Timer? _timer;
 
   final _fmt =
-      NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
+      fmtCop;
 
   @override
   void dispose() {
@@ -558,7 +559,6 @@ class _DomicilioCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fmtHora = DateFormat('d/MM/yyyy HH:mm', 'es_CO');
     // React: {d.direccion}, {d.barrio} — no incluye ciudad
     final dirCard = [pedido.direccion, pedido.barrio]
         .whereType<String>().where((s) => s.isNotEmpty).join(', ');
@@ -595,7 +595,7 @@ class _DomicilioCard extends StatelessWidget {
                       ),
                       if (pedido.creadoEn != null)
                         Text(
-                          fmtHora.format(pedido.creadoEn!),
+                          fechaHoraColombia(pedido.creadoEn!, patronFecha: 'd/MM/yyyy'),
                           style: const TextStyle(
                             fontSize: 11,
                             color: AppColors.textSecondary,

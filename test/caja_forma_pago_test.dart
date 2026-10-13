@@ -10,15 +10,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:chocoadmin/core/services/api_service.dart';
+import 'package:chocoadmin/core/utils/formato.dart';
 import 'package:chocoadmin/features/auth/providers/auth_provider.dart';
 import 'package:chocoadmin/features/domiciliario/screens/cierre_caja_screen.dart';
 
-final _fmt = NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
+final _fmt = fmtCop;
 
 Widget _harness() => MaterialApp(
       home: MultiProvider(

@@ -9,6 +9,7 @@ import '../../../features/auth/providers/auth_provider.dart';
 import '../../../shared/layouts/admin_layout.dart';
 import '../../../shared/utils/refetch_on_resume.dart';
 import '../widgets/cierre_caja_card.dart';
+import '../../../core/utils/formato.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -47,7 +48,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String _filtroFecha = '';
 
   final _fmt =
-      NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
+      fmtCop;
   final _fmtFechaDisplay = DateFormat("EEEE d 'de' MMMM", 'es_CO');
 
   late final RefetchOnResume _refetchOnResume;
@@ -55,7 +56,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _filtroFecha = DateFormat('yyyy-MM-dd').format(DateTime.now().toUtc().subtract(const Duration(hours: 5)));
+    _filtroFecha = hoyColombiaIso();
     _cargar();
     _cargarConfiguracion();
     _refetchOnResume = RefetchOnResume(callback: _cargar);
@@ -135,7 +136,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       context: context,
       initialDate: DateTime.tryParse(_filtroFecha) ?? DateTime.now(),
       firstDate: DateTime(2024),
-      lastDate: DateTime.now(),
+      lastDate: ahoraColombia(),
       locale: const Locale('es', 'CO'),
     );
     if (picked != null) {

@@ -9,6 +9,7 @@ import '../../../core/models/pedido.dart';
 import '../../../core/services/api_service.dart';
 import '../../../shared/layouts/domiciliario_layout.dart';
 import '../../../shared/widgets/brand_icons.dart';
+import '../../../core/utils/formato.dart';
 
 class PedidosScreen extends StatefulWidget {
   const PedidosScreen({super.key});
@@ -23,9 +24,9 @@ class _PedidosScreenState extends State<PedidosScreen> {
   List<Pedido> _despachados  = [];
   bool _secDespacharOpen = true;
   bool _secDespachadosOpen = true;
-  String _fecha = DateFormat('yyyy-MM-dd').format(DateTime.now().toUtc().subtract(const Duration(hours: 5)));
+  String _fecha = hoyColombiaIso();
 
-  final _fmt = NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
+  final _fmt = fmtCop;
   final _fmtFecha = DateFormat('yyyy-MM-dd');
   final _fmtFechaDisplay = DateFormat("EEEE d 'de' MMMM", 'es_CO');
 
@@ -41,7 +42,7 @@ class _PedidosScreenState extends State<PedidosScreen> {
       context: context,
       initialDate: parsed ?? DateTime.now(),
       firstDate: DateTime(2023),
-      lastDate: DateTime.now(),
+      lastDate: ahoraColombia(),
       locale: const Locale('es'),
     );
     if (picked != null) {

@@ -6,6 +6,7 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_config.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/utils/formato.dart';
 
 /// Cierre de caja del día — módulo independiente del dashboard de admin.
 /// (No confundir con lib/features/domiciliario/screens/cierre_caja_screen.dart,
@@ -31,7 +32,7 @@ class _CierreCajaCardState extends State<CierreCajaCard> {
   bool _imprimiendo = false;
 
   final _baseCtrl = TextEditingController();
-  final _fmt = NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
+  final _fmt = fmtCop;
   final _fmtFecha = DateFormat('dd/MM/yyyy', 'es_CO');
 
   static const _tipoLabel = {
@@ -67,8 +68,7 @@ class _CierreCajaCardState extends State<CierreCajaCard> {
   // Solo se puede editar base/gastos del día de hoy (Colombia, UTC-5) — fechas
   // pasadas son solo lectura, igual que en el dashboard React.
   String get _hoyISO {
-    final co = DateTime.now().toUtc().subtract(const Duration(hours: 5));
-    return co.toIso8601String().substring(0, 10);
+    return hoyColombiaIso();
   }
 
   bool get _esFechaHoy => (widget.fecha == null || widget.fecha!.isEmpty) || widget.fecha == _hoyISO;

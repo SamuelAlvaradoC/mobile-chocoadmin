@@ -1,3 +1,5 @@
+import '../utils/formato.dart';
+
 class Venta {
   final int id;
   final String estado;
@@ -37,7 +39,7 @@ class Venta {
         json['creado_en'] ??
         json['created_at'];
     if (fechaStr != null) {
-      fecha = DateTime.tryParse(fechaStr.toString());
+      fecha = parseFechaApi(fechaStr);
     }
 
     // estado puede venir como Map {"id_estado":1,"nombre_estado":"pendiente",...} o String

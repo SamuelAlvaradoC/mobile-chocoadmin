@@ -1,7 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/models/topping.dart';
@@ -9,6 +8,7 @@ import '../../../core/models/adicion.dart';
 import '../../../core/models/producto.dart';
 import '../../../core/utils/nombre_producto.dart';
 import '../../../core/utils/validar_sin_html.dart';
+import '../../../core/utils/formato.dart';
 
 // ── Salsas disponibles (idénticas a React) ───────────────────────────────────
 const _kSalsas = <Map<String, String>>[
@@ -81,7 +81,7 @@ class _ToppingsModalState extends State<ToppingsModal> {
   final _observacionCtrl = TextEditingController();
   String? _errorObservacion;
 
-  final _fmt = NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
+  final _fmt = fmtCop;
 
   @override
   void dispose() {
