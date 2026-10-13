@@ -6,6 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/services/api_service.dart';
 import '../../../shared/layouts/domiciliario_layout.dart';
 import '../../../core/utils/formato.dart';
+import '../../../core/utils/pago.dart';
 
 class CierreCajaScreen extends StatefulWidget {
   const CierreCajaScreen({super.key});
@@ -55,44 +56,12 @@ class _CierreCajaScreenState extends State<CierreCajaScreen> {
     final total = double.tryParse(v['total']?.toString() ?? '0') ?? 0.0;
     // costo domicilio (React usa 0 como default)
     final costoDomicilio = double.tryParse(v['costo_domicilio']?.toString() ?? '0') ?? 0.0;
-    // forma pago + montos parciales (igual React CierreCaja.jsx)
-    final pagos = v['pagos'];
-    List detallePagos = [];
-    if (pagos is List && pagos.isNotEmpty && pagos[0] is Map) {
-      final dp = (pagos[0] as Map)['detallePagos'];
-      if (dp is List) detallePagos = dp;
-    }
-    final tieneEf = detallePagos.any((d) => d is Map && (d['metodoPago'] as Map?)?['nombre'] == 'efectivo');
-    final tieneT  = detallePagos.any((d) => d is Map && (d['metodoPago'] as Map?)?['nombre'] == 'transferencia');
-
-    String formaPago = v['metodo_pago']?.toString() ?? '';
-    if (formaPago.isEmpty) {
-      if (tieneEf && tieneT) {
-        formaPago = 'mixto';
-      } else if (tieneT) {
-        formaPago = 'transferencia';
-      } else {
-        formaPago = 'efectivo';
-      }
-    }
-
-    // React: suma monto del detallePago si existe, si no usa monto_efectivo/monto_transferencia
-    double montoEf;
-    double montoT;
-    if (tieneEf) {
-      montoEf = detallePagos
-          .where((d) => d is Map && (d['metodoPago'] as Map?)?['nombre'] == 'efectivo')
-          .fold(0.0, (s, d) => s + (double.tryParse((d as Map)['monto']?.toString() ?? '0') ?? 0));
-    } else {
-      montoEf = formaPago == 'efectivo' ? total : (double.tryParse(v['monto_efectivo']?.toString() ?? '0') ?? 0);
-    }
-    if (tieneT) {
-      montoT = detallePagos
-          .where((d) => d is Map && (d['metodoPago'] as Map?)?['nombre'] == 'transferencia')
-          .fold(0.0, (s, d) => s + (double.tryParse((d as Map)['monto']?.toString() ?? '0') ?? 0));
-    } else {
-      montoT = formaPago == 'transferencia' ? total : (double.tryParse(v['monto_transferencia']?.toString() ?? '0') ?? 0);
-    }
+    // Método y montos desde la venta (core/utils/pago.dart), no desde
+    // detallePagos -- mismo helper que el modelo Pedido y que la web.
+    final pago = pagoDeVenta(v);
+    final formaPago = pago.metodo ?? 'efectivo';
+    final montoEf = pago.efectivo;
+    final montoT = pago.transferencia;
 
     return {
       'id':              id,
@@ -352,7 +321,7 @@ class _CierreCajaScreenState extends State<CierreCajaScreen> {
                                             style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w800)),
                                         if (fp == 'mixto')
                                           Text(
-                                            'Ef. ${_fmt.format(v['monto_efectivo'])} + Tr. ${_fmt.format(v['monto_transf'])}',
+                                            'Efectivo: ${_fmt.format(v['monto_efectivo'])} + Transferencia: ${_fmt.format(v['monto_transf'])}',
                                             style: GoogleFonts.nunito(fontSize: 9, color: const Color(0xFF888888)),
                                           ),
                                       ],

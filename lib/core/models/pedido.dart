@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../utils/formato.dart';
+import '../utils/pago.dart';
 import '../utils/nombre_producto.dart';
 
 /// Una línea del pedido tal como llega de la API en el detalle (nombres ya resueltos)
@@ -375,53 +376,21 @@ class Pedido {
     }
 
     // ── método de pago + desglose mixto ─────────────────────────────────────
-    String? metodoPago = (ventaMap ?? json)['metodo_pago']?.toString();
-    // Montos: primero los de la venta (monto_efectivo/monto_transferencia, se
-    // guardan al crearla); los detallePagos solo existen DESPUÉS de marcar el
-    // pedido como entregado, así que antes de eso el desglose del mixto salía
-    // en 0. Llegan como texto ("7000") porque son Decimal en la base.
-    double? montoDe(Object? v) => v == null ? null : double.tryParse(v.toString());
-    double? montoEfectivo = montoDe((ventaMap ?? json)['monto_efectivo']);
-    double? montoTransferencia = montoDe((ventaMap ?? json)['monto_transferencia']);
-    final montosDeVenta = montoEfectivo != null || montoTransferencia != null;
+    // Desde la venta (core/utils/pago.dart), no desde detallePagos: esos solo
+    // existen al entregar y no se actualizan si la venta se edita después.
+    final pago = pagoDeVenta(ventaMap ?? json);
+    final String? metodoPago = pago.metodo;
+    final double montoEfectivo = pago.efectivo;
+    final double montoTransferencia = pago.transferencia;
 
     // comprobante_url: primero desde Venta directamente, luego desde detallePago
     String? comprobanteUrl = (ventaMap ?? json)['comprobante_url']?.toString();
-
-    final pagosSrc = ventaMap ?? json;
-    final pagos = pagosSrc['pagos'];
-    if (pagos is List && pagos.isNotEmpty) {
-      final p0 = pagos[0];
-      if (p0 is Map) {
-        final dp = p0['detallePagos'];
-        if (dp is List && dp.isNotEmpty) {
-          if (metodoPago == null || metodoPago.isEmpty) {
-            if (dp.length > 1) {
-              metodoPago = 'mixto';
-            } else {
-              final dp0 = dp[0];
-              if (dp0 is Map) {
-                final mpMap = dp0['metodoPago'];
-                if (mpMap is Map) {
-                  metodoPago = mpMap['nombre']?.toString();
-                }
-              }
-            }
-          }
-          // Extraer montos individuales para mixto + comprobante desde detallePago
-          for (final dpItem in dp) {
-            if (dpItem is Map) {
-              final mpMap = dpItem['metodoPago'];
-              final nombre = (mpMap is Map ? mpMap['nombre'] : null)?.toString() ?? '';
-              final monto = double.tryParse((dpItem['monto'] ?? 0).toString()) ?? 0;
-              if (nombre == 'efectivo' && !montosDeVenta) montoEfectivo = monto;
-              if (nombre == 'transferencia') {
-                if (!montosDeVenta) montoTransferencia = monto;
-                // Fallback: leer comprobante desde detallePago si no está en Venta
-                comprobanteUrl ??= dpItem['comprobante']?.toString();
-              }
-            }
-          }
+    final pagos = (ventaMap ?? json)['pagos'];
+    if (comprobanteUrl == null && pagos is List && pagos.isNotEmpty && pagos[0] is Map) {
+      final dp = (pagos[0] as Map)['detallePagos'];
+      if (dp is List) {
+        for (final d in dp.whereType<Map>()) {
+          comprobanteUrl ??= d['comprobante']?.toString();
         }
       }
     }

@@ -1014,10 +1014,23 @@ class _DetallePedidoModal extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                         decoration: BoxDecoration(color: AppColors.surfaceVariant, borderRadius: BorderRadius.circular(20)),
                         child: Text(
-                          p.metodoPago == 'efectivo' ? '💵 Efectivo' : p.metodoPago == 'transferencia' ? '🏦 Transferencia' : '💵🏦 Mixto',
+                          p.metodoPago == 'efectivo'
+                              ? '💵 Efectivo'
+                              : p.metodoPago == 'transferencia'
+                                  ? '🏦 Transferencia'
+                                  : p.metodoPago == 'datafono'
+                                      ? '💳 Datáfono'
+                                      : '💵🏦 Mixto',
                           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textSecondary),
                         ),
                       ),
+                      if (p.metodoPago == 'mixto') ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          'Efectivo: ${fmt.format(p.montoEfectivo ?? 0)} · Transferencia: ${fmt.format(p.montoTransferencia ?? 0)}',
+                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        ),
+                      ],
                     ],
                     // Motivo de cancelación
                     if (p.estado == 'anulado' && p.motivoAnulacion != null && p.motivoAnulacion!.isNotEmpty) ...[
