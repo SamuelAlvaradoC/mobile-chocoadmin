@@ -9,6 +9,7 @@ import '../../../core/models/producto.dart';
 import '../../../core/utils/nombre_producto.dart';
 import '../../../core/utils/validar_sin_html.dart';
 import '../../../core/utils/formato.dart';
+import '../../../core/utils/imagen.dart';
 
 // ── Salsas disponibles (idénticas a React) ───────────────────────────────────
 const _kSalsas = <Map<String, String>>[
@@ -228,7 +229,7 @@ class _ToppingsModalState extends State<ToppingsModal> {
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                 child: CachedNetworkImage(
-                  imageUrl: widget.producto.imagen!,
+                  imageUrl: imgCl(widget.producto.imagen!),
                   height: 160,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -291,7 +292,7 @@ class _ToppingsModalState extends State<ToppingsModal> {
                         fit: StackFit.expand,
                         children: [
                           CachedNetworkImage(
-                            imageUrl: op.img,
+                            imageUrl: imgCl(op.img),
                             fit: BoxFit.cover,
                             errorWidget: (_, __, ___) => Container(color: const Color(0xFFE5E7EB)),
                           ),
@@ -340,7 +341,7 @@ class _ToppingsModalState extends State<ToppingsModal> {
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                 child: CachedNetworkImage(
-                  imageUrl: widget.producto.imagen!,
+                  imageUrl: imgCl(widget.producto.imagen!),
                   height: 160,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -404,7 +405,7 @@ class _ToppingsModalState extends State<ToppingsModal> {
                         children: [
                           Container(color: _colorCobertura(op['nombre']!)),
                           CachedNetworkImage(
-                            imageUrl: op['img']!,
+                            imageUrl: imgCl(op['img']!),
                             fit: BoxFit.cover,
                             errorWidget: (_, __, ___) => Container(color: _colorCobertura(op['nombre']!)),
                           ),
@@ -451,7 +452,7 @@ class _ToppingsModalState extends State<ToppingsModal> {
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                 child: CachedNetworkImage(
-                  imageUrl: widget.producto.imagen!,
+                  imageUrl: imgCl(widget.producto.imagen!),
                   height: 200,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -522,7 +523,7 @@ class _ToppingsModalState extends State<ToppingsModal> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            CachedNetworkImage(imageUrl: imgUrl, fit: BoxFit.cover),
+            CachedNetworkImage(imageUrl: imgCl(imgUrl), fit: BoxFit.cover),
             Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter, colors: [Color(0xB3000000), Colors.transparent]),
@@ -605,7 +606,7 @@ class _ToppingsModalState extends State<ToppingsModal> {
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
-                            CachedNetworkImage(imageUrl: salsa['img']!, fit: BoxFit.cover),
+                            CachedNetworkImage(imageUrl: imgCl(salsa['img']!), fit: BoxFit.cover),
                             if (sel) Container(color: AppColors.primary.withValues(alpha: 0.18)),
                             if (sel)
                               Center(
@@ -752,7 +753,7 @@ class _ToppingsModalState extends State<ToppingsModal> {
           fit: StackFit.expand,
           children: [
             t.img != null && t.img!.isNotEmpty
-                ? CachedNetworkImage(imageUrl: t.img!, fit: BoxFit.cover)
+                ? CachedNetworkImage(imageUrl: imgCl(t.img!), fit: BoxFit.cover)
                 : Container(color: const Color(0xFFF0F0F0), alignment: Alignment.center,
                     child: Text(t.nombre.isNotEmpty ? t.nombre[0].toUpperCase() : '?',
                         style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 28, color: Color(0xFFAAAAAA)))),
@@ -977,7 +978,7 @@ class _ToppingsModalState extends State<ToppingsModal> {
           fit: StackFit.expand,
           children: [
             a.img != null && a.img!.isNotEmpty
-                ? CachedNetworkImage(imageUrl: a.img!, fit: BoxFit.cover)
+                ? CachedNetworkImage(imageUrl: imgCl(a.img!), fit: BoxFit.cover)
                 : Container(color: const Color(0xFFFEF3C7), alignment: Alignment.center,
                     child: Text(a.nombre.isNotEmpty ? a.nombre[0].toUpperCase() : '?',
                         style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 28, color: Color(0xFFD97706)))),

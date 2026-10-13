@@ -25,6 +25,7 @@ import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/colombia_location_picker.dart';
 import '../../../shared/widgets/paginacion.dart';
 import '../../../core/utils/formato.dart';
+import '../../../core/utils/imagen.dart';
 
 // Pago mixto (igual React handleEfMixto/handleEfectivoMixto): al escribir en
 // un campo se recorta al rango [0,total] y el otro campo se autocompleta con
@@ -3208,7 +3209,7 @@ class _CrearVentaScreenState extends State<_CrearVentaScreen> {
                           child: ClipRRect(
                             borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
                             child: prod.imagen != null && prod.imagen!.isNotEmpty
-                                ? CachedNetworkImage(imageUrl: prod.imagen!, fit: BoxFit.cover, width: double.infinity,
+                                ? CachedNetworkImage(imageUrl: imgCl(prod.imagen!), fit: BoxFit.cover, width: double.infinity,
                                     errorWidget: (_, __, ___) => _prodPlaceholder(prod.nombre))
                                 : _prodPlaceholder(prod.nombre),
                           ),

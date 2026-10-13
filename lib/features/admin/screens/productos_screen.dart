@@ -9,6 +9,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/cloudinary_service.dart';
 import '../../../shared/widgets/paginacion.dart';
+import '../../../core/utils/imagen.dart';
 
 class ProductosScreen extends StatefulWidget {
   const ProductosScreen({super.key});
@@ -305,7 +306,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(8),
                                       child: CachedNetworkImage(
-                                        imageUrl: imgUrl,
+                                        imageUrl: imgCl(imgUrl),
                                         width: 48, height: 48,
                                         fit: BoxFit.cover,
                                         placeholder: (_, __) => Container(width: 48, height: 48, color: const Color(0xFFF5F5F5)),
@@ -725,7 +726,7 @@ class _ProductoFormScreenState extends State<_ProductoFormScreen> {
                             ? ClipRRect(
                                 borderRadius: BorderRadius.circular(9),
                                 child: CachedNetworkImage(
-                                  imageUrl: _imgUrl!,
+                                  imageUrl: imgCl(_imgUrl!),
                                   fit: BoxFit.cover,
                                   width: double.infinity,
                                   placeholder: (_, __) => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
@@ -819,7 +820,7 @@ class _ProductoDetalleDialog extends StatelessWidget {
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.zero),
               child: CachedNetworkImage(
-                imageUrl: imgUrl,
+                imageUrl: imgCl(imgUrl),
                 height: 140, width: double.infinity, fit: BoxFit.cover,
                 placeholder: (_, __) => Container(height: 140, color: const Color(0xFFF5F5F5)),
                 errorWidget: (_, __, ___) => Container(height: 0),

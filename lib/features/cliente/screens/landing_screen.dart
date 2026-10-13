@@ -16,6 +16,7 @@ import '../../../core/constants/app_config.dart';
 import '../../../shared/layouts/client_layout.dart';
 import '../../../shared/widgets/brand_icons.dart';
 import '../providers/resena_flow_provider.dart';
+import '../../../core/utils/imagen.dart';
 
 class LandingScreen extends StatelessWidget {
   const LandingScreen({super.key});
@@ -628,7 +629,7 @@ class _ProductoEstellaCard extends StatelessWidget {
           children: [
             imgUrl.isNotEmpty
                 ? CachedNetworkImage(
-                    imageUrl: imgUrl,
+                    imageUrl: imgCl(imgUrl),
                     width: width, height: cardHeight, fit: BoxFit.cover,
                     placeholder: (_, __) => Container(width: width, height: cardHeight, color: const Color(0xFF2a2a2a)),
                     errorWidget: (_, __, ___) => fallback,

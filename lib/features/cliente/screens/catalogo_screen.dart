@@ -23,6 +23,7 @@ import '../providers/catalogo_provider.dart';
 import '../providers/carrito_provider.dart';
 import '../widgets/toppings_modal.dart';
 import '../../../core/utils/formato.dart';
+import '../../../core/utils/imagen.dart';
 
 class CatalogoScreen extends StatefulWidget {
   const CatalogoScreen({super.key});
@@ -263,13 +264,12 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(6),
-              child: CachedNetworkImage(
-                imageUrl: 'https://res.cloudinary.com/dnoxlv5kn/image/upload/v1778822634/logo_sin_fondo_remove_uuu8tt.png',
+              child: Image.asset(
+                'assets/images/logo.png',
                 width: 28,
                 height: 28,
                 fit: BoxFit.contain,
-                placeholder: (_, __) => const SizedBox(width: 28, height: 28),
-                errorWidget: (_, __, ___) => const SizedBox(width: 28, height: 28),
+                errorBuilder: (_, __, ___) => const SizedBox(width: 28, height: 28),
               ),
             ),
             const SizedBox(width: 8),
@@ -776,7 +776,7 @@ class _CarritoBottomBarState extends State<_CarritoBottomBar> {
                               width: 52, height: 52,
                               child: (item.producto.imagen != null && item.producto.imagen!.isNotEmpty)
                                   ? CachedNetworkImage(
-                                      imageUrl: item.producto.imagen!,
+                                      imageUrl: imgCl(item.producto.imagen!),
                                       fit: BoxFit.cover,
                                       placeholder: (_, __) => Container(color: AppColors.surfaceVariant),
                                       errorWidget: (_, __, ___) => _thumbFallback(item.nombreCompleto),
@@ -1197,7 +1197,7 @@ class _ProductoCard extends StatelessWidget {
                   ),
                   child: producto.imagen != null && producto.imagen!.isNotEmpty
                       ? CachedNetworkImage(
-                          imageUrl: producto.imagen!,
+                          imageUrl: imgCl(producto.imagen!),
                           fit: BoxFit.cover,
                           width: double.infinity,
                           height: double.infinity,

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/api_service.dart';
 import '../../../shared/widgets/paginacion.dart';
+import '../../../core/utils/imagen.dart';
 
 class CategoriasScreen extends StatefulWidget {
   const CategoriasScreen({super.key});
@@ -650,7 +651,7 @@ class _CategoriaDetalleDialog extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: CachedNetworkImage(
-                    imageUrl: categoria['img'].toString(),
+                    imageUrl: imgCl(categoria['img'].toString()),
                     height: 120,
                     width: double.infinity,
                     fit: BoxFit.cover,

@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -6,9 +5,6 @@ import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../features/auth/providers/auth_provider.dart';
-
-const _kLogoUrl =
-    'https://res.cloudinary.com/dnoxlv5kn/image/upload/v1778822634/logo_sin_fondo_remove_uuu8tt.png';
 
 /// AppBar compartido por Pedidos y Caja del día. El bottom nav ya no vive
 /// aquí -- lo provee RootShellScaffold a nivel del StatefulShellRoute (ver
@@ -38,11 +34,10 @@ class DomiciliarioLayout extends StatelessWidget {
         automaticallyImplyLeading: false,
         title: Row(
           children: [
-            CachedNetworkImage(
-              imageUrl: _kLogoUrl,
+            Image.asset(
+              'assets/images/logo.png',
               width: 32, height: 32, fit: BoxFit.contain,
-              placeholder: (_, __) => const SizedBox(width: 32, height: 32),
-              errorWidget: (_, __, ___) => const SizedBox(width: 32, height: 32),
+              errorBuilder: (_, __, ___) => const SizedBox(width: 32, height: 32),
             ),
             const SizedBox(width: 8),
             Text('ChocoFreseo',

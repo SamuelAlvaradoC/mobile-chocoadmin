@@ -7,6 +7,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/cloudinary_service.dart';
 import '../../../shared/widgets/paginacion.dart';
+import '../../../core/utils/imagen.dart';
 
 class ToppingsScreen extends StatefulWidget {
   const ToppingsScreen({super.key});
@@ -307,7 +308,7 @@ class _ToppingsScreenState extends State<ToppingsScreen> {
                                                 ClipRRect(
                                                   borderRadius: BorderRadius.circular(8),
                                                   child: CachedNetworkImage(
-                                                    imageUrl: img,
+                                                    imageUrl: imgCl(img),
                                                     width: 48,
                                                     height: 48,
                                                     fit: BoxFit.cover,
@@ -709,7 +710,7 @@ class _ToppingDetalleDialog extends StatelessWidget {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(10),
                         child: CachedNetworkImage(
-                          imageUrl: img,
+                          imageUrl: imgCl(img),
                           height: 120,
                           fit: BoxFit.cover,
                           placeholder: (_, __) => Container(height: 120, color: const Color(0xFFF0F0F0)),
@@ -941,7 +942,7 @@ class _ImageUploadWidgetState extends State<_ImageUploadWidget> {
                         color: AppColors.primary, strokeWidth: 2))
                 : (widget.imageUrl != null && widget.imageUrl!.isNotEmpty)
                     ? CachedNetworkImage(
-                        imageUrl: widget.imageUrl!,
+                        imageUrl: imgCl(widget.imageUrl!),
                         fit: BoxFit.cover,
                         width: double.infinity,
                         placeholder: (_, __) => Container(color: const Color(0xFFF0F0F0)),

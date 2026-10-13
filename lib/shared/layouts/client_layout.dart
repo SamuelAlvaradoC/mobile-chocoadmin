@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -30,13 +29,12 @@ class ClientLayout extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(6),
-              child: CachedNetworkImage(
-                imageUrl: 'https://res.cloudinary.com/dnoxlv5kn/image/upload/v1778822634/logo_sin_fondo_remove_uuu8tt.png',
+              child: Image.asset(
+                'assets/images/logo.png',
                 width: 28,
                 height: 28,
                 fit: BoxFit.contain,
-                placeholder: (_, __) => const SizedBox(width: 28, height: 28),
-                errorWidget: (_, __, ___) => const SizedBox(width: 28, height: 28),
+                errorBuilder: (_, __, ___) => const SizedBox(width: 28, height: 28),
               ),
             ),
             const SizedBox(width: 8),
@@ -87,18 +85,12 @@ class _Footer extends StatelessWidget {
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
-                      child: CachedNetworkImage(
-                        imageUrl: 'https://res.cloudinary.com/dnoxlv5kn/image/upload/v1778822634/logo_sin_fondo_remove_uuu8tt.png',
+                      child: Image.asset(
+                        'assets/images/logo.png',
                         width: 36,
                         height: 36,
                         fit: BoxFit.contain,
-                        placeholder: (_, __) => Container(
-                          width: 36, height: 36,
-                          decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
-                          alignment: Alignment.center,
-                          child: Text('CF', style: GoogleFonts.nunito(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12)),
-                        ),
-                        errorWidget: (_, __, ___) => Container(
+                        errorBuilder: (_, __, ___) => Container(
                           width: 36, height: 36,
                           decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
                           alignment: Alignment.center,

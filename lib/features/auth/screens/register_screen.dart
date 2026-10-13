@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -223,11 +222,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     child: Column(children: [
       const SizedBox(height: 40),
       Column(children: [
-        CachedNetworkImage(
-          imageUrl: 'https://res.cloudinary.com/dnoxlv5kn/image/upload/v1778822634/logo_sin_fondo_remove_uuu8tt.png',
+        Image.asset(
+          'assets/images/logo.png',
           width: 100, height: 100, fit: BoxFit.contain,
-          placeholder: (_, __) => const SizedBox(width: 100, height: 100),
-          errorWidget: (_, __, ___) => Text('CF',
+          errorBuilder: (_, __, ___) => Text('CF',
               style: GoogleFonts.nunito(fontSize: 32, fontWeight: FontWeight.w900, color: AppColors.primary)),
         ),
         const SizedBox(height: 8),
@@ -249,11 +247,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       Positioned(top: 0, right: -20,      child: _deco(90)),
       Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          CachedNetworkImage(
-            imageUrl: 'https://res.cloudinary.com/dnoxlv5kn/image/upload/v1778822634/logo_sin_fondo_remove_uuu8tt.png',
+          Image.asset(
+            'assets/images/logo.png',
             width: 48, height: 48, fit: BoxFit.contain,
-            placeholder: (_, __) => const SizedBox(width: 48, height: 48),
-            errorWidget: (_, __, ___) => Container(
+            errorBuilder: (_, __, ___) => Container(
               width: 44, height: 44,
               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
               alignment: Alignment.center,
