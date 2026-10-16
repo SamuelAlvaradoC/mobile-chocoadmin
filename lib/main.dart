@@ -204,7 +204,7 @@ class _AppRouterState extends State<_AppRouter> {
                         WidgetsBinding.instance.addPostFrameCallback((_) {
                           Future.delayed(const Duration(milliseconds: 150), () {
                             final ctx = LandingScreen.resenasKey.currentContext;
-                            if (ctx != null) {
+                            if (ctx != null && ctx.mounted) {
                               Scrollable.ensureVisible(ctx,
                                   duration: const Duration(milliseconds: 450), curve: Curves.easeInOut);
                             }

@@ -4,15 +4,13 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_config.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/services/cloudinary_service.dart';
 import '../../../core/models/carrito_item.dart';
 import '../../../core/utils/validar_sin_html.dart';
 import '../../../features/auth/providers/auth_provider.dart';
@@ -198,15 +196,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
     if (picked == null) return;
 
+    // WebP incluido: varios Android guardan las fotos así y Cloudinary y los
+    // navegadores del admin lo muestran sin problema.
     final nombre = picked.name.toLowerCase();
-    if (!nombre.endsWith('.jpg') && !nombre.endsWith('.jpeg') && !nombre.endsWith('.png')) {
-      setState(() => _comprobanteError = 'Formato no permitido. Solo JPG o PNG');
+    if (!RegExp(r'\.(jpe?g|png|webp)$').hasMatch(nombre)) {
+      if (mounted) setState(() => _comprobanteError = 'Formato no permitido. Usa una foto JPG, PNG o WebP');
       return;
     }
     if (await picked.length() > 5 * 1024 * 1024) {
-      setState(() => _comprobanteError = 'El archivo supera el límite de 5 MB');
+      if (mounted) setState(() => _comprobanteError = 'El archivo supera el límite de 5 MB');
       return;
     }
+    if (!mounted) return;
 
     setState(() {
       _comprobanteFile = File(picked.path);
@@ -215,23 +216,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       _comprobanteUrl = null;
     });
 
-    try {
-      final uri = Uri.parse('https://api.cloudinary.com/v1_1/${AppConfig.cloudinaryCloudName}/image/upload');
-      final req = http.MultipartRequest('POST', uri)
-        ..fields['upload_preset'] = AppConfig.cloudinaryUploadPreset
-        ..files.add(await http.MultipartFile.fromPath('file', picked.path));
-      final response = await req.send();
-      final body = await response.stream.bytesToString();
-      final json = jsonDecode(body) as Map<String, dynamic>;
-      if (response.statusCode == 200) {
-        setState(() => _comprobanteUrl = json['secure_url']?.toString());
-      } else {
-        setState(() => _comprobanteError = json['error']?['message']?.toString() ?? 'Error al subir imagen');
+    // Mismo servicio que las fotos del admin (timeout de 30 s incluido). Si
+    // falla, _comprobanteUrl queda en null y _enviarPedido no deja enviar el
+    // pedido de transferencia/mixto -- igual que la web.
+    final url = await CloudinaryService.subirImagen(File(picked.path));
+    if (!mounted) return;
+    setState(() {
+      _subiendoComprobante = false;
+      _comprobanteUrl = url;
+      if (url == null) {
+        _comprobanteFile = null;
+        _comprobanteError = 'No pudimos subir tu comprobante. Revisa tu conexión y toca de nuevo para intentarlo.';
       }
-    } catch (e) {
-      setState(() => _comprobanteError = 'Error al subir comprobante');
-    }
-    setState(() => _subiendoComprobante = false);
+    });
   }
 
   Future<void> _cargarPerfil() async {
@@ -1060,7 +1057,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           const Icon(Icons.payments_outlined, size: 18, color: Color(0xFF16A34A)),
           const Text(' + ', style: TextStyle(fontSize: 9, color: Color(0xFFCCCCCC))),
           CachedNetworkImage(
-            imageUrl: 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1779736112/bancolombia_wiytke.png',
+            imageUrl: 'https://www.chocofreseo.com/img/bancos/bancolombia.png',
             width: 18, height: 18, fit: BoxFit.contain,
             placeholder: (_, __) => Container(width: 18, height: 18, decoration: const BoxDecoration(color: Color(0xFFFFCC00), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('B', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Color(0xFF1A3C5E)))),
             errorWidget: (_, __, ___) => Container(width: 18, height: 18, decoration: const BoxDecoration(color: Color(0xFFFFCC00), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('B', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Color(0xFF1A3C5E)))),
@@ -1085,14 +1082,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 CachedNetworkImage(
-                  imageUrl: 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1779736112/bancolombia_wiytke.png',
+                  imageUrl: 'https://www.chocofreseo.com/img/bancos/bancolombia.png',
                   width: 22, height: 22, fit: BoxFit.contain,
                   placeholder: (_, __) => Container(width: 22, height: 22, decoration: const BoxDecoration(color: Color(0xFFFFCC00), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('B', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFF1A3C5E)))),
                   errorWidget: (_, __, ___) => Container(width: 22, height: 22, decoration: const BoxDecoration(color: Color(0xFFFFCC00), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('B', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFF1A3C5E)))),
                 ),
                 const SizedBox(width: 4),
                 CachedNetworkImage(
-                  imageUrl: 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1779736049/nequi_pfgazy.png',
+                  imageUrl: 'https://www.chocofreseo.com/img/bancos/nequi.png',
                   width: 18, height: 18, fit: BoxFit.contain,
                   placeholder: (_, __) => Container(width: 18, height: 18, decoration: const BoxDecoration(color: Color(0xFF3D1D89), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('N', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.white))),
                   errorWidget: (_, __, ___) => Container(width: 18, height: 18, decoration: const BoxDecoration(color: Color(0xFF3D1D89), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('N', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.white))),
@@ -1128,14 +1125,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CachedNetworkImage(
-              imageUrl: 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1779736112/bancolombia_wiytke.png',
+              imageUrl: 'https://www.chocofreseo.com/img/bancos/bancolombia.png',
               width: 22, height: 22, fit: BoxFit.contain,
               placeholder: (_, __) => Container(width: 22, height: 22, decoration: const BoxDecoration(color: Color(0xFFFFCC00), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('B', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFF1A3C5E)))),
               errorWidget: (_, __, ___) => Container(width: 22, height: 22, decoration: const BoxDecoration(color: Color(0xFFFFCC00), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('B', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFF1A3C5E)))),
             ),
             const SizedBox(width: 4),
             CachedNetworkImage(
-              imageUrl: 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1779736049/nequi_pfgazy.png',
+              imageUrl: 'https://www.chocofreseo.com/img/bancos/nequi.png',
               width: 18, height: 18, fit: BoxFit.contain,
               placeholder: (_, __) => Container(width: 18, height: 18, decoration: const BoxDecoration(color: Color(0xFF3D1D89), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('N', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.white))),
               errorWidget: (_, __, ___) => Container(width: 18, height: 18, decoration: const BoxDecoration(color: Color(0xFF3D1D89), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('N', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.white))),
@@ -1364,7 +1361,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       children: [
                         Row(children: [
                           CachedNetworkImage(
-                            imageUrl: 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1779736112/bancolombia_wiytke.png',
+                            imageUrl: 'https://www.chocofreseo.com/img/bancos/bancolombia.png',
                             width: 32, height: 32, fit: BoxFit.contain,
                             placeholder: (_, __) => Container(width: 32, height: 32, decoration: const BoxDecoration(color: Color(0xFFFFCC00), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('B', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Color(0xFF1A3C5E)))),
                             errorWidget: (_, __, ___) => Container(width: 32, height: 32, decoration: const BoxDecoration(color: Color(0xFFFFCC00), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('B', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Color(0xFF1A3C5E)))),
@@ -1404,7 +1401,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     child: Column(
                       children: [
                         CachedNetworkImage(
-                          imageUrl: 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1779736049/nequi_pfgazy.png',
+                          imageUrl: 'https://www.chocofreseo.com/img/bancos/nequi.png',
                           width: 44, height: 44, fit: BoxFit.contain,
                           placeholder: (_, __) => Container(width: 44, height: 44, decoration: const BoxDecoration(color: Color(0xFF3D1D89), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('N', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white))),
                           errorWidget: (_, __, ___) => Container(width: 44, height: 44, decoration: const BoxDecoration(color: Color(0xFF3D1D89), shape: BoxShape.circle), alignment: Alignment.center, child: const Text('N', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white))),

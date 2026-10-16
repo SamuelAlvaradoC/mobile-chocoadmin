@@ -1811,13 +1811,13 @@ class _EditarVentaScreenState extends State<_EditarVentaScreen> {
                   value: 'transferencia',
                   logo: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                     CachedNetworkImage(
-                      imageUrl: 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1779736112/bancolombia_wiytke.png',
+                      imageUrl: 'https://www.chocofreseo.com/img/bancos/bancolombia.png',
                       width: 16, height: 16, fit: BoxFit.contain,
                       errorWidget: (_, __, ___) => const Icon(Icons.account_balance_outlined, size: 16),
                     ),
                     const SizedBox(width: 3),
                     CachedNetworkImage(
-                      imageUrl: 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1779736049/nequi_pfgazy.png',
+                      imageUrl: 'https://www.chocofreseo.com/img/bancos/nequi.png',
                       width: 16, height: 16, fit: BoxFit.contain,
                       errorWidget: (_, __, ___) => const Icon(Icons.phone_android_rounded, size: 16),
                     ),

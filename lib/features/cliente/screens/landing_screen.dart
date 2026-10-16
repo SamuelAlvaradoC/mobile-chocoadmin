@@ -267,7 +267,7 @@ class _HeroImagen extends StatelessWidget {
       child: Stack(
         children: [
           CachedNetworkImage(
-            imageUrl: 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1780607775/40bc9e7c-2c1d-48a5-a4b8-fdcd46a17a4e_al6zv9.jpg',
+            imageUrl: 'https://www.chocofreseo.com/img/landing/portada.jpg',
             width: imgSize,
             height: imgSize,
             fit: BoxFit.cover,
@@ -678,7 +678,7 @@ class _Conocenos extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: CachedNetworkImage(
-            imageUrl: 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1781960585/951d154f-bddd-4c5a-b606-e5a38e309433_d2nfnl.jpg',
+            imageUrl: 'https://www.chocofreseo.com/img/landing/conocenos.jpg',
             fit: BoxFit.cover,
             placeholder: (_, __) => Container(color: const Color(0xFFFDE8E8)),
             errorWidget: (_, __, ___) => Container(color: const Color(0xFFFDE8E8)),
@@ -880,7 +880,7 @@ class _VideoPlayer extends StatefulWidget {
 
 class _VideoPlayerState extends State<_VideoPlayer> {
   static const _url =
-      'https://res.cloudinary.com/diqeuyoqo/video/upload/v1787968751/ChocoFreseo_video_landing_v2_fark9e.mp4';
+      'https://www.chocofreseo.com/video/chocofreseo-landing.mp4';
 
   late final VideoPlayerController _videoController;
   ChewieController? _chewieController;

@@ -13,10 +13,10 @@ import '../../../core/utils/imagen.dart';
 
 // ── Salsas disponibles (idénticas a React) ───────────────────────────────────
 const _kSalsas = <Map<String, String>>[
-  {'id': 'arequipe',         'nombre': 'Arequipe',          'img': 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1779742573/patatas_arequipe_vhgewf.png'},
-  {'id': 'chocolate_negro',  'nombre': 'Chocolate Negro',   'img': 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1779742679/patatas_chocolate_negro_oluxzf.png'},
-  {'id': 'chocolate_blanco', 'nombre': 'Chocolate Blanco',  'img': 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1779742648/patatas_chocolate_blanco_t6dwl5.png'},
-  {'id': 'mermelada_mora',   'nombre': 'Mermelada de Mora', 'img': 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1779742724/patatas_mermelada_jlcyrs.png'},
+  {'id': 'arequipe',         'nombre': 'Arequipe',          'img': 'https://www.chocofreseo.com/img/salsas/arequipe.png'},
+  {'id': 'chocolate_negro',  'nombre': 'Chocolate Negro',   'img': 'https://www.chocofreseo.com/img/salsas/chocolate-negro.png'},
+  {'id': 'chocolate_blanco', 'nombre': 'Chocolate Blanco',  'img': 'https://www.chocofreseo.com/img/salsas/chocolate-blanco.png'},
+  {'id': 'mermelada_mora',   'nombre': 'Mermelada de Mora', 'img': 'https://www.chocofreseo.com/img/salsas/mermelada-mora.png'},
 ];
 const _kMaxSalsasGratis  = 2;
 const _kPrecioSalsaExtra = 5000.0;
@@ -329,7 +329,7 @@ class _ToppingsModalState extends State<ToppingsModal> {
     const opciones = [
       {'nombre': 'Chocolate Negro',  'img': 'https://res.cloudinary.com/dnoxlv5kn/image/upload/v1778815863/chocolate_negro_ancho_kzqpjd.png'},
       {'nombre': 'Chocolate Blanco', 'img': 'https://res.cloudinary.com/dnoxlv5kn/image/upload/v1778815900/chocolate_blanco_ancho_rw2b5l.png'},
-      {'nombre': 'Arequipe',         'img': 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1779742573/patatas_arequipe_vhgewf.png'},
+      {'nombre': 'Arequipe',         'img': 'https://www.chocofreseo.com/img/salsas/arequipe.png'},
     ];
 
     return Column(

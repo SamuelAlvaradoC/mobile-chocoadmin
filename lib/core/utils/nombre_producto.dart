@@ -12,17 +12,17 @@ const List<ComboFruta> combosFrutas = [
   ComboFruta(
     id: 'fresa_cereza',
     etiqueta: 'Fresa/Cereza',
-    img: 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1789244675/cereza_fresa_cfbhf2.jpg',
+    img: 'https://www.chocofreseo.com/img/combos/fresa-cereza.jpg',
   ),
   ComboFruta(
     id: 'fresa_durazno',
     etiqueta: 'Fresa/Durazno',
-    img: 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1789244723/fresa_durzano_lkobxl.jpg',
+    img: 'https://www.chocofreseo.com/img/combos/fresa-durazno.jpg',
   ),
   ComboFruta(
     id: 'cereza_durazno',
     etiqueta: 'Cereza/Durazno',
-    img: 'https://res.cloudinary.com/diqeuyoqo/image/upload/v1789244748/2f8a8676-e6b8-4095-ba63-186aef146e98_ftrj9k.png',
+    img: 'https://www.chocofreseo.com/img/combos/cereza-durazno.png',
   ),
 ];
 
