@@ -17,6 +17,7 @@ import '../../../features/auth/providers/auth_provider.dart';
 import '../../../shared/layouts/admin_bottom_nav.dart';
 import '../../../shared/widgets/brand_icons.dart';
 import '../../../core/utils/formato.dart';
+import '../../../core/utils/imagen.dart';
 
 class DomiciliosScreen extends StatefulWidget {
   const DomiciliosScreen({super.key});
@@ -1352,9 +1353,10 @@ class _DetalleAdminModalState extends State<_DetalleAdminModal> {
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(10),
+                          // Vista previa de 600 px; el original solo al abrirlo.
                           child: CachedNetworkImage(
-                            imageUrl: (pedido.comprobanteUrl ??
-                                pedido.comprobante)!,
+                            imageUrl: imgCl((pedido.comprobanteUrl ??
+                                pedido.comprobante)!),
                             height: 200,
                             width: double.infinity,
                             fit: BoxFit.cover,

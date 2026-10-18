@@ -477,7 +477,7 @@ class _ProductoFormScreenState extends State<_ProductoFormScreen> {
 
   Future<void> _seleccionarImagen() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85, maxWidth: 1200);
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85, maxWidth: 1200, maxHeight: 1200);
     if (picked == null) return;
     final nombre = picked.name.toLowerCase();
     if (!nombre.endsWith('.jpg') && !nombre.endsWith('.jpeg') && !nombre.endsWith('.png')) {

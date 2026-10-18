@@ -893,7 +893,7 @@ class _ImageUploadWidgetState extends State<_ImageUploadWidget> {
 
   Future<void> _pickAndUpload() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85, maxWidth: 1200, maxHeight: 1200);
     if (picked == null) return;
     final nombre = picked.name.toLowerCase();
     if (!nombre.endsWith('.jpg') && !nombre.endsWith('.jpeg') && !nombre.endsWith('.png')) {

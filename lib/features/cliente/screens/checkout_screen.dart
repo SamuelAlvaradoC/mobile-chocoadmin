@@ -1328,8 +1328,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          'https://res.cloudinary.com/dnoxlv5kn/image/upload/v1778551977/Captura_de_pantalla_2026-05-11_210420_xc3wav.png',
+                        // QR empaquetado en la APK: antes se descargaba de Cloudinary (535 KB)
+                        // sin caché en disco cada vez que se abría el checkout.
+                        child: Image.asset(
+                          'assets/images/qr-bancolombia.png',
                           height: 100,
                           fit: BoxFit.contain,
                         ),
@@ -1459,8 +1461,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      'https://res.cloudinary.com/dnoxlv5kn/image/upload/v1778551977/Captura_de_pantalla_2026-05-11_210420_xc3wav.png',
+                    child: Image.asset(
+                      'assets/images/qr-bancolombia.png',
                       width: MediaQuery.of(context).size.width * 0.85,
                     ),
                   ),

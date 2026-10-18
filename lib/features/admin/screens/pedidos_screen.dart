@@ -1179,18 +1179,21 @@ class _VentaDetalleScreenState extends State<_VentaDetalleScreen> {
                     GestureDetector(
                       onTap: () => showDialog(
                         context: context,
+                        // Al abrirlo: el original completo (para leer bien el comprobante).
                         builder: (_) => Dialog(
-                          child: Image.network(p.comprobanteUrl!, fit: BoxFit.contain),
+                          child: CachedNetworkImage(imageUrl: p.comprobanteUrl!, fit: BoxFit.contain),
                         ),
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          p.comprobanteUrl!,
+                        // Vista previa: versión de 600 px con caché en disco (antes
+                        // Image.network bajaba el original sin caché cada vez).
+                        child: CachedNetworkImage(
+                          imageUrl: imgCl(p.comprobanteUrl!),
                           height: 160,
                           width: double.infinity,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
+                          errorWidget: (_, __, ___) => Container(
                             height: 80,
                             color: const Color(0xFFF0F0F0),
                             child: const Center(child: Icon(Icons.broken_image_outlined, color: Color(0xFFAAAAAA))),
