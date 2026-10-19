@@ -7,6 +7,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/routing/auth_redirect.dart';
 import '../../../core/utils/debouncer.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/aviso_legal_registro.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key, this.from});
@@ -341,7 +342,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
           : Text('Crear cuenta', style: GoogleFonts.nunito(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white)),
     )),
-    const SizedBox(height: 20),
+    const SizedBox(height: 12),
+    const Center(child: AvisoLegalRegistro()),
+    const SizedBox(height: 16),
 
     Center(child: RichText(text: TextSpan(
       style: GoogleFonts.nunito(fontSize: 14, color: const Color(0xFF888888), fontWeight: FontWeight.w600),

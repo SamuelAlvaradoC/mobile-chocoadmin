@@ -55,6 +55,12 @@ class ApiService {
     return headers;
   }
 
+  /// Encabezados JSON (con el token si hay sesión) para llamadas que no pasan
+  /// por get/post de esta clase -- ej. la reseña de la landing, que debe
+  /// mandar la sesión cuando reseña un pedido.
+  static Future<Map<String, String>> headersJson({bool conSesion = true}) =>
+      _headers(auth: conSesion);
+
   // ─── Response handler ───────────────────────────────────────────────────────
 
   static dynamic _handleResponse(http.Response response, {required bool auth}) {

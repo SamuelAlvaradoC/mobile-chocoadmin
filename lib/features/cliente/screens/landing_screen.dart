@@ -13,6 +13,7 @@ import 'package:video_player/video_player.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_config.dart';
+import '../../../core/services/api_service.dart';
 import '../../../shared/layouts/client_layout.dart';
 import '../../../shared/widgets/brand_icons.dart';
 import '../providers/resena_flow_provider.dart';
@@ -1053,9 +1054,11 @@ class _CtaFinalState extends State<_CtaFinal> {
     final idVentaPendiente = context.read<ResenaFlowProvider>().idVentaPendienteEnFormulario;
     setState(() { _enviando = true; _error = null; });
     try {
+      // La reseña de un pedido exige la sesión del cliente dueño del pedido
+      // (la encuesta general sin pedido sigue siendo pública).
       final res = await http.post(
         Uri.parse('${AppConfig.apiBaseUrl}/resenas'),
-        headers: {'Content-Type': 'application/json'},
+        headers: await ApiService.headersJson(),
         body: jsonEncode({
           'sede':                  _sede,
           'frecuencia':            _frecuencia,
