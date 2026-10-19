@@ -40,15 +40,19 @@ class CarritoRemotoApi implements CarritoRemoto {
       _lista(await ApiService.post('/api/carrito/validar', {'items': items}), 'lineas');
 }
 
-/// Persiste el carrito en SharedPreferences, igual que React persiste en
-/// localStorage (CartContext.jsx) -- una clave por usuario
-/// (`carrito_<id_usuario>` o `carrito_anon` para invitados) para que el
-/// carrito de un cliente nunca se filtre a otro en el mismo dispositivo.
+/// Una sola fuente de verdad: [items] es lo que muestran el carrito, el
+/// checkout y la confirmación, y es exactamente lo que se envía en el pedido.
 ///
-/// Cualquiera puede armar el carrito (con o sin sesión, con la tienda abierta
-/// o cerrada). Al iniciar sesión, lo que se armó como invitado se pasa al
-/// carrito de la cuenta y se combina con el guardado en el servidor sin
-/// duplicar líneas.
+/// Se guarda en SharedPreferences (`carrito_<id_usuario>` con sesión,
+/// `carrito_anon` sin sesión) y, con sesión, también en la cuenta
+/// (servidor). Reglas:
+///   - Cerrar sesión: el carrito del dispositivo se vacía (la siguiente
+///     persona no ve el anterior); el de la cuenta queda en el servidor.
+///   - Iniciar sesión con un carrito armado sin cuenta: ESE carrito
+///     reemplaza al guardado en la cuenta (no se combinan).
+///   - Iniciar sesión sin carrito: se recupera el guardado en la cuenta.
+///   - Después de hacer el pedido: se vacían el del dispositivo y el de la
+///     cuenta ([vaciarTrasPedido]).
 class CarritoProvider extends ChangeNotifier {
   CarritoProvider({this.remoto});
 
@@ -62,8 +66,8 @@ class CarritoProvider extends ChangeNotifier {
   // de la app, vía ChangeNotifierProxyProvider en main.dart).
   String? _claveActual;
 
-  // Hasta combinar con el carrito del servidor no se le sube nada, para no
-  // pisar lo que el cliente dejó guardado desde otro dispositivo.
+  // No se sube nada al servidor hasta saber qué carrito vale (el armado sin
+  // cuenta o el recuperado de la cuenta).
   bool _servidorListo = false;
   bool _sincronizando = false;
   Timer? _debounceServidor;
@@ -73,45 +77,79 @@ class CarritoProvider extends ChangeNotifier {
   double get total => _items.fold(0.0, (s, i) => s + i.subtotal);
   bool get isEmpty => _items.isEmpty;
 
-  /// true mientras se trae el carrito guardado en el servidor.
+  /// true mientras se recupera el carrito guardado en la cuenta.
   bool get sincronizando => _sincronizando;
 
-  static String _claveParaUsuario(int? userId) =>
-      userId != null ? 'carrito_$userId' : 'carrito_anon';
+  static const _claveInvitado = 'carrito_anon';
 
-  /// Cambia el carrito activo al del usuario dado (o al de invitado si es
-  /// null), cargando lo que haya guardado bajo esa clave. Si ya está
-  /// sincronizado con esa misma clave, no hace nada (evita recargas
-  /// redundantes en cada notificación de AuthProvider).
-  ///
-  /// Si se pasa de invitado a una cuenta en esta misma sesión de la app
-  /// (inició sesión o se registró), el carrito de invitado se combina con el
-  /// de la cuenta y la clave de invitado se vacía. Al arrancar la app ya con
-  /// sesión no hay combinación: cada clave carga solo lo suyo.
+  static String _claveParaUsuario(int? userId) =>
+      userId != null ? 'carrito_$userId' : _claveInvitado;
+
+  /// Cambia el carrito activo según la sesión (ver reglas arriba). Si ya
+  /// está con esa misma clave, no hace nada (evita recargas redundantes en
+  /// cada notificación de AuthProvider).
   Future<void> sincronizarUsuario(int? userId) async {
     final clave = _claveParaUsuario(userId);
-    if (_claveActual == clave) return;
-    final veniaDeInvitado = _claveActual == 'carrito_anon' && userId != null;
-    final invitado = veniaDeInvitado ? List<CarritoItem>.from(_items) : const <CarritoItem>[];
+    final anterior = _claveActual;
+    if (anterior == clave) return;
+    final armadoSinCuenta = List<CarritoItem>.from(_items);
     _claveActual = clave;
     _servidorListo = false;
     _debounceServidor?.cancel();
+    final prefs = await SharedPreferences.getInstance();
 
-    final guardado = await _leerLocal(clave);
-    if (_claveActual != clave) return; // cambió de usuario mientras leía
-    _items
-      ..clear()
-      ..addAll(guardado);
-
-    if (invitado.isNotEmpty) {
-      _combinarEn(_items, invitado);
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('carrito_anon');
-      await _persistirLocal();
+    if (userId == null) {
+      if (anterior == null) {
+        // Arranque de la app sin sesión: lo que armó como invitado.
+        final guardado = await _leerLocal(clave);
+        if (_claveActual != clave) return;
+        _items
+          ..clear()
+          ..addAll(guardado);
+      } else {
+        // Cerró sesión: el dispositivo queda sin carrito. El de la cuenta
+        // sigue en el servidor.
+        _items.clear();
+        await prefs.remove(anterior);
+        await prefs.remove(_claveInvitado);
+      }
+      notifyListeners();
+      return;
     }
-    notifyListeners();
 
-    if (userId != null) await _sincronizarConServidor(clave);
+    if (anterior == _claveInvitado && armadoSinCuenta.isNotEmpty) {
+      // Inició sesión con un carrito armado sin cuenta: ese reemplaza al de
+      // la cuenta.
+      _items
+        ..clear()
+        ..addAll(armadoSinCuenta);
+      await prefs.remove(_claveInvitado);
+      await _persistirLocal();
+      notifyListeners();
+      await _subirAlServidor(clave);
+      return;
+    }
+
+    if (anterior == null) {
+      // Arranque de la app ya con sesión: lo que quedó en este dispositivo
+      // vale; si no hay nada, se recupera el de la cuenta.
+      final guardado = await _leerLocal(clave);
+      if (_claveActual != clave) return;
+      if (guardado.isNotEmpty) {
+        _items
+          ..clear()
+          ..addAll(guardado);
+        notifyListeners();
+        await _subirAlServidor(clave);
+        return;
+      }
+    }
+
+    // Inició sesión sin carrito (o arrancó sin nada local): el de la cuenta.
+    if (anterior == _claveInvitado) await prefs.remove(_claveInvitado);
+    _items.clear();
+    notifyListeners();
+    await _recuperarDelServidor(clave);
   }
 
   Future<List<CarritoItem>> _leerLocal(String clave) async {
@@ -132,50 +170,66 @@ class CarritoProvider extends ChangeNotifier {
     return lista;
   }
 
-  /// Agrega a [destino] las líneas de [otras] que no tenga. Si la misma línea
-  /// (mismo lineaId) está en ambos, queda una sola con la cantidad mayor.
-  static void _combinarEn(List<CarritoItem> destino, List<CarritoItem> otras) {
-    for (final o in otras) {
-      final idx = destino.indexWhere((d) => d.lineaId == o.lineaId);
-      if (idx < 0) {
-        destino.add(o);
-      } else if (o.cantidad > destino[idx].cantidad) {
-        destino[idx].cantidad = o.cantidad;
-      }
+  /// Reemplaza el carrito de la cuenta por el actual.
+  Future<void> _subirAlServidor(String clave) async {
+    final r = remoto;
+    if (r == null || _claveActual != clave) return;
+    _servidorListo = true;
+    try {
+      await r.guardar(_items.map(aCanonico).toList());
+    } catch (_) {
+      // Sin red: queda el del dispositivo; el próximo cambio lo vuelve a subir.
     }
   }
 
-  /// Trae el carrito guardado en el servidor, lo revalida (para tener
-  /// nombres, precios e imágenes actuales), lo combina con el local y guarda
-  /// el resultado en ambos lados.
-  Future<void> _sincronizarConServidor(String clave) async {
+  /// Trae el carrito guardado en la cuenta, revalidado (nombres, precios e
+  /// imágenes actuales), y lo deja como carrito actual.
+  Future<void> _recuperarDelServidor(String clave) async {
     final r = remoto;
     if (r == null) return;
     _sincronizando = true;
     notifyListeners();
     try {
       final guardados = await r.obtener();
-      final delServidor = <CarritoItem>[];
+      final recuperado = <CarritoItem>[];
       if (guardados.isNotEmpty) {
         for (final l in await r.validar(guardados)) {
-          if (l['disponible'] == true) delServidor.add(_itemDesdeLinea(l));
+          if (l['disponible'] == true) recuperado.add(_itemDesdeLinea(l));
         }
       }
       if (_claveActual != clave) return;
-      _combinarEn(_items, delServidor);
+      if (_items.isNotEmpty) {
+        // Agregó algo mientras se recuperaba: vale lo que ve.
+        await _subirAlServidor(clave);
+        return;
+      }
+      _items.addAll(recuperado);
       _servidorListo = true;
       notifyListeners();
       await _persistirLocal();
-      await r.guardar(_items.map(aCanonico).toList());
     } catch (_) {
-      // Sin red: se sigue con el carrito local; se reintenta en el próximo
-      // cambio de sesión.
+      // Sin red: se sigue con el carrito vacío del dispositivo.
+      if (_claveActual == clave) _servidorListo = true;
     } finally {
       if (_claveActual == clave) {
         _sincronizando = false;
         notifyListeners();
       }
     }
+  }
+
+  /// Después de hacer el pedido: vacía el carrito del dispositivo y el de la
+  /// cuenta (sin esperar el retardo de guardado).
+  Future<void> vaciarTrasPedido() async {
+    _debounceServidor?.cancel();
+    _items.clear();
+    notifyListeners();
+    await _persistirLocal();
+    final r = remoto;
+    if (r == null || _claveActual == null || _claveActual == _claveInvitado) return;
+    try {
+      await r.guardar(const []);
+    } catch (_) {}
   }
 
   Future<void> _persistirLocal() async {
@@ -188,7 +242,7 @@ class CarritoProvider extends ChangeNotifier {
   Future<void> _persistir() async {
     await _persistirLocal();
     final r = remoto;
-    if (r == null || !_servidorListo || _claveActual == 'carrito_anon') return;
+    if (r == null || !_servidorListo || _claveActual == _claveInvitado) return;
     _debounceServidor?.cancel();
     _debounceServidor = Timer(const Duration(milliseconds: 800), () {
       r.guardar(_items.map(aCanonico).toList()).catchError((_) {});

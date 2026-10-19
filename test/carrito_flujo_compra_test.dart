@@ -1,6 +1,6 @@
-// Nuevo flujo de compra: cualquiera arma el carrito; al iniciar sesión el de
-// invitado se pasa a la cuenta y se combina con el guardado en el servidor
-// sin duplicar; antes de pedir se revalidan precios y disponibilidad.
+// Nuevo flujo de compra: cualquiera arma el carrito; al iniciar sesión el
+// armado sin cuenta reemplaza al guardado en la cuenta; antes de pedir se
+// revalidan precios y disponibilidad.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -89,13 +89,10 @@ void main() {
     expect(remoto.guardados, isEmpty); // sin sesión no se sube nada
   });
 
-  test('al iniciar sesión: invitado + servidor se combinan sin duplicar y se guarda el resultado', () async {
+  test('al iniciar sesión con carrito armado sin cuenta, ESE reemplaza al de la cuenta (no se combinan)', () async {
     final remoto = _RemotoFalso()
-      ..enServidor = [{'id_producto': 1}, {'id_producto': 2}]
-      ..respuestaValidar = (_) => [
-            _linea(), // la misma línea que el invitado agregó
-            _linea(id: 2, nombre: 'Bowl', toppings: const [], salsas: const []),
-          ];
+      ..enServidor = [{'id_producto': 2}]
+      ..respuestaValidar = (_) => [_linea(id: 2, nombre: 'Bowl', toppings: const [], salsas: const [])];
     final c = CarritoProvider(remoto: remoto);
     await c.sincronizarUsuario(null);
     _agregarFresas(c);
@@ -104,13 +101,14 @@ void main() {
 
     await c.sincronizarUsuario(7); // inició sesión
 
-    expect(c.items.map((i) => i.producto.nombre).toList()..sort(), ['Bowl', 'Fresas con crema']);
-    expect(c.items.firstWhere((i) => i.producto.id == 1).cantidad, 2); // la mayor, sin duplicar
+    expect(c.items.map((i) => i.producto.nombre), ['Fresas con crema']);
+    expect(c.items.single.cantidad, 2);
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString('carrito_anon'), isNull);
     expect(prefs.getString('carrito_7'), isNotNull);
-    expect(remoto.guardados.last, hasLength(2));
-    expect(remoto.guardados.last.first['salsas'], ['arequipe']);
+    expect(remoto.guardados.last, hasLength(1));
+    expect(remoto.guardados.last.single['id_producto'], 1);
+    expect(remoto.guardados.last.single['salsas'], ['arequipe']);
   });
 
   test('validar(): quita lo agotado, avisa el cambio de precio y actualiza el carrito', () async {

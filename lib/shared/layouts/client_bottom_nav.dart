@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 
 import '../../core/services/auth_service.dart' show UserRole;
 import '../../features/auth/providers/auth_provider.dart';
-import '../../features/cliente/providers/carrito_provider.dart';
 
 /// Bottom nav nativo para las 3 pantallas raíz del cliente (Catálogo,
 /// Landing/Inicio, Perfil) — cada una vive en su propio branch de un
@@ -107,10 +106,9 @@ class ClientLogoutAction extends StatelessWidget {
     return IconButton(
       tooltip: 'Cerrar sesión',
       icon: const Icon(Icons.logout_rounded),
-      onPressed: () async {
-        await auth.logout();
-        if (context.mounted) context.read<CarritoProvider>().limpiar();
-      },
+      // Al cerrar sesión CarritoProvider vacía el carrito del dispositivo
+      // (el de la cuenta queda en el servidor) -- ver sincronizarUsuario.
+      onPressed: () => auth.logout(),
     );
   }
 }

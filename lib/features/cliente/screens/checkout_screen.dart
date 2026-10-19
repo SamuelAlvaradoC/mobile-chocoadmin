@@ -451,7 +451,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         }).catchError((_) {});
       }
 
-      carrito.limpiar();
+      // Vacía el carrito del dispositivo y el guardado en la cuenta.
+      await carrito.vaciarTrasPedido();
 
       if (mounted) {
         HapticFeedback.mediumImpact();
