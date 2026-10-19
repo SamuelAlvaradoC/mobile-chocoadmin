@@ -10,14 +10,8 @@ import '../../../core/utils/nombre_producto.dart';
 import '../../../core/utils/validar_sin_html.dart';
 import '../../../core/utils/formato.dart';
 import '../../../core/utils/imagen.dart';
+import '../../../core/utils/salsas.dart';
 
-// ── Salsas disponibles (idénticas a React) ───────────────────────────────────
-const _kSalsas = <Map<String, String>>[
-  {'id': 'arequipe',         'nombre': 'Arequipe',          'img': 'https://www.chocofreseo.com/img/salsas/arequipe.png'},
-  {'id': 'chocolate_negro',  'nombre': 'Chocolate Negro',   'img': 'https://www.chocofreseo.com/img/salsas/chocolate-negro.png'},
-  {'id': 'chocolate_blanco', 'nombre': 'Chocolate Blanco',  'img': 'https://www.chocofreseo.com/img/salsas/chocolate-blanco.png'},
-  {'id': 'mermelada_mora',   'nombre': 'Mermelada de Mora', 'img': 'https://www.chocofreseo.com/img/salsas/mermelada-mora.png'},
-];
 const _kMaxSalsasGratis  = 2;
 const _kPrecioSalsaExtra = 5000.0;
 const _kPrecioTopExtra   = 2000.0;
@@ -151,7 +145,7 @@ class _ToppingsModalState extends State<ToppingsModal> {
       // Si es bowl, la cobertura reemplaza a las salsas (igual que React)
       final sList = widget.producto.esBowl
           ? (_coberturaElegida != null ? [{'nombre': _coberturaElegida}] : <Map<String, dynamic>>[])
-          : _kSalsas.where((s) => _salsasSel.contains(s['id'])).map((s) => Map<String, dynamic>.from(s)).toList();
+          : kSalsasDisponibles.where((s) => _salsasSel.contains(s['id'])).map((s) => Map<String, dynamic>.from(s)).toList();
 
       Navigator.pop(context, ModalProductoResult(
         toppings: tFlat,
@@ -584,9 +578,9 @@ class _ToppingsModalState extends State<ToppingsModal> {
                     crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12,
                     childAspectRatio: 0.85,
                   ),
-                  itemCount: _kSalsas.length,
+                  itemCount: kSalsasDisponibles.length,
                   itemBuilder: (_, i) {
-                    final salsa = _kSalsas[i];
+                    final salsa = kSalsasDisponibles[i];
                     final sId   = salsa['id']!;
                     final sel   = _salsasSel.contains(sId);
                     final idx   = _salsasSel.toList().indexOf(sId);

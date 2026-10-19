@@ -4,12 +4,16 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/routing/auth_redirect.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/utils/debouncer.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, this.from});
+
+  /// Ruta a la que volver tras iniciar sesión (ver destinosTrasLogin).
+  final String? from;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -129,6 +133,11 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
       final role = auth.user?.role;
+      final destino = destinoTrasLogin(widget.from);
+      if (destino != null && role == UserRole.cliente) {
+        context.go(destino);
+        return;
+      }
       // Igual que React Login.jsx: solo admin/domiciliario tienen ruta directa;
       // cualquier otro rol (cliente, confirmador_domicilio, cocinero, etc.)
       // cae en /landing.
@@ -144,6 +153,11 @@ class _LoginScreenState extends State<LoginScreen> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  String _conDestino(String ruta) {
+    final destino = destinoTrasLogin(widget.from);
+    return destino == null ? ruta : '$ruta?from=$destino';
   }
 
   @override
@@ -291,7 +305,7 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         const TextSpan(text: '¿No tienes cuenta? '),
         WidgetSpan(child: GestureDetector(
-          onTap: () => context.push('/register'),
+          onTap: () => context.push(_conDestino('/register')),
           child: Text('Regístrate gratis',
               style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.primary)),
         )),

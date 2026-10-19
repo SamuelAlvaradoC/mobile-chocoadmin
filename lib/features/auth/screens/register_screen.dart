@@ -4,11 +4,15 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/routing/auth_redirect.dart';
 import '../../../core/utils/debouncer.dart';
 import '../providers/auth_provider.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+  const RegisterScreen({super.key, this.from});
+
+  /// Ruta a la que volver tras registrarse (ver destinosTrasLogin).
+  final String? from;
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -195,7 +199,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
       // Igual que React Registro.jsx: el registro público siempre crea un
       // cliente y navega a /landing, sin ramas por rol.
-      context.go('/landing');
+      context.go(destinoTrasLogin(widget.from) ?? '/landing');
     } catch (ex) {
       if (mounted) setState(() => _generalError = _parsearErrorBackend(ex.toString().replaceFirst('Exception: ', '')));
     } finally {
@@ -347,7 +351,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           // push (no go): el back del sistema debe volver a Register, no
           // saltar siempre a /catalogo -- mismo criterio que Login<->Register
           // <->ForgotPassword en login_screen.dart.
-          onTap: () => context.push('/login'),
+          onTap: () => context.push(destinoTrasLogin(widget.from) == null ? '/login' : '/login?from=${widget.from}'),
           child: Text('Inicia sesión',
               style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.primary)),
         )),

@@ -61,4 +61,29 @@ void main() {
       );
     });
   });
+
+  group('computeAuthRedirect -- volver al checkout tras login/registro', () {
+    test('un cliente que llegó desde "Hacer pedido" vuelve a /checkout', () {
+      for (final ruta in ['/login', '/register']) {
+        expect(
+          computeAuthRedirect(status: AuthStatus.authenticated, location: ruta, role: UserRole.cliente, from: '/checkout'),
+          '/checkout',
+        );
+      }
+    });
+
+    test('otros roles van a su inicio aunque venga from', () {
+      expect(
+        computeAuthRedirect(status: AuthStatus.authenticated, location: '/login', role: UserRole.admin, from: '/checkout'),
+        '/admin/dashboard',
+      );
+    });
+
+    test('un from que no está en la lista se ignora', () {
+      expect(
+        computeAuthRedirect(status: AuthStatus.authenticated, location: '/login', role: UserRole.cliente, from: '/admin/ventas'),
+        '/catalogo',
+      );
+    });
+  });
 }

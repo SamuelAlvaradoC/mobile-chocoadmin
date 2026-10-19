@@ -21,6 +21,7 @@ import '../../../shared/widgets/double_back_to_exit.dart' show CheckoutBackContr
 import '../../../shared/widgets/whatsapp_fab.dart';
 import '../providers/carrito_provider.dart';
 import '../../../core/utils/formato.dart';
+import '../../../core/utils/tienda.dart';
 
 // Pago mixto (igual React handleEfectivoMixto/handleTransferMixto): al
 // escribir en un campo se recorta al rango [0,total] y el otro campo se
@@ -59,6 +60,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   int _paso = 0;
   bool _enviando = false;
   String? _errorEnvio;
+
+  // ── Tienda cerrada y cambios del carrito ────────────────
+  // Con la tienda cerrada se puede revisar el pedido pero no enviarlo (la
+  // API igual lo rechaza fuera de horario).
+  String? _avisoCerrado;
+  // Lo que cambió al revalidar el carrito (precios, productos agotados...).
+  List<String> _cambiosCarrito = const [];
 
   // ── Paso 1: Datos de contacto ──────────────────────────────
   final _telefonoCtrl = TextEditingController();
@@ -124,9 +132,32 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     CheckoutBackController.registrar(_handleBack);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _cargarPerfil();
+      _cargarEstadoTienda();
+      _revalidarCarrito();
     });
     _cargarValorPunto();
     _cargarDatafono();
+  }
+
+  Future<void> _cargarEstadoTienda() async {
+    try {
+      final data = await ApiService.get('/api/configuracion/estado-tienda', auth: false);
+      final inner = data is Map && data['data'] is Map ? data['data'] as Map : (data is Map ? data : <String, dynamic>{});
+      if (!mounted) return;
+      setState(() => _avisoCerrado = inner['abierto'] == false
+          ? mensajeTiendaCerrada(estado: inner['estado']?.toString(), horaApertura: inner['hora_apertura'])
+          : null);
+    } catch (_) {}
+  }
+
+  /// Revalida precios y disponibilidad del carrito contra la API. Devuelve
+  /// true si algo cambió (el carrito ya quedó actualizado y se muestra el
+  /// aviso).
+  Future<bool> _revalidarCarrito() async {
+    final cambios = await context.read<CarritoProvider>().validar();
+    if (!mounted || cambios == null || cambios.isEmpty) return false;
+    setState(() => _cambiosCarrito = cambios);
+    return true;
   }
 
   Future<void> _cargarValorPunto() async {
@@ -298,7 +329,27 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       return;
     }
 
+    await _cargarEstadoTienda();
+    if (!mounted) return;
+    if (_avisoCerrado != null) {
+      setState(() => _errorEnvio = _avisoCerrado);
+      return;
+    }
+
+    // Antes de enviar se revalida el carrito: si cambió algún precio o se
+    // agotó algo, se actualiza y el cliente confirma de nuevo con el total
+    // correcto.
+    setState(() { _enviando = true; _errorEnvio = null; });
+    final cambio = await _revalidarCarrito();
+    if (!mounted) return;
+    setState(() => _enviando = false);
+    if (cambio) {
+      setState(() => _errorEnvio = 'Actualizamos tu carrito. Revisa los cambios y confirma de nuevo.');
+      return;
+    }
+
     final carrito = context.read<CarritoProvider>();
+    if (carrito.items.isEmpty) return;
 
     // Agua de cortesía: obligatorio responder cuando la pregunta aplica
     // (mismo criterio de visibilidad que el bloque de UI más abajo).
@@ -429,6 +480,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   @override
   Widget build(BuildContext context) {
     final carrito = context.watch<CarritoProvider>();
+    if (carrito.items.isEmpty && carrito.sincronizando) {
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+          CircularProgressIndicator(color: AppColors.primary),
+          SizedBox(height: 12),
+          Text('Cargando tu carrito…', style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+        ])),
+      );
+    }
     if (carrito.items.isEmpty && _paso == 0 && !_enviando) {
       return Scaffold(
         backgroundColor: AppColors.background,
@@ -471,6 +532,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       body: Column(
         children: [
           _buildIndicadorPasos(),
+          if (_avisoCerrado != null)
+            _aviso(_avisoCerrado!, fondo: const Color(0xFFFEF9C3), borde: const Color(0xFFFDE68A), texto: const Color(0xFF854D0E)),
+          if (_cambiosCarrito.isNotEmpty)
+            _aviso(
+              'Actualizamos tu carrito:\n${_cambiosCarrito.map((c) => '• $c').join('\n')}',
+              fondo: const Color(0xFFEFF6FF), borde: const Color(0xFFBFDBFE), texto: const Color(0xFF1E40AF),
+              onCerrar: () => setState(() => _cambiosCarrito = const []),
+            ),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(AppSizes.screenPadding),
@@ -485,6 +554,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       ),
     ), // Scaffold
     ); // PopScope
+  }
+
+  Widget _aviso(String mensaje, {required Color fondo, required Color borde, required Color texto, VoidCallback? onCerrar}) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(AppSizes.screenPadding, 12, AppSizes.screenPadding, 0),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: fondo, border: Border.all(color: borde), borderRadius: BorderRadius.circular(10)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(mensaje, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: texto, height: 1.4)),
+        if (onCerrar != null)
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(onPressed: onCerrar, child: Text('Entendido', style: TextStyle(color: texto, fontWeight: FontWeight.w800))),
+          ),
+      ]),
+    );
   }
 
   Widget _buildIndicadorPasos() {

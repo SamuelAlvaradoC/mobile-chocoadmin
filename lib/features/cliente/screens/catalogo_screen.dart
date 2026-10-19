@@ -24,6 +24,7 @@ import '../providers/carrito_provider.dart';
 import '../widgets/toppings_modal.dart';
 import '../../../core/utils/formato.dart';
 import '../../../core/utils/imagen.dart';
+import '../../../core/utils/tienda.dart';
 
 class CatalogoScreen extends StatefulWidget {
   const CatalogoScreen({super.key});
@@ -32,20 +33,12 @@ class CatalogoScreen extends StatefulWidget {
   State<CatalogoScreen> createState() => _CatalogoScreenState();
 }
 
-/// Equivalente a formatHora12() del frontend React (src/utils/formatHora.js).
-String _formatHora12(dynamic hora24) {
-  final h = num.tryParse(hora24?.toString() ?? '') ?? 0;
-  final period = h < 12 ? 'AM' : 'PM';
-  final h12raw = h % 12;
-  final h12 = h12raw == 0 ? 12 : h12raw.toInt();
-  return '$h12:00 $period';
-}
-
 class _CatalogoScreenState extends State<CatalogoScreen> {
   final _busquedaCtrl = TextEditingController();
   String _busqueda = '';
   bool _carritoExpandido = false;
   bool? _tiendaAbierta;
+  String? _estadoTienda;
   dynamic _horaApertura;
   dynamic _horaCierre;
   int _tiempoEspera = 30;
@@ -86,6 +79,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
         final inner = data['data'] is Map ? data['data'] as Map : data;
         setState(() {
           _tiendaAbierta = inner['abierto'] == true;
+          _estadoTienda = inner['estado']?.toString();
           _horaApertura = inner['hora_apertura'];
           _horaCierre = inner['hora_cierre'];
         });
@@ -105,6 +99,19 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     } catch (_) {}
   }
 
+  String get _mensajeCerrado =>
+      mensajeTiendaCerrada(estado: _estadoTienda, horaApertura: _horaApertura);
+
+  // Aviso que se quita solo (como los del modo admin) y a login; al
+  // terminar vuelve directo al checkout con el carrito.
+  void _irALoginParaPedir() {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text('Inicia sesión o crea tu cuenta para poder seguir con tu pedido'),
+      duration: Duration(seconds: 4),
+    ));
+    context.go('/login?from=/checkout');
+  }
+
   void _mostrarTiendaCerrada() {
     showDialog(
       context: context,
@@ -121,7 +128,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                   style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.w800, color: const Color(0xFF1a1a1a)),
                   textAlign: TextAlign.center),
               const SizedBox(height: 8),
-              Text('No estamos aceptando pedidos en este momento. ¡Vuelve pronto!',
+              Text(_mensajeCerrado,
                   style: GoogleFonts.nunito(fontSize: 13, color: AppColors.textSecondary),
                   textAlign: TextAlign.center),
               const SizedBox(height: 20),
@@ -140,86 +147,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     );
   }
 
-  void _mostrarLoginRequerido() {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('🔒', style: TextStyle(fontSize: 48)),
-              const SizedBox(height: 12),
-              Text(
-                'Inicia sesión para comprar',
-                style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.w800, color: const Color(0xFF1a1a1a)),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Necesitas una cuenta para agregar productos al carrito.',
-                style: GoogleFonts.nunito(fontSize: 13, color: AppColors.textSecondary),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('Cancelar'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        context.go('/login');
-                      },
-                      child: const Text('Iniciar sesión'),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              GestureDetector(
-                onTap: () {
-                  Navigator.pop(ctx);
-                  context.go('/register');
-                },
-                child: RichText(
-                  text: TextSpan(
-                    style: GoogleFonts.nunito(fontSize: 12, color: AppColors.textSecondary),
-                    children: [
-                      const TextSpan(text: '¿No tienes cuenta? '),
-                      TextSpan(
-                        text: 'Regístrate gratis',
-                        style: GoogleFonts.nunito(color: AppColors.primary, fontWeight: FontWeight.w700),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> _agregarProducto(Producto producto) async {
-    if (_tiendaAbierta == false) { _mostrarTiendaCerrada(); return; }
-    final user = context.read<AuthProvider>().user;
-    if (user == null) { _mostrarLoginRequerido(); return; }
-
     final catalogo = context.read<CatalogoProvider>();
     final carrito  = context.read<CarritoProvider>();
     if (!mounted) return;
@@ -312,10 +240,14 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                       fmt: fmt,
                       expandido: _carritoExpandido,
                       onToggle: () => setState(() => _carritoExpandido = !_carritoExpandido),
-                      onCheckout: auth.user == null
-                          ? (_) => _mostrarLoginRequerido()
-                          : _tiendaAbierta == false
-                              ? (_) => _mostrarTiendaCerrada()
+                      avisoCerrado: _tiendaAbierta == false ? _mensajeCerrado : null,
+                      // "Hacer pedido": con la tienda cerrada se avisa y no
+                      // avanza; sin sesión va a login/registro y vuelve
+                      // directo al checkout con el carrito.
+                      onCheckout: _tiendaAbierta == false
+                          ? (_) => _mostrarTiendaCerrada()
+                          : auth.user == null
+                              ? (_) => _irALoginParaPedir()
                               : (int pts) => context.go('/checkout', extra: {'puntosAUsar': pts}),
                     ),
                   ),
@@ -364,10 +296,10 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
               const Text('🔒', style: TextStyle(fontSize: 20)),
               const SizedBox(width: 10),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Estamos cerrados por el momento',
+                Text(_mensajeCerrado,
                     style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.primary)),
                 Text(
-                    'Domicilios: Todos los días · ${_formatHora12(_horaApertura)} - ${_formatHora12(_horaCierre)}',
+                    'Domicilios: Todos los días · ${formatHora12(_horaApertura)} - ${formatHora12(_horaCierre)}',
                     style: GoogleFonts.nunito(fontSize: 12, color: AppColors.primary)),
               ])),
             ]),
@@ -605,8 +537,11 @@ class _CarritoBottomBar extends StatefulWidget {
   final bool expandido;
   final VoidCallback onToggle;
   final void Function(int puntosAUsar) onCheckout;
+  /// Texto de "estamos cerrados" sobre "Hacer pedido" (null = abierto).
+  final String? avisoCerrado;
 
   const _CarritoBottomBar({
+    this.avisoCerrado,
     required this.carrito,
     required this.fmt,
     required this.expandido,
@@ -1036,6 +971,20 @@ class _CarritoBottomBarState extends State<_CarritoBottomBar> {
                       ],
                     ),
                     const SizedBox(height: 10),
+                    if (widget.avisoCerrado != null) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF9C3),
+                          border: Border.all(color: const Color(0xFFFDE68A)),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(widget.avisoCerrado!,
+                            style: GoogleFonts.nunito(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF854D0E))),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(

@@ -35,10 +35,20 @@ String homeForRole(UserRole? role) {
 /// `authRoutes` el redirect rebotaba a `/splash` ANTES de que el backend
 /// respondiera -- la pantalla de login quedaba desmontada, así que un login
 /// fallido se tragaba el error en silencio y terminaba en /catalogo.
+/// Destinos a los que se puede volver tras iniciar sesión o registrarse
+/// (`/login?from=/checkout`). Lista cerrada: nunca se redirige a una ruta
+/// arbitraria que venga en la URL.
+const List<String> destinosTrasLogin = ['/checkout'];
+
+/// `from` válido para volver tras el login, o null.
+String? destinoTrasLogin(String? from) =>
+    destinosTrasLogin.contains(from) ? from : null;
+
 String? computeAuthRedirect({
   required AuthStatus status,
   required String location,
   required UserRole? role,
+  String? from,
 }) {
   if (status == AuthStatus.initial || status == AuthStatus.loading) {
     if (authRoutes.contains(location)) return null;
@@ -54,6 +64,10 @@ String? computeAuthRedirect({
 
   // Autenticado: redirigir fuera de auth/splash al home del rol
   if (location == '/splash' || authRoutes.contains(location)) {
+    // Un cliente que llegó a login/registro desde "Hacer pedido" vuelve
+    // directo al checkout con su carrito.
+    final destino = destinoTrasLogin(from);
+    if (destino != null && role == UserRole.cliente) return destino;
     return homeForRole(role);
   }
 
