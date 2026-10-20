@@ -26,6 +26,7 @@ import '../../../shared/widgets/colombia_location_picker.dart';
 import '../../../shared/widgets/paginacion.dart';
 import '../../../core/utils/formato.dart';
 import '../../../core/utils/imagen.dart';
+import '../../../shared/widgets/pedido_fuera_de_horario.dart';
 
 // Pago mixto (igual React handleEfMixto/handleEfectivoMixto): al escribir en
 // un campo se recorta al rango [0,total] y el otro campo se autocompleta con
@@ -1088,6 +1089,7 @@ class _VentaDetalleScreenState extends State<_VentaDetalleScreen> {
                   // orden: Estado|Fecha, Cliente|Teléfono, Barrio|Ciudad,
                   // Dirección|Domiciliario, Referencia, Observaciones.
                   _EstadoDetalleBadge(p.estado),
+                  PedidoFueraDeHorario(fechaReal: p.fechaReal, margen: const EdgeInsets.only(top: 10)),
                   const SizedBox(height: 10),
                   Wrap(spacing: 8, runSpacing: 8, children: [
                     if (p.creadoEn != null)

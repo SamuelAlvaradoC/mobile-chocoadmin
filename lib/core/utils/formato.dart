@@ -49,6 +49,12 @@ String horaColombia(DateTime instante) {
   return '$h12:${co.minute.toString().padLeft(2, '0')} ${co.hour < 12 ? 'AM' : 'PM'}';
 }
 
+/// "lunes 10:05 PM" (día de la semana y hora, en hora Colombia)
+String diaYHoraColombia(DateTime instante) {
+  const dias = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
+  return '${dias[aColombia(instante).weekday - 1]} ${horaColombia(instante)}';
+}
+
 /// Fecha con el patrón dado, en hora Colombia (ej. 'dd/MM/yyyy', 'dd MMM').
 String fechaColombia(DateTime instante, String patron) =>
     DateFormat(patron, 'es_CO').format(aColombia(instante));

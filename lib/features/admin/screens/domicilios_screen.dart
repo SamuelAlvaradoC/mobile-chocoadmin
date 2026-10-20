@@ -18,6 +18,7 @@ import '../../../shared/layouts/admin_bottom_nav.dart';
 import '../../../shared/widgets/brand_icons.dart';
 import '../../../core/utils/formato.dart';
 import '../../../core/utils/imagen.dart';
+import '../../../shared/widgets/pedido_fuera_de_horario.dart';
 
 class DomiciliosScreen extends StatefulWidget {
   const DomiciliosScreen({super.key});
@@ -594,6 +595,7 @@ class _DomicilioCard extends StatelessWidget {
                           color: AppColors.textPrimary,
                         ),
                       ),
+                      PedidoFueraDeHorario(fechaReal: pedido.fechaReal, margen: const EdgeInsets.only(top: 4, bottom: 2)),
                       if (pedido.creadoEn != null)
                         Text(
                           fechaHoraColombia(pedido.creadoEn!, patronFecha: 'd/MM/yyyy'),
@@ -1006,6 +1008,7 @@ class _DetalleAdminModalState extends State<_DetalleAdminModal> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  PedidoFueraDeHorario(fechaReal: pedido.fechaReal, margen: const EdgeInsets.only(bottom: 12)),
                   // ── Información del cliente ──────────────────────────
                   const Text('Información del cliente',
                       style: TextStyle(

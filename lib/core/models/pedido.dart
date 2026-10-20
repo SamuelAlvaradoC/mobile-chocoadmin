@@ -245,6 +245,9 @@ class Pedido {
   final String? comprobante;
   final String? comprobanteUrl;
   final DateTime? creadoEn;
+  /// Pedido hecho fuera de horario: hora real en que el cliente lo hizo
+  /// (creadoEn queda con la hora de apertura). null en los pedidos normales.
+  final DateTime? fechaReal;
   final List<LineaDetalle> lineas;
   final double descuentoPuntos;
   final int puntosUsados;
@@ -275,6 +278,7 @@ class Pedido {
     this.comprobante,
     this.comprobanteUrl,
     this.creadoEn,
+    this.fechaReal,
     this.lineas = const [],
     this.descuentoPuntos = 0,
     this.puntosUsados = 0,
@@ -448,6 +452,7 @@ class Pedido {
         comprobante: json['comprobante']?.toString(),
         comprobanteUrl: comprobanteUrl,
         creadoEn: creadoEn,
+        fechaReal: parseFechaApi(fechaSrc['fecha_real']),
         lineas: lineas,
         descuentoPuntos: descuentoPuntos,
         puntosUsados: puntosUsados,
@@ -497,6 +502,7 @@ class Pedido {
     String? comprobante,
     String? comprobanteUrl,
     DateTime? creadoEn,
+    DateTime? fechaReal,
     List<LineaDetalle>? lineas,
     double? descuentoPuntos,
     int? puntosUsados,
@@ -535,6 +541,7 @@ class Pedido {
     motivoAnulacion: motivoAnulacion ?? this.motivoAnulacion,
     nombreDomiciliario: nombreDomiciliario ?? this.nombreDomiciliario,
     tieneResena: tieneResena ?? this.tieneResena,
+    fechaReal: fechaReal ?? this.fechaReal,
   );
 
   /// Dirección completa legible

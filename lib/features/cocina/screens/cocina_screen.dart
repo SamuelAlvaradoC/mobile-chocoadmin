@@ -14,6 +14,7 @@ import '../../../core/services/auth_service.dart' show UserRole;
 import '../../../shared/layouts/admin_bottom_nav.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../core/utils/formato.dart';
+import '../../../shared/widgets/pedido_fuera_de_horario.dart';
 
 class CocinaScreen extends StatefulWidget {
   const CocinaScreen({super.key});
@@ -654,6 +655,7 @@ class _ModalDetalle extends StatelessWidget {
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text('Pedido #${pedido.id}', style: GoogleFonts.nunito(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white)),
+                      PedidoFueraDeHorario(fechaReal: pedido.fechaReal, margen: const EdgeInsets.only(top: 6)),
                       if (pedido.creadoEn != null) ...[
                         const SizedBox(height: 2),
                         Text(

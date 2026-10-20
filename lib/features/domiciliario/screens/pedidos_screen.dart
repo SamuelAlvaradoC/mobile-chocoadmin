@@ -10,6 +10,7 @@ import '../../../core/services/api_service.dart';
 import '../../../shared/layouts/domiciliario_layout.dart';
 import '../../../shared/widgets/brand_icons.dart';
 import '../../../core/utils/formato.dart';
+import '../../../shared/widgets/pedido_fuera_de_horario.dart';
 
 class PedidosScreen extends StatefulWidget {
   const PedidosScreen({super.key});
@@ -700,6 +701,7 @@ class _ModalDetalle extends StatelessWidget {
                     ),
                   ),
                   const Divider(height: 1, color: Color(0xFFF0F0F0)),
+                  PedidoFueraDeHorario(fechaReal: pedido.fechaReal, margen: const EdgeInsets.fromLTRB(20, 12, 20, 0)),
 
                   Flexible(
                     child: SingleChildScrollView(
